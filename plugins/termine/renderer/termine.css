@@ -1,0 +1,619 @@
+/* Plugin Terminplanung */
+
+.tp-ansicht {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  gap: 6px;
+}
+
+.tp-werkzeuge {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+}
+.tp-gruppe {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.inline {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+select {
+  font: inherit;
+  padding: 3px 6px;
+  border: 1px solid var(--linie);
+  border-radius: 4px;
+  background: var(--flaeche);
+}
+.leise {
+  color: var(--text-leise);
+}
+.negativ {
+  color: var(--kritisch);
+  font-weight: 600;
+}
+.positiv {
+  color: #2e7d32;
+}
+
+.tp-kennzahlen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  font-size: 13px;
+  color: var(--text-leise);
+}
+.tp-kennzahlen strong {
+  color: var(--text);
+}
+.tp-warnung {
+  color: #a15c00;
+}
+.tp-meldung {
+  padding: 6px 10px;
+  border: 1px solid #e3a3a3;
+  background: #fdeeee;
+  border-radius: 4px;
+}
+.tp-leer {
+  padding: 24px;
+  color: var(--text-leise);
+  max-width: 720px;
+}
+
+/* --- Split: Tabelle | Balkenplan --- */
+.tp-split {
+  flex: 1;
+  min-height: 200px;
+  display: grid;
+  grid-template-columns: minmax(360px, 48%) 1fr;
+  border: 1px solid var(--linie);
+  background: var(--flaeche);
+}
+.tp-tabelle,
+.tp-balken {
+  overflow: auto;
+  position: relative;
+  min-height: 0;
+}
+.tp-tabelle {
+  border-right: 2px solid var(--linie);
+  outline: none;
+}
+.tp-tabelle:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--akzent);
+}
+.tp-kopf {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: grid;
+  background: #f0f0ec;
+  border-bottom: 1px solid var(--linie);
+}
+.tp-kopfzelle {
+  display: flex;
+  align-items: flex-end;
+  padding: 4px 6px 6px;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-leise);
+  border-right: 1px solid var(--linie);
+}
+.tp-kopfzelle.rechts {
+  justify-content: flex-end;
+}
+.tp-kopfzelle.aktiv {
+  color: var(--akzent);
+}
+.tp-zeile {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: grid;
+  border-bottom: 1px solid #ecece8;
+  font-size: 13px;
+}
+.tp-zeile.gewaehlt {
+  background: #e7eef8;
+}
+.tp-zeile.sammel {
+  font-weight: 600;
+}
+.tp-zelle {
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  border-right: 1px solid #ecece8;
+  overflow: hidden;
+  white-space: nowrap;
+  cursor: default;
+}
+/* Nr. und Name bleiben beim waagerechten Scrollen stehen */
+.tp-zelle.fest,
+.tp-kopfzelle.fest {
+  position: sticky;
+  z-index: 1;
+  background: var(--flaeche);
+}
+.tp-kopfzelle.fest {
+  background: #f0f0ec;
+}
+.tp-zeile.gewaehlt .tp-zelle.fest {
+  background: #e7eef8;
+}
+.tp-zelle.rechts {
+  justify-content: flex-end;
+  font-variant-numeric: tabular-nums;
+}
+.tp-zelle.fokus {
+  box-shadow: inset 0 0 0 2px var(--akzent);
+}
+.tp-zelle.negativ {
+  color: var(--kritisch);
+}
+.tp-zeile.kritisch .tp-zelle:nth-child(2) .tp-text {
+  color: var(--kritisch);
+}
+.tp-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tp-name {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.tp-klappe {
+  border: none;
+  background: none;
+  padding: 0;
+  width: 16px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.tp-klappe-platz {
+  display: inline-block;
+  width: 16px;
+}
+.tp-raute {
+  color: #333;
+  font-size: 11px;
+}
+.tp-raute.schnittstelle {
+  color: #e07b00;
+}
+.tp-risiko {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  background: #fff3cd;
+  border: 1px solid #d9a400;
+  font-size: 10px;
+  font-weight: 600;
+}
+.tp-editor {
+  width: 100%;
+  padding: 2px 4px;
+  border: 1px solid var(--akzent);
+  border-radius: 0;
+}
+
+/* --- Balkenplan --- */
+.tp-balken-kopf {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #f0f0ec;
+  border-bottom: 1px solid var(--linie);
+}
+.tp-kopflinie {
+  stroke: #d0d0ca;
+}
+.tp-kopftext {
+  font-size: 11px;
+  fill: #555;
+}
+.tp-kopftext.klein {
+  font-size: 10px;
+}
+.tp-balken-svg {
+  display: block;
+}
+.tp-frei.frei {
+  fill: #f3f3f0;
+}
+.tp-frei.ruhezeit {
+  fill: #dcdcd6;
+}
+.tp-zeilenhg {
+  fill: transparent;
+}
+.tp-zeilenhg.gewaehlt {
+  fill: rgba(31, 95, 168, 0.1);
+}
+.tp-heute {
+  stroke: #1f5fa8;
+  stroke-width: 1.5;
+}
+.tp-sollende {
+  stroke: var(--kritisch);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 4;
+}
+.tp-sollende-text {
+  fill: var(--kritisch);
+  font-size: 11px;
+}
+.tp-balken-rect {
+  fill: #4a7fc1;
+  stroke: #2d5c97;
+}
+.tp-balken-rect.kritisch {
+  fill: #d64541;
+  stroke: #9e2a27;
+}
+.tp-puffer {
+  stroke: #8a8a84;
+  stroke-width: 0.5;
+}
+.tp-schraffur {
+  stroke: #8a8a84;
+  stroke-width: 1.5;
+}
+.tp-negativ {
+  fill: var(--kritisch);
+}
+.tp-meilenstein path {
+  fill: #333;
+}
+.tp-meilenstein.kritisch path {
+  fill: var(--kritisch);
+}
+.tp-meilenstein.schnittstelle path {
+  fill: #e07b00;
+  stroke: #8a4b00;
+}
+.tp-balkentext {
+  font-size: 11px;
+  fill: #333;
+}
+.tp-sammel path {
+  fill: #333;
+}
+.tp-sammel.kritisch path {
+  fill: #9e2a27;
+}
+.tp-pfeil {
+  fill: none;
+  stroke: #7a7a74;
+  stroke-width: 1;
+}
+.tp-pfeil.kritisch {
+  stroke: var(--kritisch);
+  stroke-width: 1.8;
+}
+.tp-pfeilspitze {
+  fill: #7a7a74;
+}
+.tp-pfeilspitze.kritisch {
+  fill: var(--kritisch);
+}
+.tp-griff {
+  fill: #fff;
+  stroke: var(--akzent);
+  stroke-width: 1.5;
+  cursor: crosshair;
+  opacity: 0;
+}
+g:hover > .tp-griff,
+.np-knoten.gewaehlt .tp-griff {
+  opacity: 1;
+}
+.tp-ziehlinie {
+  stroke: var(--akzent);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  pointer-events: none;
+}
+.tp-risikomarke circle {
+  fill: #fff3cd;
+  stroke: #d9a400;
+}
+.tp-risikomarke text {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.tp-legende {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  font-size: 12px;
+  padding: 4px 2px;
+}
+.tp-legende-eintrag {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  margin-left: 10px;
+}
+
+/* --- Netzplan --- */
+.tp-netz {
+  flex: 1;
+  min-height: 200px;
+  overflow: auto;
+  border: 1px solid var(--linie);
+  background: #fff;
+  outline: none;
+}
+.tp-zoom {
+  min-width: 48px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.np-knoten {
+  cursor: grab;
+}
+.np-knoten rect.np-rahmen {
+  fill: #fff;
+  stroke: #333;
+  stroke-width: 1.2;
+}
+.np-knoten line {
+  stroke: #333;
+  stroke-width: 0.8;
+}
+.np-knoten text {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.np-knoten .np-titel {
+  font-weight: 600;
+}
+.np-knoten text.negativ {
+  fill: var(--kritisch);
+}
+.np-knoten.kritisch rect.np-rahmen {
+  stroke: var(--kritisch);
+  stroke-width: 3;
+}
+.np-knoten.meilenstein rect.np-rahmen {
+  fill: #f6f6f2;
+}
+.np-knoten.schnittstelle rect.np-rahmen {
+  fill: #fff1df;
+}
+.np-knoten.gewaehlt rect.np-rahmen {
+  stroke: var(--akzent);
+  stroke-width: 2.5;
+}
+.np-linie {
+  fill: none;
+  stroke: #555;
+  stroke-width: 1.2;
+}
+.np-kante.kritisch .np-linie {
+  stroke: var(--kritisch);
+  stroke-width: 3;
+}
+.np-kante.gewaehlt .np-linie {
+  stroke: var(--akzent);
+}
+.np-trefferflaeche {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 10;
+  cursor: pointer;
+}
+.np-kantentext {
+  font-size: 11px;
+  fill: #333;
+}
+.np-kante.kritisch .np-kantentext {
+  fill: var(--kritisch);
+}
+.np-legende-knoten {
+  display: inline-grid;
+  border: 1px solid #333;
+  font-size: 11px;
+}
+.np-legende-knoten span {
+  padding: 1px 6px;
+}
+.np-legende-knoten span + span {
+  border-top: 1px solid #333;
+}
+
+/* --- Dialoge --- */
+.dialog-hintergrund {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 6vh;
+  z-index: 20;
+}
+.dialog {
+  max-width: 94vw;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--flaeche);
+  border-radius: 6px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+}
+.dialog-kopf {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--linie);
+}
+.dialog-kopf h2 {
+  font-size: 16px;
+  margin: 0;
+  flex: 1;
+}
+.dialog-inhalt {
+  padding: 12px 14px;
+  overflow: auto;
+}
+.dialog-inhalt h3 {
+  font-size: 14px;
+  margin: 16px 0 6px;
+}
+.dialog-inhalt h4 {
+  font-size: 13px;
+  margin: 12px 0 4px;
+}
+.dialog-fuss {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 10px 14px;
+  border-top: 1px solid var(--linie);
+}
+.dialog-fuss .fehler {
+  margin-right: auto;
+}
+.dialog-erklaerung {
+  margin-top: 0;
+  color: var(--text-leise);
+  font-size: 13px;
+}
+.formular {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 14px;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+.feld {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.feld.breit {
+  grid-column: 1 / -1;
+}
+.feld.haken {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+.feld.radio {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+.feld.radio label {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.feld-label {
+  font-size: 12px;
+  color: var(--text-leise);
+}
+.feld-hinweis {
+  font-size: 12px;
+  color: #a15c00;
+}
+.feld input,
+.feld select,
+.feld textarea {
+  font: inherit;
+  padding: 4px 8px;
+  border: 1px solid var(--linie);
+  border-radius: 4px;
+}
+.formelzeile {
+  font-family: Consolas, monospace;
+  background: #f3f3f0;
+  padding: 4px 6px;
+}
+input.kurz {
+  width: 52px;
+}
+.termintabelle {
+  margin-top: 12px;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.termintabelle th {
+  text-align: left;
+  color: var(--text-leise);
+  font-weight: 600;
+  padding: 2px 6px 2px 14px;
+}
+.termintabelle td {
+  padding: 2px 6px;
+}
+.beziehungsliste {
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.beziehungszeile {
+  display: grid;
+  grid-template-columns: 1fr 180px 70px 150px auto;
+  gap: 6px;
+  align-items: center;
+}
+.beziehungszeile.neu {
+  padding-top: 8px;
+  border-top: 1px dashed var(--linie);
+}
+.kalender {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+.wochentage {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.wochentage label {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+.abstand-links {
+  margin-left: 20px;
+}
+.ruhezeiten {
+  border-collapse: collapse;
+  width: 100%;
+}
+.ruhezeiten th {
+  text-align: left;
+  font-size: 12px;
+  color: var(--text-leise);
+}
+.ruhezeiten td {
+  padding: 2px 4px;
+}
+.tabelle tr.aktiv td:first-child {
+  font-weight: 600;
+}

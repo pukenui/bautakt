@@ -20,14 +20,14 @@ Ziel: Ab ca. **13.12.** sollen damit F.1 (Rollen-Netzplan) und F.2 (Projekttermi
 - [x] Parser Vorgänger-Spalte (Kurz- und Langform)
 - [x] Referenztests R-01 bis R-08 grün
 
-### M2 – Oberfläche Termine (bis ca. 10.12.)
-- [ ] Hauptansicht: Tabelle links, vernetzter Balkenplan rechts (E-18, E-21)
-- [ ] Vorgangseigenschaften inkl. Pflichtfeld Quelle/Annahme, Anmerkung, Rolle, braucht/liefert, Risiko (E-13)
-- [ ] Sammelvorgänge (Zuklappen = Rahmenterminplan), mehrere Pläne je Projekt (E-14)
-- [ ] Beziehungs-Dialog (Langform), Verbinden per Maus
-- [ ] Netzplan-Reiter im Übungsformat, Auto-Layout + Verschieben (E-20)
-- [ ] Soll-Ende, Umschalter Rückwärtsrechnung, negative Puffer rot, Schnittstellen-Meilensteine (E-19)
-- [ ] Kalender-/Ruhezeiten-Dialog
+### M2 – Oberfläche Termine (bis ca. 10.12.) ✔
+- [x] Hauptansicht: Tabelle links, vernetzter Balkenplan rechts (E-18, E-21)
+- [x] Vorgangseigenschaften inkl. Pflichtfeld Quelle/Annahme, Anmerkung, Rolle, braucht/liefert, Risiko (E-13)
+- [x] Sammelvorgänge (Zuklappen = Rahmenterminplan), mehrere Pläne je Projekt (E-14)
+- [x] Beziehungs-Dialog (Langform), Verbinden per Maus
+- [x] Netzplan-Reiter im Übungsformat, Auto-Layout + Verschieben (E-20)
+- [x] Soll-Ende, Umschalter Rückwärtsrechnung, negative Puffer rot, Schnittstellen-Meilensteine (E-19)
+- [x] Kalender-/Ruhezeiten-Dialog
 
 ### M3 – Export, Stände, Hilfe (bis ca. 13.12.)
 - [ ] Druckansicht mit Plankopf, Legende, Risiko-Hinweisen → PDF A3 quer, PNG
@@ -70,3 +70,4 @@ Ziel: Ab ca. **13.12.** sollen damit F.1 (Rollen-Netzplan) und F.2 (Projekttermi
 - 24.11.2026 – Planung abgeschlossen (Lastenheft, Architektur, Roadmap, Referenzbeispiele).
 - 24.11.2026 – **M0 fertig.** Monorepo (pnpm, electron-vite, TS strict, ESLint/Prettier, Vitest), Kern (Projektdatei mit Migrationen, Befehle/Undo/Redo/Änderungsprotokoll, Ereignisse, Plugin-Lader, Lock/Backup/Autosave/JSON-Export), sichere Electron-Shell, Plugin „termine“ als Gerüst (Pläne anlegen/umbenennen/löschen). 35 Tests grün, Rauchtest der App und des gepackten Installers erfolgreich. Electron vorerst 42 (siehe Architektur 9).
 - 24.11.2026 – **M1 fertig.** Reine Bibliotheken `rechnen-kalender` (Arbeitstage, NRW-Feiertage, Ruhezeiten, AT↔Datum, KT-Abstände, ISO-KW) und `rechnen-termine` (Vorwärts-/Rückwärtsrechnung EA/AA/EE/AE mit AT/KT, GP/FP, kritischer Weg inkl. kritischer Pfeile, Soll-Ende, Bedingungen, Sammelvorgänge, Zykluserkennung, Parser Kurz-/Langform). Referenztests R-01 bis R-08 grün, dazu 300 Zufallsnetze als Eigenschaftstests; insgesamt 396 Tests. Präzisierungen in Architektur 10.
+- 24.11.2026 – **M2 fertig.** Plugin „termine“ mit Datenmodell (Vorgänge, Beziehungen, Kalender, Ruhezeiten; Migration 2 inkl. Übernahme von M0-Dateien) und allen Änderungen als undo-fähige Befehle. Oberfläche: Terminplan (virtualisierte Tabelle mit Tastatureingabe + vernetzter Balkenplan Tag/KW/Monat/Quartal mit Puffern, Meilensteinen, Schnittstellen, Soll-Ende-/Heute-Linie, Ruhezeiten, Risiko-Legende, Verbinden per Maus), Netzplan im Übungsformat (Auto-Layout, Verschieben, Verbinden), Dialoge für Vorgang, Vorgänger (Langform) und Plan/Kalender/Ruhezeiten, Rahmenterminplan durch Zuklappen, mehrere Pläne. 410 Tests grün; Bedienung in der gebauten App per Tastatur und Maus geprüft. Präzisierungen in Architektur 11.

@@ -1,0 +1,194 @@
+import { BautaktFehler, type PluginDb } from '@bautakt/kern';
+import { Arbeitskalender } from '@bautakt/rechnen-kalender';
+import { netzplanBerechnen, NetzplanFehler, type VorgangEingabe } from '@bautakt/rechnen-termine';
+import type {
+  BeziehungZeile,
+  Berechnung,
+  KalenderDaten,
+  PlanDaten,
+  PlanZeile,
+  RuhezeitZeile,
+  VorgangMitEbene,
+  VorgangTermine,
+  VorgangZeile,
+} from '../gemeinsam/typen.js';
+
+/** Lesezugriff, wie ihn `PluginDb` und `Transaktion` gemeinsam bieten. */
+export type Leser = Pick<PluginDb, 'lesen' | 'eins'>;
+
+export function planLesen(db: Leser, planId: string): PlanZeile {
+  const p = db.eins<PlanZeile>('SELECT * FROM t_plan WHERE id = ?', planId);
+  if (!p) throw new BautaktFehler('NICHT_GEFUNDEN', 'Der Plan existiert nicht (mehr).');
+  return p;
+}
+
+export function kalenderLesen(db: Leser, kalenderId: string | null): KalenderDaten {
+  const k = kalenderId
+    ? db.eins<{ id: string; arbeitstage: string; bundesland: string | null }>(
+        'SELECT * FROM t_kalender WHERE id = ?',
+        kalenderId,
+      )
+    : undefined;
+  return {
+    id: k?.id ?? '',
+    arbeitstage: [...(k?.arbeitstage ?? '1111100')].map((c) => c === '1'),
+    bundesland: k ? (k.bundesland === 'NW' ? 'NW' : null) : 'NW',
+  };
+}
+
+export function vorgaengeLesen(db: Leser, planId: string): VorgangZeile[] {
+  return db.lesen<VorgangZeile>(
+    'SELECT * FROM t_vorgang WHERE plan_id = ? ORDER BY sortierung',
+    planId,
+  );
+}
+
+export function beziehungenLesen(db: Leser, planId: string): BeziehungZeile[] {
+  return db.lesen<BeziehungZeile>(
+    'SELECT * FROM t_beziehung WHERE plan_id = ? ORDER BY id',
+    planId,
+  );
+}
+
+/** Vorgänge in Baumreihenfolge (Gliederung, E-14), mit Ebene. */
+export function alsBaum(vorgaenge: readonly VorgangZeile[]): VorgangMitEbene[] {
+  const kinder = new Map<string | null, VorgangZeile[]>();
+  const ids = new Set(vorgaenge.map((v) => v.id));
+  for (const v of vorgaenge) {
+    const p = v.parent_id && ids.has(v.parent_id) ? v.parent_id : null;
+    const l = kinder.get(p);
+    if (l) l.push(v);
+    else kinder.set(p, [v]);
+  }
+  for (const l of kinder.values()) l.sort((a, b) => a.sortierung - b.sortierung);
+  const ergebnis: VorgangMitEbene[] = [];
+  const besucht = new Set<string>();
+  const gehe = (parent: string | null, ebene: number) => {
+    for (const v of kinder.get(parent) ?? []) {
+      if (besucht.has(v.id)) continue;
+      besucht.add(v.id);
+      ergebnis.push({ ...v, ebene, hatKinder: (kinder.get(v.id)?.length ?? 0) > 0 });
+      gehe(v.id, ebene + 1);
+    }
+  };
+  gehe(null, 0);
+  return ergebnis;
+}
+
+export function arbeitskalender(plan: PlanZeile, kalender: KalenderDaten, ruhe: RuhezeitZeile[]) {
+  return new Arbeitskalender({
+    start: plan.projektstart ?? heuteIso(),
+    arbeitstage: kalender.arbeitstage,
+    bundesland: kalender.bundesland,
+    ruhezeiten: ruhe.map((r) => ({ von: r.von, bis: r.bis, name: r.name || 'Ruhezeit' })),
+  });
+}
+
+export function heuteIso(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/**
+ * Anzeigedatum eines Zeitpunkts für Meilensteine: Ende des Arbeitstags AT t;
+ * bei t ≤ 0 (Projektstart) der Beginn des ersten Arbeitstags.
+ */
+export function meilensteinDatum(kal: Arbeitskalender, t: number): string {
+  return t >= 1 ? kal.endeDatum(t) : kal.anfangDatum(t);
+}
+
+/** Liest einen Plan vollständig und rechnet ihn (Architektur 4.1: Ergebnisse werden nicht gespeichert). */
+export function planDatenLaden(db: Leser, planId: string): PlanDaten {
+  const plan = planLesen(db, planId);
+  const kalender = kalenderLesen(db, plan.kalender_id);
+  const ruhezeiten = plan.kalender_id
+    ? db.lesen<RuhezeitZeile>(
+        'SELECT * FROM t_ruhezeit WHERE kalender_id = ? ORDER BY von',
+        plan.kalender_id,
+      )
+    : [];
+  const vorgaenge = alsBaum(vorgaengeLesen(db, planId));
+  const beziehungen = beziehungenLesen(db, planId);
+  return {
+    plan,
+    kalender,
+    ruhezeiten,
+    vorgaenge,
+    beziehungen,
+    berechnung: rechnen(plan, kalender, ruhezeiten, vorgaenge, beziehungen),
+  };
+}
+
+function rechnen(
+  plan: PlanZeile,
+  kalender: KalenderDaten,
+  ruhezeiten: RuhezeitZeile[],
+  vorgaenge: VorgangMitEbene[],
+  beziehungen: BeziehungZeile[],
+): Berechnung {
+  try {
+    const kal = arbeitskalender(plan, kalender, ruhezeiten);
+    const eingaben: VorgangEingabe[] = vorgaenge.map((v) => ({
+      id: v.id,
+      nr: v.nr,
+      typ: v.typ,
+      dauer: v.typ === 'meilenstein' ? 0 : v.dauer_at,
+      parent: v.parent_id,
+      fruehestensAb:
+        v.bedingung_typ === 'nicht_frueher_als' && v.bedingung_datum
+          ? kal.zeitpunktFruehestensAb(v.bedingung_datum)
+          : null,
+      spaetestensBis:
+        v.bedingung_typ === 'muss_enden_am' && v.bedingung_datum
+          ? kal.zeitpunktSpaetestensBis(v.bedingung_datum)
+          : null,
+    }));
+    const sollEnde = plan.soll_ende ? kal.zeitpunktSpaetestensBis(plan.soll_ende) : null;
+    const e = netzplanBerechnen(
+      eingaben,
+      beziehungen.map((b) => ({
+        id: b.id,
+        von: b.von_id,
+        nach: b.nach_id,
+        art: b.art,
+        abstand: b.abstand,
+        einheit: b.einheit,
+      })),
+      {
+        kalender: kal,
+        sollEnde,
+        rueckwaertsVon:
+          plan.rueckwaerts_von === 'soll_ende' && sollEnde !== null ? 'soll_ende' : 'berechnet',
+      },
+    );
+    const typ = new Map(vorgaenge.map((v) => [v.id, v.typ]));
+    const termine: Record<string, VorgangTermine> = {};
+    for (const [id, r] of e.vorgaenge) {
+      const punkt = typ.get(id) === 'meilenstein' || r.fez === r.faz;
+      termine[id] = {
+        ...r,
+        anfang: punkt ? meilensteinDatum(kal, r.faz) : kal.anfangDatum(r.faz),
+        ende: punkt ? meilensteinDatum(kal, r.fez) : kal.endeDatum(r.fez),
+        spaetAnfang: punkt ? meilensteinDatum(kal, r.saz) : kal.anfangDatum(r.saz),
+        spaetEnde: punkt ? meilensteinDatum(kal, r.sez) : kal.endeDatum(r.sez),
+      };
+    }
+    return {
+      ok: true,
+      termine,
+      kritischeBeziehungen: e.beziehungen
+        .filter((b) => b.kritisch && b.id)
+        .map((b) => b.id as string),
+      projektende: e.projektende,
+      projektendeDatum: e.projektende >= 1 ? kal.endeDatum(e.projektende) : kal.anfangDatum(0),
+      sollEnde,
+      sollEndeDatum: plan.soll_ende,
+      abweichungSollEnde: e.abweichungSollEnde,
+      minGp: e.minGp,
+    };
+  } catch (err) {
+    if (err instanceof NetzplanFehler || err instanceof Error)
+      return { ok: false, fehler: err.message };
+    throw err;
+  }
+}

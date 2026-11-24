@@ -56,13 +56,18 @@ const handler: Record<Aufruf, (args: unknown[]) => unknown> = {
   'befehl:ausfuehren': ([daten]) =>
     antwort(() => {
       const a = befehlSchema.parse(daten);
-      aktiveSitzung().befehl({
+      const e = aktiveSitzung().befehl({
         plugin: a.plugin,
         name: a.name,
         daten: a.daten,
         ...(a.grund ? { grund: a.grund } : {}),
       });
-      return null;
+      return {
+        befehlId: e.befehlId,
+        eingefuegt: e.aenderungen
+          .filter((x) => x.art === 'einfuegen')
+          .map((x) => ({ tabelle: x.tabelle, id: x.id })),
+      };
     }),
   'befehl:rueckgaengig': () => antwort(() => aktiveSitzung().rueckgaengig()),
   'befehl:wiederholen': () => antwort(() => aktiveSitzung().wiederholen()),

@@ -22,6 +22,12 @@ export interface ProjektStatus {
 /** Ergebnis jedes Aufrufs: Fehler werden als Daten übertragen, nicht geworfen. */
 export type Antwort<T> = { ok: true; wert: T } | { ok: false; fehler: string; code?: string };
 
+/** Ergebnis eines Befehls für die Oberfläche: neu angelegte Zeilen (z. B. zum Auswählen). */
+export interface BefehlAntwort {
+  befehlId: string;
+  eingefuegt: { tabelle: string; id: string }[];
+}
+
 /** Push-Nachrichten Main → Renderer. */
 export interface Meldungen {
   /** Projekt geöffnet/geschlossen/geändert; null = kein Projekt offen. */
@@ -63,7 +69,7 @@ export interface BautaktApi {
       name: string,
       daten: unknown,
       grund?: string,
-    ): Promise<Antwort<null>>;
+    ): Promise<Antwort<BefehlAntwort>>;
     rueckgaengig(): Promise<Antwort<boolean>>;
     wiederholen(): Promise<Antwort<boolean>>;
   };

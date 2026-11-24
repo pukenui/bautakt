@@ -1,11 +1,20 @@
 import type Database from 'better-sqlite3';
 import { BautaktFehler } from './fehler.js';
+import type { Wert, Zeile } from './sql.js';
+
+/** Datenzugriff für Migrationsschritte (läuft in derselben Transaktion wie das SQL). */
+export interface MigrationDb {
+  alle<T = Zeile>(sql: string, ...parameter: Wert[]): T[];
+  ausfuehren(sql: string, ...parameter: Wert[]): void;
+}
 
 /** Eine Schema-Migration eines Plugins (oder des Kerns). Versionen aufsteigend ab 1, lückenlos. */
 export interface Migration {
   version: number;
   name: string;
   sql: string;
+  /** Optionaler Datenschritt nach dem SQL, z. B. um Zeilen mit UUID-v7-IDs anzulegen. */
+  daten?: (db: MigrationDb) => void;
 }
 
 export function schemaVersion(db: Database.Database, pluginId: string): number {
@@ -58,6 +67,10 @@ export function migrationenAusfuehren(
     db.transaction(() => {
       try {
         db.exec(m.sql);
+        m.daten?.({
+          alle: <T>(sql: string, ...p: Wert[]) => db.prepare(sql).all(...p) as T[],
+          ausfuehren: (sql: string, ...p: Wert[]) => void db.prepare(sql).run(...p),
+        });
       } catch (e) {
         throw new BautaktFehler(
           'MIGRATION',

@@ -273,3 +273,17 @@ Präzisierungen der Rechenregeln aus Abschnitt 5, wie sie in `packages/rechnen-*
 - **Abweichung zum Soll-Ende** wird immer gemeldet, wenn ein Soll-Ende gesetzt ist (`projektende − sollEnde`, > 0 = Überschreitung), auch bei Standard-Rückwärtsrechnung.
 - **Vorgänger-Spalte.** Nr. ist eine Zahl (auch gegliedert, `1.2.3`) oder ein Kürzel aus Buchstaben/Ziffern; nach einem Kürzel steht vor der Art ein Leerzeichen (`A EE+2`). Abstände nur ganzzahlig mit Vorzeichen; `−` (typografisch) wird akzeptiert, leere Einträge (`;;`) werden übergangen. Langform-Ausgabe: `3 Ende-Anfang +15 Arbeitstage` bzw. `… Kalendertage` (eindeutig wieder einlesbar). Mehrere Beziehungen zwischen denselben Vorgängen (z. B. AA und EE) sind erlaubt.
 - **Topologische Reihenfolge** nach Kahn mit Warteschlange in Eingabereihenfolge (deterministisch). Zyklus beim Rechnen → Fehler mit Pfad; beim Eingeben einer Beziehung prüft `zyklusDurchNeueBeziehung` vorab (R-05).
+
+## 11. Umsetzungsnotizen (M2)
+
+- **Tabellen** wie in 4.1, zusätzlich `t_beziehung.plan_id`; `t_kalender.arbeitstage` als Maske `1111100` (Mo–So). Jeder Plan hat einen eigenen Kalender. Keine Fremdschlüssel in SQL; die Befehle halten die Daten konsistent (Löschen eines Vorgangs entfernt Unterpunkte und Beziehungen, Löschen eines Plans alles Zugehörige – jeweils undo-fähig).
+- **Migrationen mit Datenschritt:** `Migration.daten(db)` läuft nach dem SQL in derselben Transaktion, damit z. B. Kalender für bestehende Pläne mit UUID-v7-IDs angelegt werden können.
+- **Befehlsantwort an die Oberfläche** enthält die IDs der neu eingefügten Zeilen (`BefehlAntwort.eingefuegt`), damit z. B. ein neuer Vorgang direkt ausgewählt ist.
+- **Planabfrage** `termine:plan` liefert Plan, Kalender, Ruhezeiten, Vorgänge in Gliederungsreihenfolge (mit Ebene) und das Rechenergebnis inkl. Anzeige-Daten; gerechnet wird bei jeder Abfrage im Main-Prozess.
+- **Nr.** ist je Plan eindeutig (ohne Groß-/Kleinschreibung), neue Vorgänge bekommen die nächste freie Zahl. **Vorgänger-Spalte** ersetzt die Vorgänger des Vorgangs; unveränderte Beziehungen behalten ihre ID.
+- **Einrücken** hängt den Vorgang unter den Vorgang darüber; ist dieser noch kein Sammelvorgang, wird er dazu – außer er hat Anordnungsbeziehungen (E-14), dann Fehlermeldung. Ausrücken setzt den Vorgang direkt hinter seinen bisherigen Sammelvorgang.
+- **Anzeige von Meilensteinen:** Zeitpunkt t ≥ 1 → Ende des Arbeitstags AT t; t ≤ 0 → Beginn des ersten Arbeitstags (Projektbeginn). Gilt auch für Vorgänge mit Dauer 0.
+- **Soll-Ende aus Dauer** im Plandialog: „Start + n Monate“ = Tag vor demselben Kalendertag n Monate später (z. B. 14.12.2026 + 15 Monate → 13.03.2028).
+- **Anzeigezustand** (gewählter Plan, Datum/AT, Kurz-/Langform, Zoom, zugeklappte Sammelvorgänge) liegt nur in der Oberfläche (localStorage), nicht in der Projektdatei.
+- **Netzplan:** Pfeile verlassen den Knoten rechts und erreichen ihn links (unabhängig von der Art; die Art steht am Pfeil, z. B. `+10EA`); Ein-/Ausgänge werden über die Knotenhöhe verteilt. Positionen in Pixeln, gerundet.
+- Renderer nutzt `rechnen-kalender`/`rechnen-termine` direkt für Datumsanzeige, Zeitachse und Formatierung der Vorgänger (reine Bibliotheken, ohne Node).

@@ -133,6 +133,12 @@ importers:
       '@bautakt/kern':
         specifier: workspace:*
         version: link:../../packages/kern
+      '@bautakt/rechnen-kalender':
+        specifier: workspace:*
+        version: link:../../packages/rechnen-kalender
+      '@bautakt/rechnen-termine':
+        specifier: workspace:*
+        version: link:../../packages/rechnen-termine
       '@bautakt/ui':
         specifier: workspace:*
         version: link:../../packages/ui

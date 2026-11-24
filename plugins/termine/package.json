@@ -1,6 +1,6 @@
 {
   "name": "@bautakt/plugin-termine",
-  "version": "0.0.1",
+  "version": "0.2.0",
   "private": true,
   "description": "Plugin Terminplanung (Netzplan, Balkenplan)",
   "type": "module",
@@ -15,7 +15,9 @@
     "@bautakt/kern": "workspace:*",
     "@bautakt/ui": "workspace:*",
     "react": "^19.2.0",
-    "zod": "^4.1.0"
+    "zod": "^4.1.0",
+    "@bautakt/rechnen-kalender": "workspace:*",
+    "@bautakt/rechnen-termine": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

@@ -5,5 +5,5 @@
     "jsx": "react-jsx",
     "types": ["node"]
   },
-  "include": ["main", "renderer", "migrations", "test"]
+  "include": ["main", "renderer", "migrations", "gemeinsam", "test"]
 }

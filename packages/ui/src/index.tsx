@@ -1,5 +1,58 @@
 import type { BautaktApi, ProjektStatus } from '@bautakt/kern/vertrag';
-import type { ComponentType, ReactNode } from 'react';
+import { useEffect, useRef, type ComponentType, type ReactNode } from 'react';
+
+/** Modaler Dialog (Esc oder × schließt). Fokus springt beim Öffnen in den Dialog. */
+export function Dialog(props: {
+  titel: string;
+  onSchliessen: () => void;
+  children: ReactNode;
+  fuss?: ReactNode;
+  breite?: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const { onSchliessen } = props;
+  useEffect(() => {
+    const el = ref.current;
+    el?.querySelector<HTMLElement>('input, select, textarea, button:not(.schliessen)')?.focus();
+    const taste = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onSchliessen();
+      }
+    };
+    window.addEventListener('keydown', taste, true);
+    return () => window.removeEventListener('keydown', taste, true);
+  }, [onSchliessen]);
+  return (
+    <div
+      className="dialog-hintergrund"
+      onMouseDown={(e) => e.target === e.currentTarget && onSchliessen()}
+    >
+      <div
+        ref={ref}
+        className="dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-label={props.titel}
+        style={{ width: props.breite ?? 560 }}
+      >
+        <header className="dialog-kopf">
+          <h2>{props.titel}</h2>
+          <button className="schliessen" aria-label="Schließen" onClick={onSchliessen}>
+            ×
+          </button>
+        </header>
+        <div className="dialog-inhalt">{props.children}</div>
+        {props.fuss && <footer className="dialog-fuss">{props.fuss}</footer>}
+      </div>
+    </div>
+  );
+}
+
+/** Ganze Zahl im deutschen Format (Tausenderpunkt). */
+export function zahlAnzeigen(n: number): string {
+  return n.toLocaleString('de-DE');
+}
 
 /** Props, die jede Plugin-Ansicht von der App-Shell erhält. */
 export interface AnsichtProps {
