@@ -107,6 +107,14 @@ importers:
         specifier: ^24.0.0
         version: 24.19.2
 
+  packages/rechnen-kalender: {}
+
+  packages/rechnen-termine:
+    devDependencies:
+      '@bautakt/rechnen-kalender':
+        specifier: workspace:*
+        version: link:../rechnen-kalender
+
   packages/ui:
     dependencies:
       '@bautakt/kern':

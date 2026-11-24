@@ -14,11 +14,11 @@ Ziel: Ab ca. **13.12.** sollen damit F.1 (Rollen-Netzplan) und F.2 (Projekttermi
 - [x] Kern: Plugin-Lader + Plugin-API (E-35) mit leerem Plugin `termine`
 - [x] Neu/Öffnen/Speichern, Autosave 2 min, Backup bak1–5, Lock → schreibgeschützt (E-41)
 
-### M1 – Rechenkern Termine (bis ca. 03.12.)
-- [ ] `rechnen-kalender`: Arbeitstage, NRW-Feiertage, Ruhezeiten, AT↔Datum, KT-Umrechnung
-- [ ] `rechnen-termine`: Vorwärts/Rückwärts, EA/AA/EE/AE, negative Abstände, GP/FP, kritischer Pfad, Soll-Ende, Bedingungen, Zykluserkennung
-- [ ] Parser Vorgänger-Spalte (Kurz- und Langform)
-- [ ] Referenztests R-01 bis R-08 grün
+### M1 – Rechenkern Termine (bis ca. 03.12.) ✔
+- [x] `rechnen-kalender`: Arbeitstage, NRW-Feiertage, Ruhezeiten, AT↔Datum, KT-Umrechnung
+- [x] `rechnen-termine`: Vorwärts/Rückwärts, EA/AA/EE/AE, negative Abstände, GP/FP, kritischer Pfad, Soll-Ende, Bedingungen, Zykluserkennung
+- [x] Parser Vorgänger-Spalte (Kurz- und Langform)
+- [x] Referenztests R-01 bis R-08 grün
 
 ### M2 – Oberfläche Termine (bis ca. 10.12.)
 - [ ] Hauptansicht: Tabelle links, vernetzter Balkenplan rechts (E-18, E-21)
@@ -69,3 +69,4 @@ Ziel: Ab ca. **13.12.** sollen damit F.1 (Rollen-Netzplan) und F.2 (Projekttermi
 
 - 24.11.2026 – Planung abgeschlossen (Lastenheft, Architektur, Roadmap, Referenzbeispiele).
 - 24.11.2026 – **M0 fertig.** Monorepo (pnpm, electron-vite, TS strict, ESLint/Prettier, Vitest), Kern (Projektdatei mit Migrationen, Befehle/Undo/Redo/Änderungsprotokoll, Ereignisse, Plugin-Lader, Lock/Backup/Autosave/JSON-Export), sichere Electron-Shell, Plugin „termine“ als Gerüst (Pläne anlegen/umbenennen/löschen). 35 Tests grün, Rauchtest der App und des gepackten Installers erfolgreich. Electron vorerst 42 (siehe Architektur 9).
+- 24.11.2026 – **M1 fertig.** Reine Bibliotheken `rechnen-kalender` (Arbeitstage, NRW-Feiertage, Ruhezeiten, AT↔Datum, KT-Abstände, ISO-KW) und `rechnen-termine` (Vorwärts-/Rückwärtsrechnung EA/AA/EE/AE mit AT/KT, GP/FP, kritischer Weg inkl. kritischer Pfeile, Soll-Ende, Bedingungen, Sammelvorgänge, Zykluserkennung, Parser Kurz-/Langform). Referenztests R-01 bis R-08 grün, dazu 300 Zufallsnetze als Eigenschaftstests; insgesamt 396 Tests. Präzisierungen in Architektur 10.
