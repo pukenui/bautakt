@@ -1,0 +1,33 @@
+{
+  "name": "bautakt",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Termin- und Kostenplanung für Bauprojekte",
+  "type": "module",
+  "packageManager": "pnpm@10.34.9",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "postinstall": "node scripts/native.mjs",
+    "dev": "pnpm --filter @bautakt/desktop dev",
+    "test": "node scripts/test.mjs",
+    "test:watch": "node scripts/test.mjs --watch",
+    "lint": "eslint . && pnpm typecheck",
+    "typecheck": "pnpm -r --parallel typecheck",
+    "format": "prettier --write .",
+    "build:win": "pnpm --filter @bautakt/desktop build:win"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.0",
+    "@types/node": "^24.0.0",
+    "eslint": "^10.0.0",
+    "eslint-config-prettier": "^10.1.0",
+    "eslint-plugin-react-hooks": "^7.1.0",
+    "globals": "^16.0.0",
+    "prettier": "^3.6.0",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.74.0",
+    "vitest": "^5.0.0"
+  }
+}

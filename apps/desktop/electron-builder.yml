@@ -1,0 +1,27 @@
+appId: de.bautakt.app
+productName: Bautakt
+directories:
+  output: release
+  buildResources: build
+files:
+  - out/**
+  - package.json
+asarUnpack:
+  - '**/node_modules/better-sqlite3/**'
+fileAssociations:
+  - ext: bautakt
+    name: Bautakt-Projekt
+    description: Bautakt-Projektdatei
+    role: Editor
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  artifactName: Bautakt-Setup-${version}.${ext}
+  shortcutName: Bautakt
+  language: '1031'
+npmRebuild: false

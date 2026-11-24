@@ -1,0 +1,24 @@
+{
+  "name": "@bautakt/plugin-termine",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Plugin Terminplanung (Netzplan, Balkenplan)",
+  "type": "module",
+  "exports": {
+    "./main": "./main/index.ts",
+    "./renderer": "./renderer/index.tsx"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@bautakt/kern": "workspace:*",
+    "@bautakt/ui": "workspace:*",
+    "react": "^19.2.0",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.2.0"
+  }
+}

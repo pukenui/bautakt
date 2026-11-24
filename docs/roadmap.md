@@ -1,0 +1,71 @@
+# Bautakt – Roadmap
+
+Stand: 24.11.2026. Immer nur am aktuellen Meilenstein arbeiten. Jeder Meilenstein endet mit grünen Tests und einer lauffähigen App.
+
+## Phase K – Kern bis zur Planspiel-Abgabe (20.12.2026)
+
+Ziel: Ab ca. **13.12.** sollen damit F.1 (Rollen-Netzplan) und F.2 (Projektterminplan) erstellbar sein; die Woche danach ist Puffer und Nutzung.
+
+### M0 – Gerüst (bis ca. 28.11.) ✔
+- [x] Repo, pnpm-Workspaces, electron-vite, TypeScript strict, ESLint/Prettier, Vitest
+- [x] Electron-Sicherheit (contextIsolation, sandbox, typisierte IPC-Liste)
+- [x] Kern: Projektdatei `.bautakt` (SQLite, Migrationen je Plugin, `meta`)
+- [x] Kern: Befehle + Undo/Redo + Änderungsprotokoll
+- [x] Kern: Plugin-Lader + Plugin-API (E-35) mit leerem Plugin `termine`
+- [x] Neu/Öffnen/Speichern, Autosave 2 min, Backup bak1–5, Lock → schreibgeschützt (E-41)
+
+### M1 – Rechenkern Termine (bis ca. 03.12.)
+- [ ] `rechnen-kalender`: Arbeitstage, NRW-Feiertage, Ruhezeiten, AT↔Datum, KT-Umrechnung
+- [ ] `rechnen-termine`: Vorwärts/Rückwärts, EA/AA/EE/AE, negative Abstände, GP/FP, kritischer Pfad, Soll-Ende, Bedingungen, Zykluserkennung
+- [ ] Parser Vorgänger-Spalte (Kurz- und Langform)
+- [ ] Referenztests R-01 bis R-08 grün
+
+### M2 – Oberfläche Termine (bis ca. 10.12.)
+- [ ] Hauptansicht: Tabelle links, vernetzter Balkenplan rechts (E-18, E-21)
+- [ ] Vorgangseigenschaften inkl. Pflichtfeld Quelle/Annahme, Anmerkung, Rolle, braucht/liefert, Risiko (E-13)
+- [ ] Sammelvorgänge (Zuklappen = Rahmenterminplan), mehrere Pläne je Projekt (E-14)
+- [ ] Beziehungs-Dialog (Langform), Verbinden per Maus
+- [ ] Netzplan-Reiter im Übungsformat, Auto-Layout + Verschieben (E-20)
+- [ ] Soll-Ende, Umschalter Rückwärtsrechnung, negative Puffer rot, Schnittstellen-Meilensteine (E-19)
+- [ ] Kalender-/Ruhezeiten-Dialog
+
+### M3 – Export, Stände, Hilfe (bis ca. 13.12.)
+- [ ] Druckansicht mit Plankopf, Legende, Risiko-Hinweisen → PDF A3 quer, PNG
+- [ ] Benannte Soll-Stände speichern/laden (E-22, E-32 Datenmodell)
+- [ ] Hilfe-Seitenleiste (F1) Grundversion mit Abläufen und Tastenkürzeln für Termine (E-29)
+- [ ] Windows-Installer + erstes GitHub Release `v0.1.0`
+
+## Phase V – Version 1 (ab 21.12.2026)
+
+- [ ] **M4** Ist-Erfassung, Stichtag/Prognose, Soll-Ist-Balken, Abweichungsursachen (E-32)
+- [ ] **M5** Terminliste und Meilensteinplan (E-30)
+- [ ] **M6** Bibliothek-Plugin (global, eingefrorene Kopien) + Aufwandswert-Rechner mit Formelzeile (E-23, E-24) · Test R-09
+- [ ] **M7** Kosten-Plugin: DIN-276-Baum, DIN-277-Flächen, KKW, Index, Regionalfaktor, MwSt./Vorsteuer (E-15, E-16) · Tests R-10, R-11
+- [ ] **M8** Kosten Soll-Ist: Stufen, Aufträge, Rechnungen (E-33)
+- [ ] **M9** Excel-Export (Vorgangsliste, Kostentabelle im Dynexite-Aufbau) (E-25)
+- [ ] **M10** Ortsstruktur, Liniendiagramm, Taktplanung „über Takte vervielfältigen“ (E-30, E-31)
+- [ ] **M11** Meilenstein-Trendanalyse (E-30)
+- [ ] **M12** Statistik-Plugin: Erfahrungsdatenbank, Auswertung ab n ≥ 3, Vorschläge, Schalter „zählt in Statistik“ (E-34)
+- [ ] **M13** MS-Project-XML Im-/Export (E-25)
+- [ ] **M14** Hilfe komplett: Glossar mit Hover, leere Ansichten, Erststart-Tour (E-29)
+
+## Phase B – BIM
+
+- [ ] **B1** IFC-Viewer (IFC2x3/IFC4), Bauteilliste, Testmodelle aus BIMCraft und FreeCAD (E-37, E-40)
+- [ ] **B2** 5D: Mengen (Qto/Geometrie, Herkunft sichtbar), Regeltabelle IFC → KG, Übergabe an Kosten
+- [ ] **B3** DIN-277-Flächen aus IfcSpace, Reimport über GlobalId mit Änderungsbericht
+- [ ] **B4** 4D: Vorgänge ↔ Bauteile, Bauablauf-Simulation, Ort ↔ Geschoss/Zone
+- [ ] **B5** Optionale Kopplungs-Plugins BIMCraft-CLI / FreeCAD; GAEB; IFC4.3
+
+## Später / offen
+
+- Fremde Plugins mit Rechteabfrage (E-36), Auto-Update, Code-Signatur
+- Destatis-Index automatisch abrufen (E-16)
+- Soll-Ist-Vergleich zwischen beliebigen Ständen (Terminen) als eigene Ansicht
+- Mac/Linux/Web, Mehrbenutzerbetrieb
+- Farb-/Schriftvorlagen für Pläne
+
+## Verlauf
+
+- 24.11.2026 – Planung abgeschlossen (Lastenheft, Architektur, Roadmap, Referenzbeispiele).
+- 24.11.2026 – **M0 fertig.** Monorepo (pnpm, electron-vite, TS strict, ESLint/Prettier, Vitest), Kern (Projektdatei mit Migrationen, Befehle/Undo/Redo/Änderungsprotokoll, Ereignisse, Plugin-Lader, Lock/Backup/Autosave/JSON-Export), sichere Electron-Shell, Plugin „termine“ als Gerüst (Pläne anlegen/umbenennen/löschen). 35 Tests grün, Rauchtest der App und des gepackten Installers erfolgreich. Electron vorerst 42 (siehe Architektur 9).

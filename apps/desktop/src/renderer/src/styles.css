@@ -1,0 +1,198 @@
+:root {
+  --hintergrund: #f6f6f4;
+  --flaeche: #ffffff;
+  --linie: #d9d9d4;
+  --text: #1d1d1b;
+  --text-leise: #6b6b66;
+  --akzent: #1f5fa8;
+  --kritisch: #c62828;
+  --warnung-hg: #fff4d6;
+  --warnung-linie: #e0b44a;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--hintergrund);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  height: 100%;
+}
+
+button {
+  font: inherit;
+  padding: 4px 10px;
+  border: 1px solid var(--linie);
+  background: var(--flaeche);
+  border-radius: 4px;
+  cursor: pointer;
+}
+button:hover:not(:disabled) {
+  border-color: var(--akzent);
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+button.primaer {
+  background: var(--akzent);
+  border-color: var(--akzent);
+  color: #fff;
+}
+input {
+  font: inherit;
+  padding: 4px 8px;
+  border: 1px solid var(--linie);
+  border-radius: 4px;
+}
+:focus-visible {
+  outline: 2px solid var(--akzent);
+  outline-offset: 1px;
+}
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.kopf {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 6px 12px;
+  background: var(--flaeche);
+  border-bottom: 1px solid var(--linie);
+}
+.marke {
+  color: var(--akzent);
+}
+.projektname {
+  color: var(--text-leise);
+}
+.reiter {
+  display: flex;
+  gap: 2px;
+}
+.reiter button {
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+}
+.reiter button.aktiv {
+  border-bottom-color: var(--akzent);
+  font-weight: 600;
+}
+.kopf-aktionen {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+}
+
+.banner.warnung {
+  padding: 6px 12px;
+  background: var(--warnung-hg);
+  border-bottom: 1px solid var(--warnung-linie);
+}
+
+.inhalt {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+.hauptbereich {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+}
+.hilfe {
+  position: relative;
+  width: 340px;
+  border-left: 1px solid var(--linie);
+  background: var(--flaeche);
+  padding: 12px;
+  overflow: auto;
+}
+.hilfe pre {
+  white-space: pre-wrap;
+  font-family: inherit;
+  margin: 0;
+}
+.schliessen {
+  border: none;
+  background: transparent;
+  float: right;
+}
+
+.leer {
+  max-width: 520px;
+  margin: 10vh auto;
+  text-align: center;
+  color: var(--text-leise);
+}
+.leer h2 {
+  color: var(--text);
+  font-weight: 600;
+}
+.knoepfe {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.werkzeugleiste {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.werkzeugleiste input {
+  width: 320px;
+}
+.tabelle {
+  border-collapse: collapse;
+  background: var(--flaeche);
+  min-width: 600px;
+}
+.tabelle th,
+.tabelle td {
+  border-bottom: 1px solid var(--linie);
+  padding: 6px 10px;
+  text-align: left;
+}
+.tabelle th {
+  font-weight: 600;
+  color: var(--text-leise);
+}
+.aktionen {
+  text-align: right;
+  white-space: nowrap;
+}
+.aktionen button + button {
+  margin-left: 6px;
+}
+.fehler {
+  color: var(--kritisch);
+}
+
+.fuss {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 12px;
+  font-size: 12px;
+  color: var(--text-leise);
+  background: var(--flaeche);
+  border-top: 1px solid var(--linie);
+}
+.hinweis.warnung {
+  color: #8a5a00;
+}
+.hinweis.fehler {
+  color: var(--kritisch);
+}

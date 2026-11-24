@@ -1,0 +1,10 @@
+packages:
+  - apps/*
+  - packages/*
+  - plugins/*
+
+# Nur diese Pakete dürfen Install-Skripte ausführen (native Module, Binaries)
+onlyBuiltDependencies:
+  - better-sqlite3
+  - electron
+  - esbuild

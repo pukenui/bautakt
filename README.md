@@ -1,0 +1,25 @@
+# Bautakt
+
+Desktop-App (Windows) für Termin- und Kostenplanung von Bauprojekten: Netzplan nach DIN 69900,
+Balkenpläne, Kostenplanung nach DIN 276/277, Soll-Ist und projektübergreifende Statistik –
+später erweitert zu einem BIM-Ökosystem (IFC-Viewer, 5D, 4D).
+
+Status: M0 (Gerüst) fertig, als Nächstes M1 (Rechenkern Termine).
+
+## Entwicklung
+
+Voraussetzungen: Node.js ≥ 24, pnpm 10 (`npm install -g pnpm@10`).
+
+```
+pnpm install        # Abhängigkeiten (lädt Electron und das passende better-sqlite3-Binary)
+pnpm dev            # App im Entwicklungsmodus
+pnpm test           # alle Tests (Vitest, laufen mit der Node-Laufzeit von Electron)
+pnpm lint           # ESLint + Typprüfung
+pnpm build:win      # Windows-Installer (NSIS) nach apps/desktop/release/
+```
+
+- Lastenheft: [docs/lastenheft.md](docs/lastenheft.md)
+- Architektur: [docs/architektur.md](docs/architektur.md)
+- Roadmap: [docs/roadmap.md](docs/roadmap.md)
+- Referenzbeispiele/Tests: [docs/referenzbeispiele.md](docs/referenzbeispiele.md)
+- Regeln für Claude Code: [CLAUDE.md](CLAUDE.md)

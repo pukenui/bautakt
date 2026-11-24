@@ -1,0 +1,278 @@
+import fs from 'node:fs';
+import { Befehlsverwaltung, nurLesend, type BefehlAufruf, type BefehlErgebnis } from './befehle.js';
+import { Ereignisbus } from './ereignisse.js';
+import { BautaktFehler } from './fehler.js';
+import type {
+  AbfrageDefinition,
+  BautaktPlugin,
+  ExportFunktion,
+  ImportFunktion,
+  MainKontext,
+  PluginDb,
+} from './plugin.js';
+import { pluginsOrdnen } from './pluginlader.js';
+import { Projektdatei } from './projektdatei.js';
+import { sicherungAnlegen } from './sicherung.js';
+import { sperreErwerben, type Sperre, type SperrInfo } from './sperre.js';
+import type { Wert } from './sql.js';
+import type { ProjektStatus } from './vertrag.js';
+
+export const AUTOSAVE_MS = 2 * 60 * 1000;
+
+export interface SitzungsOptionen {
+  appVersion: string;
+  plugins: readonly BautaktPlugin[];
+  /** Intervall für Autosave (Standard 2 min, E-41); 0 = aus (für Tests). */
+  autosaveMs?: number;
+  fehler?: (e: unknown) => void;
+}
+
+interface Erweiterungen {
+  abfragen: Map<string, AbfrageDefinition>;
+  dienste: Map<string, unknown>;
+  exporte: Map<string, ExportFunktion>;
+  importe: Map<string, ImportFunktion>;
+  staende: { plugin: string; speichern: (id: string) => void; laden: (id: string) => void }[];
+}
+
+/** Ein geöffnetes Projekt: Datei, Sperre, Befehle, Ereignisse und aktivierte Plugins. */
+export class ProjektSitzung {
+  readonly ereignisse: Ereignisbus;
+  private readonly befehle: Befehlsverwaltung;
+  private readonly erw: Erweiterungen = {
+    abfragen: new Map(),
+    dienste: new Map(),
+    exporte: new Map(),
+    importe: new Map(),
+    staende: [],
+  };
+  private timer: NodeJS.Timeout | undefined;
+  private geschlossen = false;
+
+  private constructor(
+    private readonly datei: Projektdatei,
+    private readonly sperre: Sperre | undefined,
+    readonly fremdeSperre: SperrInfo | undefined,
+    private readonly optionen: SitzungsOptionen,
+  ) {
+    this.ereignisse = new Ereignisbus(optionen.fehler);
+    this.befehle = new Befehlsverwaltung(datei.db, this.ereignisse, datei.schreibgeschuetzt);
+    this.ereignisse.on('befehl.ausgefuehrt', () => datei.geaendertVermerken(optionen.appVersion));
+  }
+
+  /** Neues Projekt anlegen und öffnen. */
+  static neu(
+    pfad: string,
+    projektname: string,
+    optionen: SitzungsOptionen & { ueberschreiben?: boolean },
+  ): ProjektSitzung {
+    const plugins = pluginsOrdnen(optionen.plugins);
+    const s = sperreErwerben(pfad);
+    if (s.status === 'belegt') {
+      throw new BautaktFehler(
+        'SCHREIBGESCHUETZT',
+        `Die Datei ist bereits geöffnet (${belegtText(s.info)}).`,
+      );
+    }
+    try {
+      const datei = Projektdatei.erstellen(pfad, {
+        projektname,
+        appVersion: optionen.appVersion,
+        ueberschreiben: optionen.ueberschreiben ?? false,
+      });
+      return new ProjektSitzung(datei, s.sperre, undefined, optionen).starten(plugins);
+    } catch (e) {
+      s.sperre.freigeben();
+      throw e;
+    }
+  }
+
+  /** Vorhandenes Projekt öffnen. Ist es anderswo geöffnet → schreibgeschützt (E-41). */
+  static oeffnen(pfad: string, optionen: SitzungsOptionen): ProjektSitzung {
+    const plugins = pluginsOrdnen(optionen.plugins);
+    if (!fs.existsSync(pfad)) {
+      throw new BautaktFehler('DATEI_FEHLT', `Die Datei wurde nicht gefunden: ${pfad}`);
+    }
+    const s = sperreErwerben(pfad);
+    const sperre = s.status === 'erworben' ? s.sperre : undefined;
+    try {
+      const datei = Projektdatei.oeffnen(pfad, { schreibgeschuetzt: !sperre });
+      try {
+        if (sperre) sicherungAnlegen(datei); // vor den Migrationen sichern
+        const fremd = s.status === 'belegt' ? s.info : undefined;
+        return new ProjektSitzung(datei, sperre, fremd, optionen).starten(plugins);
+      } catch (e) {
+        datei.schliessen();
+        throw e;
+      }
+    } catch (e) {
+      sperre?.freigeben();
+      throw e;
+    }
+  }
+
+  private starten(plugins: readonly BautaktPlugin[]): this {
+    for (const p of plugins) this.datei.migrieren(p.id, p.migrationen);
+    for (const p of plugins) p.aktivieren(this.kontext(p));
+    const ms = this.optionen.autosaveMs ?? AUTOSAVE_MS;
+    if (ms > 0 && !this.datei.schreibgeschuetzt) {
+      this.timer = setInterval(() => {
+        try {
+          this.speichern(true);
+        } catch (e) {
+          (this.optionen.fehler ?? console.error)(e);
+        }
+      }, ms);
+      this.timer.unref();
+    }
+    return this;
+  }
+
+  private kontext(p: BautaktPlugin): MainKontext {
+    const db = this.lesezugriff();
+    const erw = this.erw;
+    return {
+      pluginId: p.id,
+      schreibgeschuetzt: this.datei.schreibgeschuetzt,
+      db,
+      befehle: {
+        registrieren: (def) => this.befehle.registrieren(p.id, p.tabellenPraefix, def),
+        ausfuehren: (name, daten, grund) =>
+          this.befehle.ausfuehren({ plugin: p.id, name, daten, ...(grund ? { grund } : {}) }),
+      },
+      abfragen: {
+        registrieren(def) {
+          const k = `${p.id}:${def.name}`;
+          if (erw.abfragen.has(k)) throw new BautaktFehler('PLUGIN', `Abfrage „${k}“ doppelt.`);
+          erw.abfragen.set(k, def as AbfrageDefinition);
+        },
+      },
+      ereignisse: this.ereignisse,
+      dienste: {
+        bereitstellen(name, impl) {
+          if (erw.dienste.has(name)) throw new BautaktFehler('PLUGIN', `Dienst „${name}“ doppelt.`);
+          erw.dienste.set(name, impl);
+        },
+        holen<T>(name: string): T {
+          if (!erw.dienste.has(name)) {
+            throw new BautaktFehler('PLUGIN', `Dienst „${name}“ ist nicht verfügbar.`);
+          }
+          return erw.dienste.get(name) as T;
+        },
+      },
+      exporte: { registrieren: (format, fn) => void erw.exporte.set(`${p.id}:${format}`, fn) },
+      importe: { registrieren: (format, fn) => void erw.importe.set(`${p.id}:${format}`, fn) },
+      stand: {
+        registrieren: (speichern, laden) =>
+          void erw.staende.push({ plugin: p.id, speichern, laden }),
+      },
+    };
+  }
+
+  private lesezugriff(): PluginDb {
+    const db = this.datei.db;
+    return {
+      lesen: <T>(sql: string, ...parameter: Wert[]) => nurLesend(db, sql).all(...parameter) as T[],
+      eins: <T>(sql: string, ...parameter: Wert[]) =>
+        nurLesend(db, sql).get(...parameter) as T | undefined,
+    };
+  }
+
+  get pfad(): string {
+    return this.datei.pfad;
+  }
+
+  get offen(): boolean {
+    return !this.geschlossen;
+  }
+
+  get schreibgeschuetzt(): boolean {
+    return this.datei.schreibgeschuetzt;
+  }
+
+  status(): ProjektStatus {
+    const meta = this.datei.meta();
+    return {
+      pfad: this.datei.pfad,
+      projektname: meta.projektname,
+      erstellt: meta.erstellt,
+      geaendert: meta.geaendert,
+      schreibgeschuetzt: this.datei.schreibgeschuetzt,
+      gesperrtVon: this.fremdeSperre ? belegtText(this.fremdeSperre) : null,
+      undo: this.befehle.status(),
+    };
+  }
+
+  befehl(aufruf: BefehlAufruf): BefehlErgebnis {
+    return this.befehle.ausfuehren(aufruf);
+  }
+
+  rueckgaengig(): boolean {
+    return this.befehle.rueckgaengig();
+  }
+
+  wiederholen(): boolean {
+    return this.befehle.wiederholen();
+  }
+
+  abfrage(plugin: string, name: string, argumente: unknown): unknown {
+    const def = this.erw.abfragen.get(`${plugin}:${name}`);
+    if (!def)
+      throw new BautaktFehler('ABFRAGE_UNBEKANNT', `Unbekannte Abfrage „${plugin}:${name}“.`);
+    const geprueft = def.schema.safeParse(argumente);
+    if (!geprueft.success) {
+      throw new BautaktFehler('BEFEHL_DATEN', `Ungültige Argumente für „${plugin}:${name}“.`);
+    }
+    return def.ausfuehren(this.lesezugriff(), geprueft.data);
+  }
+
+  /** Sicherungspunkt: WAL in die Datei schreiben, Sperre auffrischen. */
+  speichern(automatisch = false): void {
+    if (this.datei.schreibgeschuetzt) return;
+    this.datei.checkpoint();
+    this.sperre?.auffrischen();
+    this.ereignisse.emit('projekt.gespeichert', { pfad: this.datei.pfad, automatisch });
+  }
+
+  /** Kopie an neuem Ort speichern; die aktuelle Sitzung wird geschlossen, die neue geöffnet. */
+  speichernUnter(ziel: string): ProjektSitzung {
+    if (ziel === this.datei.pfad) {
+      this.speichern();
+      return this;
+    }
+    const s = sperreErwerben(ziel);
+    if (s.status === 'belegt') {
+      throw new BautaktFehler(
+        'SCHREIBGESCHUETZT',
+        `Die Zieldatei ist geöffnet (${belegtText(s.info)}).`,
+      );
+    }
+    s.sperre.freigeben();
+    for (const endung of ['-wal', '-shm']) fs.rmSync(ziel + endung, { force: true });
+    this.datei.kopieSchreiben(ziel);
+    this.schliessen();
+    return ProjektSitzung.oeffnen(ziel, this.optionen);
+  }
+
+  /** Gesamtes Projekt als JSON (zum Sichern/Vergleichen). */
+  alsJson(): string {
+    return JSON.stringify({ ...this.datei.alsJson(), meta: this.datei.meta() }, null, 2);
+  }
+
+  schliessen(): void {
+    if (this.geschlossen) return;
+    this.geschlossen = true;
+    if (this.timer) clearInterval(this.timer);
+    this.ereignisse.leeren();
+    try {
+      this.datei.schliessen();
+    } finally {
+      this.sperre?.freigeben();
+    }
+  }
+}
+
+function belegtText(info: SperrInfo): string {
+  const zeit = info.zeit ? new Date(info.zeit).toLocaleString('de-DE') : 'unbekannt';
+  return `Rechner ${info.rechner}, Prozess ${info.pid}, seit ${zeit}`;
+}
