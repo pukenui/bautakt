@@ -674,3 +674,151 @@ input.kurz {
 .ist-verlauf th {
   font-size: 12px;
 }
+
+/* --- Terminliste und Meilensteinplan (E-47, E-48) --- */
+.tl-tabelle {
+  flex: 1;
+  min-height: 160px;
+  overflow: auto;
+  border: 1px solid var(--linie);
+  background: var(--flaeche);
+  outline: none;
+}
+.tl-tabelle:focus-visible {
+  outline: 2px solid var(--akzent);
+  outline-offset: -2px;
+}
+.tl-kopf {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: grid;
+  min-height: 34px;
+  background: #f0f0ec;
+  border-bottom: 1px solid var(--linie);
+}
+.tl-zeile {
+  display: grid;
+  height: 28px;
+  border-bottom: 1px solid #ecece8;
+  font-size: 13px;
+}
+.tl-zeile.gewaehlt {
+  background: #e7eef8;
+}
+.tl-zeile.sammel {
+  font-weight: 600;
+}
+.tl-zeile .kritisch-text {
+  color: inherit;
+}
+.tl-zeile.kritisch .kritisch-text .tp-text {
+  color: var(--kritisch);
+}
+.tp-zelle.positiv {
+  color: #2e7d32;
+}
+.tl-gruppe {
+  position: sticky;
+  left: 0;
+  padding: 6px 8px 4px;
+  font-weight: 600;
+  font-size: 13px;
+  background: #f7f7f4;
+  border-bottom: 1px solid var(--linie);
+}
+.ml-leiste {
+  border: 1px solid var(--linie);
+  background: #fff;
+  overflow: hidden;
+  flex: none;
+}
+.ml-zeitleiste {
+  display: block;
+  font-family: inherit;
+}
+.ml-achse-hg {
+  fill: #f0f0ec;
+}
+.ml-raster {
+  stroke: #efefeb;
+}
+.ml-basis {
+  stroke: #7a7a74;
+  stroke-width: 1.5;
+}
+.ml-linie line {
+  stroke-width: 1.5;
+  stroke-dasharray: 6 4;
+}
+.ml-linie text {
+  font-size: 10px;
+}
+.ml-linie.heute line {
+  stroke: #1f5fa8;
+  stroke-dasharray: none;
+}
+.ml-linie.heute text {
+  fill: #1f5fa8;
+}
+.ml-linie.stichtag line {
+  stroke: #e07b00;
+}
+.ml-linie.stichtag text {
+  fill: #a15c00;
+}
+.ml-linie.sollende line {
+  stroke: var(--kritisch);
+}
+.ml-linie.sollende text {
+  fill: var(--kritisch);
+}
+.ml-punkt {
+  cursor: default;
+}
+.ml-raute {
+  fill: #333;
+}
+.ml-punkt.kritisch .ml-raute {
+  fill: var(--kritisch);
+}
+.ml-punkt.schnittstelle .ml-raute {
+  fill: #e07b00;
+  stroke: #8a4b00;
+}
+.ml-punkt.fertig .ml-raute {
+  fill: #2e7d32;
+}
+.ml-punkt.gewaehlt .ml-raute {
+  stroke: var(--akzent);
+  stroke-width: 2.5;
+}
+.ml-punkt.gewaehlt .ml-titel {
+  fill: var(--akzent);
+}
+.ml-soll {
+  fill: #fff;
+  stroke: #8a8a84;
+  stroke-width: 1.5;
+}
+.ml-verschiebung {
+  stroke: #8a8a84;
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+.ml-fuehrung {
+  stroke: #b8b8b2;
+  stroke-width: 1;
+}
+.ml-titel {
+  font-size: 11px;
+  font-weight: 600;
+  fill: #1d1d1b;
+}
+.ml-punkt.kritisch .ml-titel {
+  fill: var(--kritisch);
+}
+.ml-datum {
+  font-size: 10px;
+  fill: #555;
+}

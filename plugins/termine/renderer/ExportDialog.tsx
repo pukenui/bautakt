@@ -2,16 +2,28 @@ import type { BautaktApi } from '@bautakt/kern/vertrag';
 import { Dialog } from '@bautakt/ui';
 import { useState } from 'react';
 import type { PlanDaten } from '../gemeinsam/typen.js';
+import { filterAktiv, OHNE_FILTER, type ListenFilter } from './listen.js';
+
+export type Darstellung = 'balkenplan' | 'netzplan' | 'terminliste' | 'meilensteinplan';
+
+const TITEL: Record<Darstellung, string> = {
+  balkenplan: 'Balkenplan',
+  netzplan: 'Netzplan',
+  terminliste: 'Terminliste',
+  meilensteinplan: 'Meilensteinplan',
+};
 
 const ERSTELLER = 'bautakt.ersteller';
 
-/** Export als PDF (A3 quer) oder PNG mit Plankopf, Legende und Risiko-Hinweisen (E-11, E-21). */
+/** Export als PDF (A3 quer) oder PNG mit Plankopf, Legende und Risiko-Hinweisen (E-11, E-21, E-50). */
 export function ExportDialog(props: {
   api: BautaktApi;
   daten: PlanDaten;
   projektname: string;
   zugeklappt: string[];
-  darstellung: 'balkenplan' | 'netzplan';
+  /** Filter der Terminliste (E-47); wird beim Export der Terminliste übernommen. */
+  listeFilter?: ListenFilter;
+  darstellung: Darstellung;
   onSchliessen: () => void;
 }) {
   const [f, setF] = useState({
@@ -20,7 +32,9 @@ export function ExportDialog(props: {
     aufloesung: 2,
     ersteller: localStorage.getItem(ERSTELLER) ?? '',
     gliederungUebernehmen: true,
+    filterUebernehmen: true,
   });
+  const listeFilter = props.listeFilter ?? OHNE_FILTER;
   const [laeuft, setLaeuft] = useState(false);
   const [meldung, setMeldung] = useState<{ text: string; fehler: boolean } | null>(null);
 
@@ -32,7 +46,7 @@ export function ExportDialog(props: {
     }
     setLaeuft(true);
     setMeldung(null);
-    const titel = f.darstellung === 'balkenplan' ? 'Balkenplan' : 'Netzplan';
+    const titel = TITEL[f.darstellung];
     const a = await props.api.export.starten({
       format: f.format,
       ansicht: `termine.${f.darstellung}`,
@@ -43,6 +57,7 @@ export function ExportDialog(props: {
         ersteller: f.ersteller.trim(),
         zugeklappt: f.gliederungUebernehmen ? props.zugeklappt : [],
         sollStandId: props.daten.vergleich?.standId ?? null,
+        filter: f.filterUebernehmen ? listeFilter : OHNE_FILTER,
       },
     });
     setLaeuft(false);
@@ -74,6 +89,8 @@ export function ExportDialog(props: {
           >
             <option value="balkenplan">Balkenplan (für die Bauherrschaft)</option>
             <option value="netzplan">Netzplan (DIN 69900)</option>
+            <option value="terminliste">Terminliste</option>
+            <option value="meilensteinplan">Meilensteinplan</option>
           </select>
         </label>
         <label className="feld">
@@ -107,7 +124,18 @@ export function ExportDialog(props: {
             onChange={(e) => setF({ ...f, ersteller: e.target.value })}
           />
         </label>
-        {f.darstellung === 'balkenplan' && (
+        {f.darstellung === 'terminliste' &&
+          (filterAktiv(listeFilter) || listeFilter.gruppieren) && (
+            <label className="feld haken breit">
+              <input
+                type="checkbox"
+                checked={f.filterUebernehmen}
+                onChange={(e) => setF({ ...f, filterUebernehmen: e.target.checked })}
+              />
+              Filter und Gruppierung wie angezeigt übernehmen
+            </label>
+          )}
+        {(f.darstellung === 'balkenplan' || f.darstellung === 'terminliste') && (
           <label className="feld haken breit">
             <input
               type="checkbox"

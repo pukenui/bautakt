@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { OHNE_FILTER, type ListenFilter } from './listen.js';
 
 /** Anzeigezustand des Plugins, geteilt zwischen den Ansichten (nicht Teil der Projektdaten). */
 export interface Zustand {
@@ -14,6 +15,8 @@ export interface Zustand {
   auswahl: string | null;
   /** Soll-Vergleich je Plan: Stand-ID, null = aus; fehlt = jüngster Soll-Stand (E-46). */
   vergleich: Record<string, string | null>;
+  /** Filter und Gruppierung der Terminliste (E-47). */
+  listeFilter: ListenFilter;
 }
 
 const SPEICHER = 'bautakt.termine.anzeige';
@@ -28,10 +31,16 @@ function laden(): Zustand {
     netzZoom: 1,
     auswahl: null,
     vergleich: {},
+    listeFilter: OHNE_FILTER,
   };
   try {
     const gespeichert = JSON.parse(localStorage.getItem(SPEICHER) ?? '{}') as Partial<Zustand>;
-    return { ...standard, ...gespeichert, auswahl: null };
+    return {
+      ...standard,
+      ...gespeichert,
+      listeFilter: { ...OHNE_FILTER, ...gespeichert.listeFilter },
+      auswahl: null,
+    };
   } catch {
     return standard;
   }

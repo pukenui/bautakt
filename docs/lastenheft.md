@@ -79,6 +79,10 @@ Zusätzlich im Kern, weil sie das Fundament betreffen: Kalender (E-12), Soll-End
 | E-44 | **Nicht begonnene Vorgänge** beginnen in der Prognose **frühestens am Stichtag** (FAZ ≥ Stichtag), zusätzlich zu ihren Anordnungsbeziehungen. |
 | E-45 | **Ist-Verlauf:** Ist-Meldungen werden **je Stichtag** gespeichert (Verlauf bleibt erhalten). Die Prognose nutzt je Vorgang die jüngste Meldung bis zum gewählten Stichtag. |
 | E-46 | **Soll-Ist-Vergleich** gegen einen **wählbaren Soll-Stand**; vorbelegt mit dem jüngsten Stand der Art „Soll“. |
+| E-47 | **Terminliste:** Vorgänge in Gliederungsreihenfolge mit Nr., Vorgang, Gewerk, Verantwortlich, Dauer, Anfang, Ende, GP, Quelle/Annahme; mit Stichtag zusätzlich %, mit Soll-Vergleich Soll-Ende und Abw. Filter nach Gewerk, Verantwortlich und Zeitraum (nächste 2/4/8 Wochen ab Stichtag bzw. heute oder frei von–bis; ein Vorgang passt, wenn er den Zeitraum berührt). Sammelvorgänge bleiben sichtbar, solange ein Unterpunkt passt. Wahlweise **gruppiert nach Gewerk** (je Gruppe chronologisch, ohne Sammelvorgänge, „ohne Gewerk“ zuletzt). |
+| E-48 | **Meilensteinplan:** Zeitleiste mit Rauten (Schnittstellentermine orange, Soll-Termin als graue Raute, Stichtag/Soll-Ende/Heute als Linien) und darunter Tabelle aller Meilensteine chronologisch: Nr., Meilenstein, Termin, GP, Soll-Termin, Abw., Bedingung, Bedingungsdatum, Schnittstelle, Verantwortlich. |
+| E-49 | **Terminliste und Meilensteinplan sind direkt bearbeitbar** (Nr., Name, Gewerk, Verantwortlich, Dauer, Quelle/Annahme bzw. Bedingung, Schnittstelle) – über dieselben Befehle wie der Terminplan. Wird eine Bedingung ohne Datum gewählt, wird der aktuelle Termin des Meilensteins vorbelegt. |
+| E-50 | **Export** beider Ansichten als PDF (A3 quer, mehrseitig) oder PNG mit Plankopf, wie Balkenplan und Netzplan; Filter und Gruppierung der Terminliste werden übernommen und im Fuß genannt. |
 
 ### 3.4 Undo und Änderungsprotokoll (E-22)
 

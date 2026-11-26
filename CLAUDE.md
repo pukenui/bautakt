@@ -6,7 +6,7 @@ die schrittweise zu einem BIM-Ökosystem (IFC-Viewer, 5D, 4D) ausgebaut wird.
 
 **Vor jeder Arbeit lesen:**
 
-1. `docs/lastenheft.md` – alle fachlichen Entscheidungen (E-01 … E-42). Verbindlich.
+1. `docs/lastenheft.md` – alle fachlichen Entscheidungen (E-01 … E-50). Verbindlich.
 2. `docs/architektur.md` – Kern, Plugins, Datenmodell, Rechenregeln.
 3. `docs/roadmap.md` – welcher Meilenstein gerade dran ist. Nur daran arbeiten.
 4. `docs/referenzbeispiele.md` – Testfälle mit Sollwerten.

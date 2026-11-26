@@ -171,3 +171,25 @@ body.druckmodus #app {
 .druck-netz {
   display: block;
 }
+
+/* Terminliste und Meilensteinplan (E-50) */
+.druck-liste tr.gruppe td {
+  font-weight: 700;
+  background: #f2f2ee;
+  border-bottom: 1px solid #888;
+  padding-top: 3px;
+}
+.druck-liste th.rechts {
+  text-align: right;
+}
+.druck-liste td.negativ {
+  color: #b02a27;
+  font-weight: 600;
+}
+.druck-liste td.positiv {
+  color: #2e7d32;
+}
+.druck-zeitleiste {
+  margin-bottom: 10px;
+  border: 1px solid #888;
+}

@@ -1,13 +1,19 @@
 import { LeereAnsicht, type AnsichtProps, type RendererPlugin } from '@bautakt/ui';
 import { useEffect, useState, type FormEvent } from 'react';
 import type { PlanZeile } from '../gemeinsam/typen.js';
+import hilfeMeilensteine from '../hilfe/meilensteinplan.md?raw';
 import hilfeNetzplan from '../hilfe/netzplan.md?raw';
+import hilfeTerminliste from '../hilfe/terminliste.md?raw';
 import hilfePlaene from '../hilfe/plaene.md?raw';
 import hilfeTerminplan from '../hilfe/terminplan.md?raw';
 import { datumKurz, useBefehl } from './daten.js';
 import { DruckBalkenplan } from './druck/DruckBalkenplan.js';
+import { DruckMeilensteinplan } from './druck/DruckMeilensteinplan.js';
 import { DruckNetzplan } from './druck/DruckNetzplan.js';
+import { DruckTerminliste } from './druck/DruckTerminliste.js';
+import { MeilensteinAnsicht } from './MeilensteinAnsicht.js';
 import { NetzplanAnsicht } from './NetzplanAnsicht.js';
+import { TerminlisteAnsicht } from './TerminlisteAnsicht.js';
 import { TerminplanAnsicht } from './TerminplanAnsicht.js';
 import { setzen, useZustand } from './zustand.js';
 import './termine.css';
@@ -139,10 +145,24 @@ export const termineRenderer: RendererPlugin = {
       hilfe: hilfeTerminplan,
     },
     { id: 'termine.netz', titel: 'Netzplan', komponente: NetzplanAnsicht, hilfe: hilfeNetzplan },
+    {
+      id: 'termine.liste',
+      titel: 'Terminliste',
+      komponente: TerminlisteAnsicht,
+      hilfe: hilfeTerminliste,
+    },
+    {
+      id: 'termine.meilensteine',
+      titel: 'Meilensteinplan',
+      komponente: MeilensteinAnsicht,
+      hilfe: hilfeMeilensteine,
+    },
     { id: 'termine.plaene', titel: 'Pläne', komponente: Plaene, hilfe: hilfePlaene },
   ],
   druckansichten: [
     { id: 'termine.balkenplan', titel: 'Balkenplan', komponente: DruckBalkenplan },
     { id: 'termine.netzplan', titel: 'Netzplan', komponente: DruckNetzplan },
+    { id: 'termine.terminliste', titel: 'Terminliste', komponente: DruckTerminliste },
+    { id: 'termine.meilensteinplan', titel: 'Meilensteinplan', komponente: DruckMeilensteinplan },
   ],
 };

@@ -97,7 +97,8 @@ export async function exportieren(
       fs.writeFileSync(ziel, pdf);
     } else {
       const groesse = (await w.webContents.executeJavaScript(
-        '({ b: document.documentElement.scrollWidth, h: document.documentElement.scrollHeight })',
+        // Höhe des Inhalts, nicht des Fensters: kurze Pläne ohne leeren Rand darunter
+        "({ b: document.documentElement.scrollWidth, h: Math.ceil((document.querySelector('.druck') ?? document.documentElement).getBoundingClientRect().height) })",
       )) as { b: number; h: number };
       const faktor = Math.min(auftrag.aufloesung, MAX_PIXEL / groesse.b, MAX_PIXEL / groesse.h);
       w.setContentSize(Math.ceil(groesse.b * faktor), Math.ceil(groesse.h * faktor));

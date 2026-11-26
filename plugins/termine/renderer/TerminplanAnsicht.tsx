@@ -2,19 +2,11 @@ import type { AnsichtProps } from '@bautakt/ui';
 import { useCallback, useEffect, useMemo, useRef, useState, type UIEvent } from 'react';
 import { Balkenplan } from './Balkenplan.js';
 import { sichtbareVorgaenge, useBefehl, useKalender, usePlan } from './daten.js';
-import { BeziehungDialog, PlanDialog, VorgangDialog } from './Dialoge.js';
-import { ExportDialog } from './ExportDialog.js';
-import { IstDialog } from './IstDialog.js';
 import { SollIstLeiste } from './SollIstLeiste.js';
 import { KeinPlan, Kennzahlen, PlanLeiste } from './gemeinsam.js';
-import { StaendeDialog } from './StaendeDialog.js';
+import { PlanDialoge, type DialogZustand } from './PlanDialoge.js';
 import { Tabelle } from './Tabelle.js';
 import { setzen, useZustand, zuklappen } from './zustand.js';
-
-type DialogZustand =
-  | { art: 'vorgang' | 'beziehung' | 'ist'; id: string }
-  | { art: 'plan' | 'staende' | 'export' }
-  | null;
 
 /** Hauptansicht (E-18): links Vorgangstabelle, rechts vernetzter Balkenplan. */
 export function TerminplanAnsicht({ api, status, datenstand }: AnsichtProps) {
@@ -330,66 +322,19 @@ export function TerminplanAnsicht({ api, status, datenstand }: AnsichtProps) {
         </div>
       )}
 
-      {dialog?.art === 'vorgang' && (
-        <VorgangDialog
-          daten={daten}
-          vorgangId={dialog.id}
-          nurLesen={nurLesen}
-          befehl={befehl}
-          fehler={fehler}
-          onBeziehungen={() => setDialog({ art: 'beziehung', id: dialog.id })}
-          onSchliessen={dialogSchliessen}
-        />
-      )}
-      {dialog?.art === 'beziehung' && (
-        <BeziehungDialog
-          daten={daten}
-          vorgangId={dialog.id}
-          nurLesen={nurLesen}
-          befehl={befehl}
-          fehler={fehler}
-          onSchliessen={dialogSchliessen}
-        />
-      )}
-      {dialog?.art === 'plan' && (
-        <PlanDialog
-          daten={daten}
-          nurLesen={nurLesen}
-          befehl={befehl}
-          fehler={fehler}
-          onSchliessen={dialogSchliessen}
-        />
-      )}
-      {dialog?.art === 'ist' && (
-        <IstDialog
-          api={api}
-          daten={daten}
-          vorgangId={dialog.id}
-          datenstand={datenstand}
-          nurLesen={nurLesen}
-          befehl={befehl}
-          fehler={fehler}
-          onSchliessen={dialogSchliessen}
-        />
-      )}
-      {dialog?.art === 'staende' && (
-        <StaendeDialog
-          api={api}
-          datenstand={datenstand}
-          nurLesen={nurLesen}
-          onSchliessen={() => setDialog(null)}
-        />
-      )}
-      {dialog?.art === 'export' && (
-        <ExportDialog
-          api={api}
-          daten={daten}
-          projektname={status.projektname}
-          zugeklappt={z.zugeklappt[daten.plan.id] ?? []}
-          darstellung="balkenplan"
-          onSchliessen={() => setDialog(null)}
-        />
-      )}
+      <PlanDialoge
+        dialog={dialog}
+        setDialog={setDialog}
+        onSchliessen={dialogSchliessen}
+        api={api}
+        daten={daten}
+        datenstand={datenstand}
+        projektname={status.projektname}
+        nurLesen={nurLesen}
+        befehl={befehl}
+        fehler={fehler}
+        darstellung="balkenplan"
+      />
     </div>
   );
 }
