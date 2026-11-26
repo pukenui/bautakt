@@ -55,6 +55,11 @@ export interface MainKontext {
   exporte: { registrieren(format: string, fn: ExportFunktion): void };
   importe: { registrieren(format: string, fn: ImportFunktion): void };
   stand: { registrieren(handler: StandHandler): void };
+  /**
+   * Dateien, auf die das Projekt verweist (z. B. Rechnungs-PDF, E-62). Nur solche Pfade darf die
+   * Oberfläche mit dem Standardprogramm öffnen.
+   */
+  anhaenge: { registrieren(fn: (db: PluginDb) => string[]): void };
 }
 
 /**

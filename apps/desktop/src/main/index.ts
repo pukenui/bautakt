@@ -1,13 +1,15 @@
-import { GlobaleDaten, type Meldungen } from '@bautakt/kern';
+import { BautaktFehler, GlobaleDaten, type Meldungen } from '@bautakt/kern';
 import {
   app,
   BrowserWindow,
+  dialog,
   ipcMain,
   Menu,
   session,
   shell,
   type IpcMainInvokeEvent,
 } from 'electron';
+import fs from 'node:fs';
 import path from 'node:path';
 import { z } from 'zod';
 import { AUFRUFE, MELDUNG_PRAEFIX, type Aufruf } from '../shared/kanaele';
@@ -61,6 +63,47 @@ function aktiveSitzung() {
 
 const PRELOAD = path.join(__dirname, '../preload/index.js');
 
+/** Dateiendungen, die als Anhang mit dem Standardprogramm geöffnet werden dürfen (E-62). */
+const ANHANG_ENDUNGEN = [
+  '.pdf',
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.tif',
+  '.tiff',
+  '.docx',
+  '.doc',
+  '.xlsx',
+  '.xls',
+  '.odt',
+  '.ods',
+  '.txt',
+  '.msg',
+  '.eml',
+];
+
+/**
+ * Öffnet einen Anhang nur, wenn das Projekt auf genau diese Datei verweist und sie ein Dokument
+ * oder Bild ist – so kann die Oberfläche keine beliebigen Programme starten.
+ */
+async function anhangOeffnen(pfad: unknown): Promise<null> {
+  const p = z.string().min(1).max(4000).parse(pfad);
+  if (!path.isAbsolute(p))
+    throw new BautaktFehler('ZUGRIFF', 'Der Anhang braucht einen vollständigen Pfad.');
+  if (!ANHANG_ENDUNGEN.includes(path.extname(p).toLowerCase()))
+    throw new BautaktFehler('ZUGRIFF', 'Dieser Dateityp wird nicht als Anhang geöffnet.');
+  if (!aktiveSitzung().anhangBekannt(p))
+    throw new BautaktFehler(
+      'ZUGRIFF',
+      'Die Datei ist in diesem Projekt nicht als Anhang eingetragen.',
+    );
+  if (!fs.existsSync(p))
+    throw new BautaktFehler('DATEI_FEHLT', `Die Datei wurde nicht gefunden: ${p}`);
+  const fehler = await shell.openPath(p);
+  if (fehler) throw new BautaktFehler('ZUGRIFF', fehler);
+  return null;
+}
+
 /** Lädt die Renderer-Seite (Entwicklung: Dev-Server, sonst Datei) mit optionalem Hash. */
 async function seiteLaden(w: BrowserWindow, hash = ''): Promise<void> {
   const devUrl = process.env['ELECTRON_RENDERER_URL'];
@@ -109,6 +152,21 @@ const handler: Record<Aufruf, (args: unknown[]) => unknown> = {
       const a = abfrageSchema.parse(daten);
       return aktiveSitzung().abfrage(a.plugin, a.name, a.argumente);
     }),
+  'anhang:waehlen': () =>
+    antwort(async () => {
+      aktiveSitzung();
+      const ergebnis = fenster
+        ? await dialog.showOpenDialog(fenster, {
+            title: 'Anhang wählen',
+            properties: ['openFile'],
+            filters: [
+              { name: 'Dokumente und Bilder', extensions: ANHANG_ENDUNGEN.map((e) => e.slice(1)) },
+            ],
+          })
+        : { canceled: true, filePaths: [] };
+      return ergebnis.canceled ? null : (ergebnis.filePaths[0] ?? null);
+    }),
+  'anhang:oeffnen': ([pfad]) => antwort(() => anhangOeffnen(pfad)),
   'global:abfrage': ([daten]) =>
     antwort(() => {
       const a = abfrageSchema.parse(daten);

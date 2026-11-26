@@ -115,3 +115,87 @@ export const ZEILE_FELDER = [
   'kommentar',
   'anmerkung',
 ] as const;
+
+// --- Soll-Ist (E-33, E-60–E-63) ---------------------------------------------------------
+
+export interface StufeZeile {
+  id: string;
+  kg: number;
+  stufe: 'rahmen' | 'schaetzung' | 'berechnung';
+  betrag_netto: number;
+  herkunft: 'planung' | 'hand';
+  zeit: string;
+}
+
+export interface AuftragZeile {
+  id: string;
+  kg: number;
+  bezeichnung: string;
+  auftragnehmer: string;
+  betrag_netto: number;
+  datum: string | null;
+  beleg_nr: string;
+  /** Pfad zur Datei (Verweis, E-62) */
+  anhang: string | null;
+  anmerkung: string;
+}
+
+export interface RechnungZeile {
+  id: string;
+  kg: number;
+  auftrag_id: string | null;
+  rechnungssteller: string;
+  betrag_netto: number;
+  datum: string | null;
+  beleg_nr: string;
+  anhang: string | null;
+  anmerkung: string;
+}
+
+export interface AbweichungZeile {
+  id: string;
+  kg: number;
+  ursache: string | null;
+  text: string;
+}
+
+export interface AuftragBerechnet extends AuftragZeile {
+  abgerechnet: number;
+  offen: number;
+  anhangFehlt: boolean;
+}
+
+export interface RechnungBerechnet extends RechnungZeile {
+  anhangFehlt: boolean;
+}
+
+export interface SollIstZeile {
+  kg: number;
+  ebene: 1 | 2 | 3;
+  bezeichnung: string;
+  stufen: Record<
+    'rahmen' | 'schaetzung' | 'berechnung' | 'anschlag' | 'feststellung',
+    number | null
+  >;
+  /** von Hand korrigierte Stufen dieser KG */
+  vonHand: ('rahmen' | 'schaetzung' | 'berechnung')[];
+  prognose: number | null;
+  abweichung: number | null;
+  abweichungProzent: number | null;
+  ursache: string | null;
+  ursacheText: string;
+}
+
+export interface SollIstDaten {
+  bezug: 'rahmen' | 'schaetzung' | 'berechnung' | 'anschlag' | 'feststellung';
+  zeilen: SollIstZeile[];
+  /** Zeitpunkt des letzten Festschreibens je Stufe (UTC) */
+  festgeschrieben: Record<'rahmen' | 'schaetzung' | 'berechnung', string | null>;
+  auftraege: AuftragBerechnet[];
+  rechnungen: RechnungBerechnet[];
+  /** Summe KG 100–800 je Stufe sowie Prognose und Abweichung */
+  gesamt: Omit<
+    SollIstZeile,
+    'kg' | 'ebene' | 'bezeichnung' | 'vonHand' | 'ursache' | 'ursacheText'
+  >;
+}

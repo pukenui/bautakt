@@ -25,6 +25,10 @@ const api: BautaktApi = {
     starten: (auftrag) => aufruf('export:starten', auftrag),
   },
   abfrage: (plugin, name, argumente) => aufruf('abfrage', { plugin, name, argumente }),
+  anhang: {
+    waehlen: () => aufruf('anhang:waehlen'),
+    oeffnen: (pfad) => aufruf('anhang:oeffnen', pfad),
+  },
   global: {
     abfrage: (plugin, name, argumente) => aufruf('global:abfrage', { plugin, name, argumente }),
     aktion: (plugin, name, daten) => aufruf('global:aktion', { plugin, name, daten }),

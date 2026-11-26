@@ -229,3 +229,4 @@ export function steuer(netto: number, satzProzent: number, vorsteuerabzug: boole
 export function euro(x: number): string {
   return `${fmt(x, 2)} €`;
 }
+export * from './sollist.js';

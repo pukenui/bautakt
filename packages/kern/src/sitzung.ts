@@ -45,6 +45,7 @@ interface Erweiterungen {
   exporte: Map<string, ExportFunktion>;
   importe: Map<string, ImportFunktion>;
   staende: { plugin: string; praefix: string; handler: StandHandler }[];
+  anhaenge: ((db: PluginDb) => string[])[];
 }
 
 /** Ein geöffnetes Projekt: Datei, Sperre, Befehle, Ereignisse und aktivierte Plugins. */
@@ -57,6 +58,7 @@ export class ProjektSitzung {
     exporte: new Map(),
     importe: new Map(),
     staende: [],
+    anhaenge: [],
   };
   private timer: NodeJS.Timeout | undefined;
   private geschlossen = false;
@@ -181,6 +183,7 @@ export class ProjektSitzung {
         registrieren: (handler) =>
           void erw.staende.push({ plugin: p.id, praefix: p.tabellenPraefix, handler }),
       },
+      anhaenge: { registrieren: (fn) => void erw.anhaenge.push(fn) },
     };
   }
 
@@ -307,6 +310,13 @@ export class ProjektSitzung {
       throw new BautaktFehler('BEFEHL_DATEN', `Ungültige Argumente für „${plugin}:${name}“.`);
     }
     return def.ausfuehren(this.lesezugriff(), geprueft.data);
+  }
+
+  /** Verweist das Projekt auf diese Datei (Anhang)? Groß-/Kleinschreibung egal (Windows). */
+  anhangBekannt(pfad: string): boolean {
+    const ziel = pfad.toLowerCase();
+    const db = this.lesezugriff();
+    return this.erw.anhaenge.some((fn) => fn(db).some((p) => p.toLowerCase() === ziel));
   }
 
   /** Sicherungspunkt: WAL in die Datei schreiben, Sperre auffrischen. */

@@ -73,4 +73,70 @@ export const MIGRATIONEN: readonly Migration[] = [
     // Genau eine Einstellungszeile je Projekt
     daten: (db) => db.ausfuehren('INSERT INTO k_einstellung (id) VALUES (?)', neueId()),
   },
+  {
+    version: 2,
+    name: 'Soll-Ist: Stufen, Aufträge, Rechnungen, Ursachen (E-33, E-60–E-63)',
+    sql: `
+      CREATE TABLE k_stufe (
+        id TEXT PRIMARY KEY,
+        kg INTEGER NOT NULL,
+        stufe TEXT NOT NULL CHECK (stufe IN ('rahmen', 'schaetzung', 'berechnung')),
+        betrag_netto REAL NOT NULL,
+        herkunft TEXT NOT NULL DEFAULT 'planung' CHECK (herkunft IN ('planung', 'hand')),
+        zeit TEXT NOT NULL,
+        UNIQUE (kg, stufe)
+      );
+      CREATE TABLE k_auftrag (
+        id TEXT PRIMARY KEY,
+        kg INTEGER NOT NULL,
+        bezeichnung TEXT NOT NULL DEFAULT '',
+        auftragnehmer TEXT NOT NULL DEFAULT '',
+        betrag_netto REAL NOT NULL,
+        datum TEXT,
+        beleg_nr TEXT NOT NULL DEFAULT '',
+        anhang TEXT,
+        anmerkung TEXT NOT NULL DEFAULT ''
+      );
+      CREATE TABLE k_rechnung (
+        id TEXT PRIMARY KEY,
+        kg INTEGER NOT NULL,
+        auftrag_id TEXT,
+        rechnungssteller TEXT NOT NULL DEFAULT '',
+        betrag_netto REAL NOT NULL,
+        datum TEXT,
+        beleg_nr TEXT NOT NULL DEFAULT '',
+        anhang TEXT,
+        anmerkung TEXT NOT NULL DEFAULT ''
+      );
+      CREATE TABLE k_abweichung (
+        id TEXT PRIMARY KEY,
+        kg INTEGER NOT NULL UNIQUE,
+        ursache TEXT,
+        text TEXT NOT NULL DEFAULT ''
+      );
+      CREATE TABLE k_stufe_stand (
+        id TEXT PRIMARY KEY, stand_id TEXT NOT NULL, orig_id TEXT NOT NULL,
+        kg INTEGER, stufe TEXT, betrag_netto REAL, herkunft TEXT, zeit TEXT
+      );
+      CREATE TABLE k_auftrag_stand (
+        id TEXT PRIMARY KEY, stand_id TEXT NOT NULL, orig_id TEXT NOT NULL,
+        kg INTEGER, bezeichnung TEXT, auftragnehmer TEXT, betrag_netto REAL, datum TEXT,
+        beleg_nr TEXT, anhang TEXT, anmerkung TEXT
+      );
+      CREATE TABLE k_rechnung_stand (
+        id TEXT PRIMARY KEY, stand_id TEXT NOT NULL, orig_id TEXT NOT NULL,
+        kg INTEGER, auftrag_id TEXT, rechnungssteller TEXT, betrag_netto REAL, datum TEXT,
+        beleg_nr TEXT, anhang TEXT, anmerkung TEXT
+      );
+      CREATE TABLE k_abweichung_stand (
+        id TEXT PRIMARY KEY, stand_id TEXT NOT NULL, orig_id TEXT NOT NULL,
+        kg INTEGER, ursache TEXT, text TEXT
+      );
+      CREATE INDEX k_rechnung_auftrag ON k_rechnung (auftrag_id);
+      CREATE INDEX k_stufe_stand_s ON k_stufe_stand (stand_id);
+      CREATE INDEX k_auftrag_stand_s ON k_auftrag_stand (stand_id);
+      CREATE INDEX k_rechnung_stand_s ON k_rechnung_stand (stand_id);
+      CREATE INDEX k_abweichung_stand_s ON k_abweichung_stand (stand_id);
+    `,
+  },
 ];

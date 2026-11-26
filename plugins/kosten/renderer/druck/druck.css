@@ -33,3 +33,10 @@
 .kd-massgebend td {
   border-top: 2px solid #1d1d1b;
 }
+.kd-bezug {
+  background: #eef4fb;
+}
+.kd-tabelle td.negativ {
+  color: #b02a27;
+  font-weight: 600;
+}

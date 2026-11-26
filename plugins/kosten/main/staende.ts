@@ -1,7 +1,15 @@
 import { neueId, type StandHandler, type Transaktion, type Zeile } from '@bautakt/kern';
 import { kostenDatenLaden } from './daten.js';
 
-const TABELLEN = ['k_einstellung', 'k_flaeche', 'k_zeile'] as const;
+const TABELLEN = [
+  'k_einstellung',
+  'k_flaeche',
+  'k_zeile',
+  'k_stufe',
+  'k_auftrag',
+  'k_rechnung',
+  'k_abweichung',
+] as const;
 
 function spalten(tx: Transaktion, tabelle: string): Set<string> {
   return new Set(
@@ -12,8 +20,8 @@ function spalten(tx: Transaktion, tabelle: string): Set<string> {
 }
 
 /**
- * Stände des Plugins „kosten“ (Architektur 3.3): Kopie von Einstellungen, Flächen und
- * Kostenzeilen, Zeilen mit ihren Kosten zum Zeitpunkt des Stands.
+ * Stände des Plugins „kosten“ (Architektur 3.3): Kopie von Einstellungen, Flächen,
+ * Kostenzeilen (mit Kosten zum Zeitpunkt des Stands), Stufen, Aufträgen, Rechnungen und Ursachen.
  */
 export const kostenStaende: StandHandler = {
   speichern(tx, standId) {

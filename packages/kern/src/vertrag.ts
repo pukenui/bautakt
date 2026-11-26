@@ -101,6 +101,13 @@ export interface BautaktApi {
     starten(auftrag: ExportAuftragDaten): Promise<Antwort<string | null>>;
   };
   abfrage<T = unknown>(plugin: string, name: string, argumente?: unknown): Promise<Antwort<T>>;
+  /** Anhänge als Verweis auf Dateien (E-62). */
+  anhang: {
+    /** Datei-Dialog; liefert den gewählten Pfad oder null. */
+    waehlen(): Promise<Antwort<string | null>>;
+    /** Öffnet eine im Projekt eingetragene Dokument-/Bilddatei mit dem Standardprogramm. */
+    oeffnen(pfad: string): Promise<Antwort<null>>;
+  };
   /** Globale Daten im App-Datenordner (E-23), auch ohne geöffnetes Projekt. */
   global: {
     abfrage<T = unknown>(plugin: string, name: string, argumente?: unknown): Promise<Antwort<T>>;

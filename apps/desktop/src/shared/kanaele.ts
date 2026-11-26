@@ -16,6 +16,8 @@ export const AUFRUFE = [
   'export:starten',
   'abfrage',
   'global:abfrage',
+  'anhang:waehlen',
+  'anhang:oeffnen',
   'global:aktion',
 ] as const;
 

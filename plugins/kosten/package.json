@@ -15,6 +15,7 @@
     "@bautakt/kern": "workspace:*",
     "@bautakt/ui": "workspace:*",
     "@bautakt/rechnen-kosten": "workspace:*",
+    "@bautakt/rechnen-kalender": "workspace:*",
     "@bautakt/plugin-bibliothek": "workspace:*",
     "react": "^19.2.0",
     "zod": "^4.1.0"

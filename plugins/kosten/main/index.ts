@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { MIGRATIONEN } from '../migrations/index.js';
 import { kostenBefehle } from './befehle.js';
 import { kostenDatenLaden } from './daten.js';
+import { sollIstLaden } from './sollist.js';
+import { SOLLIST_BEFEHLE } from './sollistBefehle.js';
 import { kostenStaende } from './staende.js';
 
 export type { KostenDaten } from '../gemeinsam/typen.js';
@@ -15,7 +17,7 @@ export type { KostenDaten } from '../gemeinsam/typen.js';
 export const kostenPlugin: BautaktPlugin = {
   id: 'kosten',
   name: 'Kostenplanung',
-  version: '0.1.0',
+  version: '0.2.0',
   tabellenPraefix: 'k_',
   migrationen: MIGRATIONEN,
 
@@ -34,6 +36,24 @@ export const kostenPlugin: BautaktPlugin = {
       holen<(id: string) => number | null>('bibliothek.kennwertAktuelleVersion')?.(kid) ?? null;
 
     for (const b of kostenBefehle(kennwert)) ctx.befehle.registrieren(b);
+    for (const b of SOLLIST_BEFEHLE) ctx.befehle.registrieren(b);
+    ctx.abfragen.registrieren({
+      name: 'sollist',
+      schema: z
+        .object({
+          bezug: z.enum(['rahmen', 'schaetzung', 'berechnung', 'anschlag', 'feststellung']),
+        })
+        .optional(),
+      ausfuehren: (db, a) => sollIstLaden(db, a?.bezug ?? 'berechnung'),
+    });
+    // Anhänge (E-62): nur diese Dateien darf die Oberfläche öffnen
+    ctx.anhaenge.registrieren((db) =>
+      db
+        .lesen<{ anhang: string }>(
+          'SELECT anhang FROM k_auftrag WHERE anhang IS NOT NULL UNION SELECT anhang FROM k_rechnung WHERE anhang IS NOT NULL',
+        )
+        .map((a) => a.anhang),
+    );
     ctx.stand.registrieren(kostenStaende);
     ctx.abfragen.registrieren({
       name: 'kosten',

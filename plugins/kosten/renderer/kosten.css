@@ -127,3 +127,41 @@
   width: 100%;
   font-family: inherit;
 }
+.kk-teile {
+  margin-bottom: 2px;
+}
+.kk-sollist th.kk-bezug,
+.kk-sollist td.kk-bezug {
+  background: #eef4fb;
+}
+.kk-sollist th .leise {
+  font-weight: 400;
+  font-size: 11px;
+}
+.kk-ursache {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--akzent);
+  cursor: pointer;
+  text-align: left;
+}
+.kk-erklaerung {
+  margin: 0;
+  font-size: 12px;
+}
+.kk-ist {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow: auto;
+  min-height: 0;
+  flex: 1;
+}
+.kk-ist h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.kk-ist .kk-tabelle {
+  width: 100%;
+}

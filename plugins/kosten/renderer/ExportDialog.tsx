@@ -1,16 +1,19 @@
 import type { BautaktApi } from '@bautakt/kern/vertrag';
 import { Dialog } from '@bautakt/ui';
 import { useState } from 'react';
+import { bezugLaden } from './SollIstTeil.js';
 
 const ERSTELLER = 'bautakt.ersteller';
 
-/** Export der Kostentabelle als PDF (A3 quer) oder PNG (E-59). */
+/** Export der Kostentabelle bzw. des Soll-Ist als PDF (A3 quer) oder PNG (E-59, E-63). */
 export function ExportDialog(props: {
   api: BautaktApi;
   projektname: string;
+  darstellung?: 'kostentabelle' | 'sollist';
   onSchliessen: () => void;
 }) {
   const [f, setF] = useState({
+    darstellung: props.darstellung ?? ('kostentabelle' as 'kostentabelle' | 'sollist'),
     format: 'pdf' as 'pdf' | 'png',
     aufloesung: 2,
     ersteller: localStorage.getItem(ERSTELLER) ?? '',
@@ -29,10 +32,10 @@ export function ExportDialog(props: {
     setMeldung(null);
     const a = await props.api.export.starten({
       format: f.format,
-      ansicht: 'kosten.kostentabelle',
+      ansicht: `kosten.${f.darstellung}`,
       aufloesung: f.aufloesung,
-      dateiname: `${props.projektname} – Kostenplanung`,
-      parameter: { ersteller: f.ersteller.trim(), ebene: f.ebene },
+      dateiname: `${props.projektname} – ${f.darstellung === 'sollist' ? 'Kosten Soll-Ist' : 'Kostenplanung'}`,
+      parameter: { ersteller: f.ersteller.trim(), ebene: f.ebene, bezug: bezugLaden() },
     });
     setLaeuft(false);
     if (!a.ok) setMeldung({ text: a.fehler, fehler: true });
@@ -41,7 +44,7 @@ export function ExportDialog(props: {
 
   return (
     <Dialog
-      titel="Kostentabelle exportieren"
+      titel="Kosten exportieren"
       onSchliessen={props.onSchliessen}
       breite={540}
       fuss={
@@ -55,6 +58,18 @@ export function ExportDialog(props: {
       }
     >
       <div className="formular">
+        <label className="feld">
+          <span className="feld-label">Darstellung</span>
+          <select
+            value={f.darstellung}
+            onChange={(e) =>
+              setF({ ...f, darstellung: e.target.value as 'kostentabelle' | 'sollist' })
+            }
+          >
+            <option value="kostentabelle">Kostentabelle (Planung)</option>
+            <option value="sollist">Soll-Ist (Stufen, Prognose, Abweichung)</option>
+          </select>
+        </label>
         <label className="feld">
           <span className="feld-label">Format</span>
           <select

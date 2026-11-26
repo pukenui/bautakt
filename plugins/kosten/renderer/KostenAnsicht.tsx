@@ -6,67 +6,20 @@ import {
   type FlaecheEingabe,
 } from '@bautakt/rechnen-kosten';
 import { LeereAnsicht, type AnsichtProps } from '@bautakt/ui';
-import { useCallback, useEffect, useMemo, useState, type KeyboardEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { KnotenDaten, KostenDaten, ZeileBerechnet } from '../gemeinsam/typen.js';
 import { EinstellungenDialog, KgDialog, ZeileDialog } from './Dialoge.js';
 import { ExportDialog } from './ExportDialog.js';
-import { betrag, eingabeZahl, faktor, menge, prozent, rechenweg } from './format.js';
+import { betrag, faktor, menge, prozent, rechenweg } from './format.js';
+import { AuftraegeTeil } from './AuftraegeTeil.js';
+import { SollIstTeil } from './SollIstTeil.js';
+import { ZahlZelle } from './ZahlZelle.js';
 
 type DialogZustand =
   | { art: 'einstellungen' | 'export' }
   | { art: 'kg'; unter: number | null }
   | { art: 'zeile'; id: string }
   | null;
-
-/** Zahl direkt in der Tabelle ändern (Doppelklick, Eingabe übernimmt, Esc verwirft). */
-function ZahlZelle(props: {
-  wert: number | null;
-  anzeige: string;
-  darf: boolean;
-  titel?: string;
-  onSpeichern: (w: number | null) => Promise<boolean>;
-}) {
-  const [text, setText] = useState<string | null>(null);
-  const fertig = async () => {
-    if (text === null) return;
-    const w = eingabeZahl(text);
-    if (w !== props.wert && !Number.isNaN(w) && !(await props.onSpeichern(w))) return;
-    setText(null);
-  };
-  if (text !== null)
-    return (
-      <input
-        autoFocus
-        className="tp-editor kk-zahl"
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onBlur={() => void fertig()}
-        onKeyDown={(e: KeyboardEvent) => {
-          if (e.key === 'Enter') void fertig();
-          if (e.key === 'Escape') {
-            e.stopPropagation();
-            setText(null);
-          }
-        }}
-      />
-    );
-  return (
-    <span
-      className={props.darf ? 'kk-bearbeitbar' : ''}
-      title={props.titel ?? (props.darf ? 'Doppelklick zum Ändern' : undefined)}
-      onDoubleClick={() =>
-        props.darf &&
-        setText(
-          props.wert === null
-            ? ''
-            : props.wert.toLocaleString('de-DE', { useGrouping: false, maximumFractionDigits: 4 }),
-        )
-      }
-    >
-      {props.anzeige || (props.darf ? '…' : '')}
-    </span>
-  );
-}
 
 /** Flächen nach DIN 277 (E-15, R-11): Eingaben links, abgeleitete Summen fett. */
 function Flaechen(props: {
@@ -121,7 +74,7 @@ function Flaechen(props: {
 }
 
 /** Kostenplanung (E-15, E-16, E-55–E-59): KG-Baum mit Summen, Flächen, Kennzahlen. */
-export function KostenAnsicht({ api, status, datenstand }: AnsichtProps) {
+function PlanungTeil({ api, status, datenstand }: AnsichtProps) {
   const [daten, setDaten] = useState<KostenDaten | null>(null);
   const [ladefehler, setLadefehler] = useState<string | null>(null);
   const [fehler, setFehler] = useState<string | null>(null);
@@ -199,7 +152,7 @@ export function KostenAnsicht({ api, status, datenstand }: AnsichtProps) {
     befehl('zeile.aendern', { id: z.id, felder }).then((x) => x !== null);
 
   return (
-    <div className="kk-ansicht">
+    <>
       <div className="tp-werkzeuge" role="toolbar" aria-label="Kostenplanung">
         <div className="tp-gruppe">
           {!nurLesen && (
@@ -493,6 +446,97 @@ export function KostenAnsicht({ api, status, datenstand }: AnsichtProps) {
       )}
       {dialog?.art === 'export' && (
         <ExportDialog api={api} projektname={status.projektname} onSchliessen={schliessen} />
+      )}
+    </>
+  );
+}
+
+type Teil = 'planung' | 'sollist' | 'ist';
+const TEIL = 'bautakt.kosten.teil';
+
+/** Reiter „Kosten“: Kostenplanung, Soll-Ist und Aufträge & Rechnungen (E-15, E-33). */
+export function KostenAnsicht(props: AnsichtProps) {
+  const { api } = props;
+  const [teil, setTeilState] = useState<Teil>(() => {
+    const t = localStorage.getItem(TEIL);
+    return t === 'sollist' || t === 'ist' ? t : 'planung';
+  });
+  const setTeil = (t: Teil) => {
+    setTeilState(t);
+    try {
+      localStorage.setItem(TEIL, t);
+    } catch {
+      // ohne Speicher
+    }
+  };
+  const [fehler, setFehler] = useState<string | null>(null);
+  const [exportOffen, setExportOffen] = useState(false);
+  const befehl = useCallback(
+    async (name: string, d: unknown) => {
+      const a = await api.befehl.ausfuehren('kosten', name, d);
+      if (!a.ok) {
+        setFehler(a.fehler);
+        return null;
+      }
+      setFehler(null);
+      return a.wert.eingefuegt.map((e) => e.id);
+    },
+    [api],
+  );
+  const nurLesen = props.status.schreibgeschuetzt;
+  return (
+    <div className="kk-ansicht">
+      <div className="bib-teile kk-teile" role="tablist" aria-label="Kosten">
+        {(
+          [
+            ['planung', 'Kostenplanung'],
+            ['sollist', 'Soll-Ist'],
+            ['ist', 'Aufträge & Rechnungen'],
+          ] as const
+        ).map(([k, t]) => (
+          <button
+            key={k}
+            role="tab"
+            aria-selected={teil === k}
+            className={teil === k ? 'aktiv' : ''}
+            onClick={() => {
+              setFehler(null);
+              setTeil(k);
+            }}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+      {teil === 'planung' && <PlanungTeil {...props} />}
+      {teil === 'sollist' && (
+        <SollIstTeil
+          api={api}
+          datenstand={props.datenstand}
+          nurLesen={nurLesen}
+          befehl={befehl}
+          fehler={fehler}
+          setFehler={setFehler}
+          onExport={() => setExportOffen(true)}
+        />
+      )}
+      {teil === 'ist' && (
+        <AuftraegeTeil
+          api={api}
+          datenstand={props.datenstand}
+          nurLesen={nurLesen}
+          befehl={befehl}
+          fehler={fehler}
+          setFehler={setFehler}
+        />
+      )}
+      {exportOffen && (
+        <ExportDialog
+          api={api}
+          projektname={props.status.projektname}
+          darstellung="sollist"
+          onSchliessen={() => setExportOffen(false)}
+        />
       )}
     </div>
   );
