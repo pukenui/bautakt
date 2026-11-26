@@ -23,3 +23,18 @@
 .bib-tabelle tr.geloescht td.aktionen {
   text-decoration: none;
 }
+.bib-teile {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--linie);
+}
+.bib-teile button {
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: none;
+}
+.bib-teile button.aktiv {
+  border-bottom-color: var(--akzent);
+  font-weight: 600;
+}

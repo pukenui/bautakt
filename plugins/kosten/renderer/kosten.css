@@ -1,0 +1,129 @@
+/* Plugin Kostenplanung */
+.kk-ansicht {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  gap: 6px;
+}
+.kk-split {
+  flex: 1;
+  min-height: 200px;
+  display: grid;
+  grid-template-columns: 1fr 290px;
+  gap: 10px;
+}
+.kk-tabelle-rahmen {
+  overflow: auto;
+  border: 1px solid var(--linie);
+  background: var(--flaeche);
+  min-height: 0;
+}
+.kk-tabelle {
+  width: 100%;
+  font-size: 13px;
+}
+.kk-tabelle thead th {
+  position: sticky;
+  top: 0;
+  background: #f0f0ec;
+  z-index: 1;
+}
+.kk-tabelle .zahl,
+.kk-flaechen-tabelle .zahl {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.kk-tabelle tr.kk-ebene1 td {
+  font-weight: 700;
+  background: #f7f7f4;
+}
+.kk-tabelle tr.kk-ebene2 td {
+  font-weight: 600;
+}
+.kk-tabelle tr.gewaehlt td {
+  background: #e7eef8;
+}
+.kk-tabelle tfoot td {
+  font-weight: 600;
+  border-top: 1px solid var(--linie);
+}
+.kk-tabelle tr.kk-massgebend td {
+  border-top: 2px solid var(--text);
+}
+.kk-kg {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+.kk-bearbeitbar {
+  cursor: text;
+  display: inline-block;
+  min-width: 40px;
+}
+.kk-bearbeitbar:hover {
+  outline: 1px dashed var(--linie);
+}
+.kk-zahl {
+  width: 100px;
+  text-align: right;
+}
+.kk-marke {
+  color: var(--akzent);
+  font-size: 11px;
+}
+.kk-kommentar {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kk-flaechen {
+  overflow: auto;
+  border: 1px solid var(--linie);
+  background: var(--flaeche);
+  padding: 6px 8px;
+  font-size: 13px;
+}
+.kk-flaechen h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+.kk-flaechen .kk-flaechen-tabelle {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+}
+.kk-flaechen-tabelle td.zahl {
+  width: 76px;
+}
+.kk-flaechen-tabelle td:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kk-flaechen-tabelle tr.kk-summe td {
+  font-weight: 700;
+  border-top: 1px solid var(--linie);
+}
+.kk-eingefroren {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  background: #eef4fb;
+  border: 1px solid #bcd0ea;
+  border-radius: 4px;
+  font-size: 12px;
+}
+.kk-kennwert {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+.kg-liste {
+  width: 100%;
+  font-family: inherit;
+}

@@ -19,6 +19,7 @@
   "devDependencies": {
     "@bautakt/kern": "workspace:*",
     "@bautakt/plugin-bibliothek": "workspace:*",
+    "@bautakt/plugin-kosten": "workspace:*",
     "@bautakt/plugin-termine": "workspace:*",
     "@bautakt/ui": "workspace:*",
     "@types/node": "^24.0.0",

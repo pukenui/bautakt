@@ -11,6 +11,7 @@ import { zahlLesen } from '@bautakt/rechnen-aufwand';
 import type { AufwandswertFelder, AufwandswertZeile } from '../gemeinsam/typen.js';
 import hilfeBibliothek from '../hilfe/bibliothek.md?raw';
 import './bibliothek.css';
+import { KennwerteTeil } from './kennwerte.js';
 
 export function awText(w: Pick<AufwandswertZeile, 'h_je_me' | 'einheit'>): string {
   return `${w.h_je_me.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 3 })} h/${w.einheit}`;
@@ -199,8 +200,8 @@ function VersionenDialog(props: { api: BautaktApi; id: string; onSchliessen: () 
   );
 }
 
-/** Reiter „Bibliothek“ (E-23, E-51): globale Aufwandswerte, auch ohne geöffnetes Projekt. */
-function BibliothekAnsicht({ api, datenstand }: GlobaleAnsichtProps) {
+/** Aufwandswerte der Bibliothek (E-23, E-51). */
+function AufwandswerteTeil({ api, datenstand }: GlobaleAnsichtProps) {
   const [liste, setListe] = useState<AufwandswertZeile[] | null>(null);
   const [ladefehler, setLadefehler] = useState<string | null>(null);
   const [fehler, setFehler] = useState<string | null>(null);
@@ -254,7 +255,7 @@ function BibliothekAnsicht({ api, datenstand }: GlobaleAnsichtProps) {
   if (!liste) return <p className="leise">Lädt …</p>;
 
   return (
-    <div className="ansicht bib-ansicht">
+    <>
       <div className="werkzeugleiste">
         <button className="primaer" onClick={() => setDialog({ art: 'eintrag', eintrag: null })}>
           + Aufwandswert
@@ -289,10 +290,6 @@ function BibliothekAnsicht({ api, datenstand }: GlobaleAnsichtProps) {
           gelöschte anzeigen
         </label>
       </div>
-      <p className="leise bib-hinweis">
-        Die Bibliothek gilt für alle Projekte (App-Datenordner). Jede Änderung legt eine neue
-        Version an; Projekte behalten die Version, mit der gerechnet wurde.
-      </p>
       {fehler && <p className="fehler">{fehler}</p>}
       {liste.length === 0 && !geloeschte ? (
         <LeereAnsicht titel="Noch keine Aufwandswerte">
@@ -373,6 +370,38 @@ function BibliothekAnsicht({ api, datenstand }: GlobaleAnsichtProps) {
       {dialog?.art === 'versionen' && (
         <VersionenDialog api={api} id={dialog.id} onSchliessen={() => setDialog(null)} />
       )}
+    </>
+  );
+}
+
+/** Reiter „Bibliothek“ (E-23): Aufwandswerte und Kostenkennwerte, auch ohne geöffnetes Projekt. */
+function BibliothekAnsicht(props: GlobaleAnsichtProps) {
+  const [teil, setTeil] = useState<'aufwand' | 'kennwert'>('aufwand');
+  return (
+    <div className="ansicht bib-ansicht">
+      <div className="bib-teile" role="tablist" aria-label="Bibliothek">
+        {(
+          [
+            ['aufwand', 'Aufwandswerte'],
+            ['kennwert', 'Kostenkennwerte'],
+          ] as const
+        ).map(([k, t]) => (
+          <button
+            key={k}
+            role="tab"
+            aria-selected={teil === k}
+            className={teil === k ? 'aktiv' : ''}
+            onClick={() => setTeil(k)}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+      <p className="leise bib-hinweis">
+        Die Bibliothek gilt für alle Projekte (App-Datenordner). Jede Änderung legt eine neue
+        Version an; Projekte behalten die Version, mit der gerechnet wurde.
+      </p>
+      {teil === 'aufwand' ? <AufwandswerteTeil {...props} /> : <KennwerteTeil {...props} />}
     </div>
   );
 }

@@ -96,3 +96,37 @@ describe('Bibliothek: Aufwandswerte versioniert (E-23, E-51)', () => {
     b2.g.schliessen();
   });
 });
+
+describe('Bibliothek: Kostenkennwerte (E-58)', () => {
+  const kkw = {
+    bezeichnung: 'Hallen, Fertigteilbau',
+    kg: 300,
+    einheit: 'm² BGF',
+    von: 1800,
+    mittel: 2400,
+    bis: 3100,
+    quelle: 'eigene Auswertung (fiktiv)',
+    stand: '2024, Q1',
+    index_stand: 120,
+  };
+  it('versioniert wie Aufwandswerte, mit Prüfungen', () => {
+    const b = oeffnen();
+    const { id } = b.aktion('kennwert.anlegen', kkw);
+    expect(b.aktion('kennwert.aendern', { id, ...kkw, mittel: 2500 }).version).toBe(2);
+    const liste = b.g.abfrage('bibliothek', 'kennwerte', {}) as {
+      mittel: number;
+      gebaeudeart: string;
+    }[];
+    expect(liste).toMatchObject([{ mittel: 2500, gebaeudeart: '' }]);
+    expect(
+      b.g.dienst<(id: string) => number | null>('bibliothek.kennwertAktuelleVersion')?.(id),
+    ).toBe(2);
+    expect(b.aktion('kennwert.ausblenden', { id }).version).toBe(3);
+    expect(() => b.aktion('kennwert.anlegen', { ...kkw, kg: 999 })).toThrow(/Katalog/);
+    expect(() => b.aktion('kennwert.anlegen', { ...kkw, von: 2500 })).toThrow(/Von darf nicht/);
+    expect(() => b.aktion('kennwert.anlegen', { ...kkw, quelle: '' })).toThrow(/Quelle/);
+    // Aufwandswerte und Kennwerte bleiben getrennt
+    expect(b.liste()).toEqual([]);
+    b.g.schliessen();
+  });
+});

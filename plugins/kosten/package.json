@@ -1,0 +1,26 @@
+{
+  "name": "@bautakt/plugin-kosten",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Plugin Kostenplanung (DIN 276/277, Index, Regionalfaktor, MwSt.)",
+  "type": "module",
+  "exports": {
+    "./main": "./main/index.ts",
+    "./renderer": "./renderer/index.tsx"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@bautakt/kern": "workspace:*",
+    "@bautakt/ui": "workspace:*",
+    "@bautakt/rechnen-kosten": "workspace:*",
+    "@bautakt/plugin-bibliothek": "workspace:*",
+    "react": "^19.2.0",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.2.0"
+  }
+}

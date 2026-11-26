@@ -51,6 +51,9 @@ importers:
       '@bautakt/plugin-bibliothek':
         specifier: workspace:*
         version: link:../../plugins/bibliothek
+      '@bautakt/plugin-kosten':
+        specifier: workspace:*
+        version: link:../../plugins/kosten
       '@bautakt/plugin-termine':
         specifier: workspace:*
         version: link:../../plugins/termine
@@ -114,6 +117,8 @@ importers:
 
   packages/rechnen-kalender: {}
 
+  packages/rechnen-kosten: {}
+
   packages/rechnen-termine:
     devDependencies:
       '@bautakt/rechnen-kalender':
@@ -141,6 +146,37 @@ importers:
       '@bautakt/rechnen-aufwand':
         specifier: workspace:*
         version: link:../../packages/rechnen-aufwand
+      '@bautakt/rechnen-kosten':
+        specifier: workspace:*
+        version: link:../../packages/rechnen-kosten
+      '@bautakt/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      react:
+        specifier: ^19.2.0
+        version: 19.3.1
+      zod:
+        specifier: ^4.1.0
+        version: 4.6.7
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.19.2
+      '@types/react':
+        specifier: ^19.2.0
+        version: 19.3.1
+
+  plugins/kosten:
+    dependencies:
+      '@bautakt/kern':
+        specifier: workspace:*
+        version: link:../../packages/kern
+      '@bautakt/plugin-bibliothek':
+        specifier: workspace:*
+        version: link:../bibliothek
+      '@bautakt/rechnen-kosten':
+        specifier: workspace:*
+        version: link:../../packages/rechnen-kosten
       '@bautakt/ui':
         specifier: workspace:*
         version: link:../../packages/ui

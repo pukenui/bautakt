@@ -1,0 +1,35 @@
+/* Druckansicht Kostentabelle (E-59); Seitenrahmen wie bei den Terminplänen */
+.kd-inhalt {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  flex: 1;
+}
+.kd-tabelle {
+  flex: 1;
+}
+.kd-flaechen {
+  width: 260px;
+}
+.kd-tabelle th.rechts,
+.kd-flaechen th.rechts,
+.kd-tabelle td.rechts,
+.kd-flaechen td.rechts {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.kd-ebene1 td {
+  font-weight: 700;
+  border-top: 1px solid #888;
+}
+.kd-ebene2 td {
+  font-weight: 600;
+}
+.kd-tabelle tfoot td {
+  font-weight: 600;
+  border-top: 1px solid #888;
+  padding: 3px 4px;
+}
+.kd-massgebend td {
+  border-top: 2px solid #1d1d1b;
+}
