@@ -29,11 +29,11 @@ Ziel: Ab ca. **13.12.** sollen damit F.1 (Rollen-Netzplan) und F.2 (Projekttermi
 - [x] Soll-Ende, Umschalter Rückwärtsrechnung, negative Puffer rot, Schnittstellen-Meilensteine (E-19)
 - [x] Kalender-/Ruhezeiten-Dialog
 
-### M3 – Export, Stände, Hilfe (bis ca. 13.12.)
+### M3 – Export, Stände, Hilfe (bis ca. 13.12.) ✔
 - [x] Druckansicht mit Plankopf, Legende, Risiko-Hinweisen → PDF A3 quer, PNG
 - [x] Benannte Soll-Stände speichern/laden (E-22, E-32 Datenmodell)
 - [x] Hilfe-Seitenleiste (F1) Grundversion mit Abläufen und Tastenkürzeln für Termine (E-29)
-- [ ] Windows-Installer + erstes GitHub Release `v0.1.0`
+- [x] Windows-Installer + erstes GitHub Release `v0.1.0`
 
 ## Phase V – Version 1 (ab 21.12.2026)
 
@@ -71,4 +71,4 @@ Ziel: Ab ca. **13.12.** sollen damit F.1 (Rollen-Netzplan) und F.2 (Projekttermi
 - 24.11.2026 – **M0 fertig.** Monorepo (pnpm, electron-vite, TS strict, ESLint/Prettier, Vitest), Kern (Projektdatei mit Migrationen, Befehle/Undo/Redo/Änderungsprotokoll, Ereignisse, Plugin-Lader, Lock/Backup/Autosave/JSON-Export), sichere Electron-Shell, Plugin „termine“ als Gerüst (Pläne anlegen/umbenennen/löschen). 35 Tests grün, Rauchtest der App und des gepackten Installers erfolgreich. Electron vorerst 42 (siehe Architektur 9).
 - 24.11.2026 – **M1 fertig.** Reine Bibliotheken `rechnen-kalender` (Arbeitstage, NRW-Feiertage, Ruhezeiten, AT↔Datum, KT-Abstände, ISO-KW) und `rechnen-termine` (Vorwärts-/Rückwärtsrechnung EA/AA/EE/AE mit AT/KT, GP/FP, kritischer Weg inkl. kritischer Pfeile, Soll-Ende, Bedingungen, Sammelvorgänge, Zykluserkennung, Parser Kurz-/Langform). Referenztests R-01 bis R-08 grün, dazu 300 Zufallsnetze als Eigenschaftstests; insgesamt 396 Tests. Präzisierungen in Architektur 10.
 - 24.11.2026 – **M2 fertig.** Plugin „termine“ mit Datenmodell (Vorgänge, Beziehungen, Kalender, Ruhezeiten; Migration 2 inkl. Übernahme von M0-Dateien) und allen Änderungen als undo-fähige Befehle. Oberfläche: Terminplan (virtualisierte Tabelle mit Tastatureingabe + vernetzter Balkenplan Tag/KW/Monat/Quartal mit Puffern, Meilensteinen, Schnittstellen, Soll-Ende-/Heute-Linie, Ruhezeiten, Risiko-Legende, Verbinden per Maus), Netzplan im Übungsformat (Auto-Layout, Verschieben, Verbinden), Dialoge für Vorgang, Vorgänger (Langform) und Plan/Kalender/Ruhezeiten, Rahmenterminplan durch Zuklappen, mehrere Pläne. 410 Tests grün; Bedienung in der gebauten App per Tastatur und Maus geprüft. Präzisierungen in Architektur 11.
-- 26.11.2026 – **M3 weitgehend fertig.** Soll-Stände (Kern-Befehle stand.speichern/laden/umbenennen/loeschen, Plugin-Kopien inkl. eingefrorener Termine, automatische Sicherung vor jedem Rücksprung), Export PDF A3 quer (mehrseitig, Plankopf/Legende/Risiken auf jeder Seite) und PNG (1–3-fache Auflösung) für Balken- und Netzplan, Hilfe-Seitenleiste mit Markdown und allgemeiner Hilfe, Installer „Bautakt-Setup-0.1.0.exe“ gebaut. 414 Tests grün. Offen: GitHub-Release v0.1.0.
+- 26.11.2026 – **M3 fertig.** Soll-Stände (Kern-Befehle stand.speichern/laden/umbenennen/loeschen, Plugin-Kopien inkl. eingefrorener Termine, automatische Sicherung vor jedem Rücksprung), Export PDF A3 quer (mehrseitig, Plankopf/Legende/Risiken auf jeder Seite) und PNG (1–3-fache Auflösung) für Balken- und Netzplan, Hilfe-Seitenleiste mit Markdown und allgemeiner Hilfe, Installer „Bautakt-Setup-0.1.0.exe“ gebaut. 414 Tests grün. GitHub-Release v0.1.0 (privat) veröffentlicht.
