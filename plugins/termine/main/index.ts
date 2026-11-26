@@ -1,6 +1,6 @@
 import type { BautaktPlugin } from '@bautakt/kern';
 import { z } from 'zod';
-import type { PlanZeile } from '../gemeinsam/typen.js';
+import type { IstZeile, PlanZeile } from '../gemeinsam/typen.js';
 import { MIGRATIONEN } from '../migrations/index.js';
 import { BEFEHLE } from './befehle.js';
 import { planDatenLaden } from './daten.js';
@@ -15,7 +15,7 @@ export type { PlanZeile } from '../gemeinsam/typen.js';
 export const terminePlugin: BautaktPlugin = {
   id: 'termine',
   name: 'Terminplanung',
-  version: '0.3.0',
+  version: '0.4.0',
   tabellenPraefix: 't_',
   migrationen: MIGRATIONEN,
 
@@ -28,8 +28,20 @@ export const terminePlugin: BautaktPlugin = {
     ctx.abfragen.registrieren({ name: 'plaene', schema: z.undefined(), ausfuehren: plaene });
     ctx.abfragen.registrieren({
       name: 'plan',
-      schema: z.object({ planId: z.string().min(1) }),
-      ausfuehren: (db, a) => planDatenLaden(db, a.planId),
+      schema: z.object({
+        planId: z.string().min(1),
+        sollStandId: z.string().min(1).nullable().optional(),
+      }),
+      ausfuehren: (db, a) => planDatenLaden(db, a.planId, a.sollStandId ?? null),
+    });
+    ctx.abfragen.registrieren({
+      name: 'istVerlauf',
+      schema: z.object({ vorgangId: z.string().min(1) }),
+      ausfuehren: (db, a) =>
+        db.lesen<IstZeile>(
+          'SELECT * FROM t_ist WHERE vorgang_id = ? ORDER BY stichtag DESC',
+          a.vorgangId,
+        ),
     });
     ctx.dienste.bereitstellen('termine.plaene', plaene);
     ctx.dienste.bereitstellen('termine.plan', (planId: string) => planDatenLaden(ctx.db, planId));

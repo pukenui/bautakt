@@ -6,6 +6,7 @@ import {
   type NetzplanOptionen,
   type VorgangEingabe,
   type VorgangErgebnis,
+  type Vorgangsstatus,
 } from './typen.js';
 import { alsNummern, findeZyklus, zyklusText } from './zyklus.js';
 
@@ -59,6 +60,7 @@ interface Knoten {
   /** ausgehende/eingehende Beziehungen (Index in der Eingabe) */
   aus: number[];
   ein: number[];
+  status: Vorgangsstatus;
 }
 
 /**
@@ -92,7 +94,30 @@ export function netzplanBerechnen(
       pruefeGanzzahl(v.fruehestensAb, `„Nicht früher als“ bei ${nr(v.id)}`);
     if (v.spaetestensBis != null)
       pruefeGanzzahl(v.spaetestensBis, `„Muss enden am“ bei ${nr(v.id)}`);
-    knoten.set(v.id, { v, d, faz: 0, fez: 0, saz: 0, sez: 0, aus: [], ein: [] });
+    if (v.ist) {
+      const ist = v.ist;
+      pruefeGanzzahl(ist.anfang, `Der Ist-Anfang von ${nr(v.id)}`);
+      if (ist.ende != null) {
+        pruefeGanzzahl(ist.ende, `Das Ist-Ende von ${nr(v.id)}`);
+        if (ist.ende < ist.anfang) {
+          throw new NetzplanFehler(
+            'UNGUELTIG',
+            `Ist-Ende von ${nr(v.id)} liegt vor dem Ist-Anfang.`,
+          );
+        }
+      } else {
+        if (ist.rest == null) {
+          throw new NetzplanFehler(
+            'UNGUELTIG',
+            `Für den begonnenen Vorgang ${nr(v.id)} fehlt die Restdauer.`,
+          );
+        }
+        pruefeGanzzahl(ist.rest, `Die Restdauer von ${nr(v.id)}`);
+        if (ist.rest < 0)
+          throw new NetzplanFehler('UNGUELTIG', `Die Restdauer von ${nr(v.id)} ist negativ.`);
+      }
+    }
+    knoten.set(v.id, { v, d, faz: 0, fez: 0, saz: 0, sez: 0, aus: [], ein: [], status: 'geplant' });
   }
   for (const v of vorgaenge) {
     if (v.parent != null && alle.get(v.parent)?.typ !== 'sammel') {
@@ -126,6 +151,8 @@ export function netzplanBerechnen(
     return abstandFunktion(b, optionen, () => bezName(b));
   });
 
+  const stichtag = optionen.stichtag ?? null;
+  if (stichtag !== null) pruefeGanzzahl(stichtag, 'Der Stichtag');
   const rueckwaertsVon = optionen.rueckwaertsVon ?? 'berechnet';
   const sollEnde = optionen.sollEnde ?? null;
   if (sollEnde !== null) pruefeGanzzahl(sollEnde, 'Das Soll-Ende');
@@ -161,7 +188,22 @@ export function netzplanBerechnen(
   // --- Vorwärtsrechnung (Architektur 5.2) --------------------------------------------------
   for (const id of reihenfolge) {
     const j = k(id);
-    let faz = Math.max(0, j.v.fruehestensAb ?? 0);
+    // Prognose (E-43): fertige und begonnene Vorgänge liegen durch den Ist-Stand fest
+    const ist = j.v.ist;
+    if (ist) {
+      j.faz = ist.anfang;
+      if (ist.ende != null) {
+        j.fez = ist.ende;
+        j.status = 'fertig';
+      } else {
+        j.fez = Math.max(stichtag ?? ist.anfang, ist.anfang) + (ist.rest ?? 0);
+        j.status = 'begonnen';
+      }
+      j.d = j.fez - j.faz;
+      continue;
+    }
+    // nicht begonnen: frühestens am Stichtag (E-44)
+    let faz = Math.max(0, j.v.fruehestensAb ?? 0, stichtag ?? 0);
     for (const bi of j.ein) {
       const b = bez(bi);
       const i = k(b.von);
@@ -191,6 +233,12 @@ export function netzplanBerechnen(
   // --- Rückwärtsrechnung (Architektur 5.3) -------------------------------------------------
   for (let r = reihenfolge.length - 1; r >= 0; r--) {
     const i = k(reihenfolge[r] as string);
+    if (i.status === 'fertig') {
+      // fertige Vorgänge liegen fest
+      i.sez = i.fez;
+      i.saz = i.faz;
+      continue;
+    }
     let sez = bezugsende;
     if (i.v.spaetestensBis != null) sez = Math.min(sez, i.v.spaetestensBis);
     for (const bi of i.aus) {
@@ -218,7 +266,10 @@ export function netzplanBerechnen(
 
   // --- Puffer, kritischer Weg (Architektur 5.4) --------------------------------------------
   const gp = (x: Knoten) => x.sez - x.fez;
-  const minGp = ids.length ? ids.reduce((m, id) => Math.min(m, gp(k(id))), Infinity) : 0;
+  const offeneIds = ids.filter((id) => k(id).status !== 'fertig');
+  const minGp = offeneIds.length
+    ? offeneIds.reduce((m, id) => Math.min(m, gp(k(id))), Infinity)
+    : 0;
   const grenze = rueckwaertsVon === 'soll_ende' ? minGp : 0;
 
   const ergebnisse = new Map<string, VorgangErgebnis>();
@@ -240,15 +291,17 @@ export function netzplanBerechnen(
       spielraum = Math.min(spielraum, s);
     }
     const gesamt = gp(i);
+    const fertig = i.status === 'fertig';
     ergebnisse.set(id, {
       id,
       faz: i.faz,
       fez: i.fez,
       saz: i.saz,
       sez: i.sez,
-      gp: gesamt,
-      fp: Math.max(0, Math.min(spielraum, gesamt)),
-      kritisch: gesamt <= grenze,
+      gp: fertig ? 0 : gesamt,
+      fp: fertig ? 0 : Math.max(0, Math.min(spielraum, gesamt)),
+      kritisch: !fertig && gesamt <= grenze,
+      status: i.status,
     });
   }
 
@@ -292,6 +345,7 @@ export function netzplanBerechnen(
               saz: Math.min(s.saz, e.saz),
               sez: Math.max(s.sez, e.sez),
               kritisch: s.kritisch || e.kritisch,
+              status: sammelStatus(s.status, e.status),
             }
           : {
               id: p,
@@ -302,6 +356,7 @@ export function netzplanBerechnen(
               gp: 0,
               fp: null,
               kritisch: e.kritisch,
+              status: e.status,
             },
       );
     }
@@ -323,4 +378,11 @@ export function netzplanBerechnen(
     kritischerPfad,
     reihenfolge,
   };
+}
+
+/** Status eines Sammelvorgangs: fertig, wenn alle Kinder fertig; begonnen, sobald eines läuft. */
+function sammelStatus(a: Vorgangsstatus, b: Vorgangsstatus): Vorgangsstatus {
+  if (a === 'fertig' && b === 'fertig') return 'fertig';
+  if (a === 'geplant' && b === 'geplant') return 'geplant';
+  return 'begonnen';
 }

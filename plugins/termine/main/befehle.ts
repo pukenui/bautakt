@@ -113,6 +113,12 @@ function pruefeBeziehung(
   }
 }
 
+function istLoeschen(tx: Transaktion, vid: string): void {
+  for (const i of tx.lesen<{ id: string }>('SELECT id FROM t_ist WHERE vorgang_id = ?', vid)) {
+    tx.loeschen('t_ist', i.id);
+  }
+}
+
 const kanten = (bs: readonly BeziehungZeile[]) =>
   bs.map((b) => ({ von: b.von_id, nach: b.nach_id }));
 
@@ -160,6 +166,7 @@ export const BEFEHLE: Def[] = [
       projektstart: datum.optional(),
       soll_ende: datum.nullable().optional(),
       rueckwaerts_von: z.enum(['berechnet', 'soll_ende']).optional(),
+      stichtag: datum.nullable().optional(),
     }),
     ausfuehren(tx, d) {
       const alt = planLesen(tx, d.id);
@@ -190,6 +197,7 @@ export const BEFEHLE: Def[] = [
         for (let p = v.parent_id; p; p = vs.find((x) => x.id === p)?.parent_id ?? null) t++;
         return t;
       };
+      for (const v of vs) istLoeschen(tx, v.id);
       for (const v of [...vs].sort((a, b) => tiefe(b) - tiefe(a))) tx.loeschen('t_vorgang', v.id);
       if (plan.kalender_id) {
         for (const r of tx.lesen<{ id: string }>(
@@ -385,6 +393,7 @@ export const BEFEHLE: Def[] = [
             tx.loeschen('t_beziehung', b.id);
         }
       }
+      for (const vid of weg) istLoeschen(tx, vid);
       for (const vid of weg) tx.loeschen('t_vorgang', vid); // Nachkommen stehen vor ihren Eltern
     },
   }),
@@ -541,6 +550,83 @@ export const BEFEHLE: Def[] = [
     schema: z.object({ id }),
     ausfuehren(tx, d) {
       tx.loeschen('t_beziehung', d.id);
+    },
+  }),
+
+  // Ist-Erfassung (E-32, E-43–E-45) ----------------------------------------------------
+  def({
+    name: 'ist.setzen',
+    titel: 'Ist-Stand erfassen',
+    schema: z.object({
+      vorgangId: id,
+      stichtag: datum,
+      ist_anfang: datum.nullable().default(null),
+      ist_ende: datum.nullable().default(null),
+      fertig_prozent: ganz('Der Fertigstellungsgrad')
+        .min(0, 'Fertigstellungsgrad 0–100 %')
+        .max(100, 'Fertigstellungsgrad 0–100 %')
+        .nullable()
+        .default(null),
+      restdauer_at: ganz('Die Restdauer')
+        .min(0, 'Die Restdauer darf nicht negativ sein')
+        .nullable()
+        .default(null),
+      ursache: z
+        .enum(['witterung', 'lieferverzug', 'planaenderung', 'personal', 'baugrund', 'sonstiges'])
+        .nullable()
+        .default(null),
+      ursache_text: text(2000).default(''),
+    }),
+    ausfuehren(tx, d) {
+      const v = vorgangLesen(tx, d.vorgangId);
+      if (v.typ === 'sammel')
+        throw fehler('Für Sammelvorgänge wird kein Ist erfasst; bitte die Unterpunkte melden.');
+      const z = { ...d };
+      if (z.ist_ende && !z.ist_anfang) z.ist_anfang = v.typ === 'meilenstein' ? z.ist_ende : null;
+      if (z.ist_ende && !z.ist_anfang) throw fehler('Zum Ist-Ende fehlt der Ist-Anfang.');
+      if (z.ist_anfang && z.ist_anfang > z.stichtag)
+        throw fehler('Der Ist-Anfang liegt nach dem Stichtag.');
+      if (z.ist_ende && z.ist_ende > z.stichtag)
+        throw fehler('Das Ist-Ende liegt nach dem Stichtag.');
+      if (z.ist_anfang && z.ist_ende && z.ist_ende < z.ist_anfang)
+        throw fehler('Das Ist-Ende liegt vor dem Ist-Anfang.');
+      if (z.ist_ende) {
+        z.fertig_prozent = 100;
+        z.restdauer_at = null;
+      } else if (z.ist_anfang) {
+        if (z.fertig_prozent === 100) throw fehler('Bei 100 % bitte das Ist-Ende angeben.');
+        if (z.fertig_prozent === null && z.restdauer_at === null) {
+          throw fehler(
+            'Für einen begonnenen Vorgang bitte Fertigstellungsgrad oder Restdauer angeben (E-43).',
+          );
+        }
+      } else if ((z.fertig_prozent ?? 0) > 0 || z.restdauer_at !== null) {
+        throw fehler('Fortschritt ohne Ist-Anfang: bitte den Ist-Anfang angeben.');
+      }
+      const zeile = {
+        ist_anfang: z.ist_anfang,
+        ist_ende: z.ist_ende,
+        fertig_prozent: z.fertig_prozent,
+        restdauer_at: z.restdauer_at,
+        ursache: z.ursache,
+        ursache_text: z.ursache_text.trim(),
+      };
+      const da = tx.eins<{ id: string }>(
+        'SELECT id FROM t_ist WHERE vorgang_id = ? AND stichtag = ?',
+        v.id,
+        z.stichtag,
+      );
+      if (da) tx.aendern('t_ist', da.id, zeile);
+      else
+        tx.einfuegen('t_ist', { id: neueId(), vorgang_id: v.id, stichtag: z.stichtag, ...zeile });
+    },
+  }),
+  def({
+    name: 'ist.loeschen',
+    titel: 'Ist-Meldung löschen',
+    schema: z.object({ id }),
+    ausfuehren(tx, d) {
+      tx.loeschen('t_ist', d.id);
     },
   }),
 

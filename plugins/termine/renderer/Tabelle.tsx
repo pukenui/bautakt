@@ -18,7 +18,7 @@ export const KOPF = 48;
 type Bearbeitbar = 'nr' | 'name' | 'dauer' | 'vorgaenger' | 'quelle' | 'rolle';
 
 interface Spalte {
-  key: Bearbeitbar | 'anfang' | 'ende' | 'gp' | 'fp';
+  key: Bearbeitbar | 'anfang' | 'ende' | 'gp' | 'fp' | 'fertig' | 'abw';
   titel: string;
   hinweis?: string;
   breite: number;
@@ -35,6 +35,7 @@ export interface TabelleProps {
   setAuswahl: (id: string) => void;
   befehl: (name: string, daten: unknown) => Promise<string[] | null>;
   onEigenschaften: (id: string) => void;
+  onIst: (id: string) => void;
   onZuklappen: (id: string, zu: boolean) => void;
   onNeu: () => void;
   onLoeschen: () => void;
@@ -90,6 +91,28 @@ export function Tabelle(p: TabelleProps) {
     },
     { key: 'gp', titel: 'GP', hinweis: 'Gesamtpuffer (AT)', breite: 48, rechts: true },
     { key: 'fp', titel: 'FP', hinweis: 'Freier Puffer (AT)', breite: 48, rechts: true },
+    ...(daten.plan.stichtag
+      ? [
+          {
+            key: 'fertig' as const,
+            titel: '%',
+            hinweis: 'Fertigstellungsgrad laut Ist-Stand (Doppelklick: Ist erfassen)',
+            breite: 48,
+            rechts: true,
+          },
+        ]
+      : []),
+    ...(daten.vergleich
+      ? [
+          {
+            key: 'abw' as const,
+            titel: 'Abw.',
+            hinweis: `Abweichung des Endes gegenüber „${daten.vergleich.standName}“ in AT (+ = später)`,
+            breite: 52,
+            rechts: true,
+          },
+        ]
+      : []),
     {
       key: 'quelle',
       titel: 'Quelle/Annahme',
@@ -147,6 +170,20 @@ export function Tabelle(p: TabelleProps) {
         return t ? zahlAnzeigen(t.gp) : '';
       case 'fp':
         return t && t.fp !== null ? zahlAnzeigen(t.fp) : '';
+      case 'fertig': {
+        if (v.typ === 'sammel' || !t) return '';
+        if (t.status === 'fertig') return '✓ 100';
+        const ist = daten.ist[v.id];
+        if (t.status === 'begonnen')
+          return ist?.fertig_prozent != null
+            ? String(ist.fertig_prozent)
+            : `Rest ${ist?.restdauer_at ?? ''}`;
+        return '';
+      }
+      case 'abw': {
+        const a = daten.vergleich?.termine[v.id]?.abweichung;
+        return a == null ? '' : a > 0 ? `+${zahlAnzeigen(a)}` : zahlAnzeigen(a);
+      }
       case 'quelle':
         return v.quelle_annahme;
     }
@@ -296,6 +333,10 @@ export function Tabelle(p: TabelleProps) {
                   j < 2 ? 'fest' : '',
                 ];
                 if (s.key === 'gp' && t && t.gp < 0) klassen.push('negativ');
+                const abw = daten.vergleich?.termine[v.id]?.abweichung;
+                if (s.key === 'abw' && abw != null)
+                  klassen.push(abw > 0 ? 'negativ' : abw < 0 ? 'positiv' : '');
+                if (s.key === 'fertig' && t?.status === 'fertig') klassen.push('positiv');
                 const ohneQuelle =
                   s.key === 'quelle' && v.typ !== 'sammel' && !v.quelle_annahme.trim();
                 return (
@@ -306,9 +347,15 @@ export function Tabelle(p: TabelleProps) {
                     style={j < 2 ? { left: j === 0 ? 0 : spalten[0]?.breite } : undefined}
                     onMouseDown={() => setSpalte(j)}
                     onDoubleClick={() =>
-                      s.key === 'anfang' || s.key === 'ende' || s.key === 'gp' || s.key === 'fp'
-                        ? p.onEigenschaften(v.id)
-                        : beginnen(v, s)
+                      s.key === 'fertig'
+                        ? v.typ !== 'sammel' && p.onIst(v.id)
+                        : s.key === 'anfang' ||
+                            s.key === 'ende' ||
+                            s.key === 'gp' ||
+                            s.key === 'fp' ||
+                            s.key === 'abw'
+                          ? p.onEigenschaften(v.id)
+                          : beginnen(v, s)
                     }
                     title={ohneQuelle ? 'Quelle/Annahme fehlt (Pflichtfeld)' : undefined}
                   >

@@ -4,18 +4,22 @@ import { Balkenplan } from './Balkenplan.js';
 import { sichtbareVorgaenge, useBefehl, useKalender, usePlan } from './daten.js';
 import { BeziehungDialog, PlanDialog, VorgangDialog } from './Dialoge.js';
 import { ExportDialog } from './ExportDialog.js';
+import { IstDialog } from './IstDialog.js';
+import { SollIstLeiste } from './SollIstLeiste.js';
 import { KeinPlan, Kennzahlen, PlanLeiste } from './gemeinsam.js';
 import { StaendeDialog } from './StaendeDialog.js';
 import { Tabelle } from './Tabelle.js';
 import { setzen, useZustand, zuklappen } from './zustand.js';
 
 type DialogZustand =
-  { art: 'vorgang' | 'beziehung'; id: string } | { art: 'plan' | 'staende' | 'export' } | null;
+  | { art: 'vorgang' | 'beziehung' | 'ist'; id: string }
+  | { art: 'plan' | 'staende' | 'export' }
+  | null;
 
 /** Hauptansicht (E-18): links Vorgangstabelle, rechts vernetzter Balkenplan. */
 export function TerminplanAnsicht({ api, status, datenstand }: AnsichtProps) {
   const z = useZustand();
-  const { plaene, daten, ladefehler } = usePlan(api, datenstand);
+  const { plaene, staende, daten, ladefehler } = usePlan(api, datenstand);
   const { befehl, fehler, setFehler } = useBefehl(api);
   const kal = useKalender(daten);
   const [dialog, setDialog] = useState<DialogZustand>(null);
@@ -182,6 +186,14 @@ export function TerminplanAnsicht({ api, status, datenstand }: AnsichtProps) {
             Vorgänger …
           </button>
         </div>
+        <SollIstLeiste
+          daten={daten}
+          staende={staende}
+          nurLesen={nurLesen}
+          befehl={befehl}
+          istMoeglich={!!gewaehlt && gewaehlt.typ !== 'sammel'}
+          onIst={() => gewaehlt && setDialog({ art: 'ist', id: gewaehlt.id })}
+        />
         <div className="tp-gruppe">
           <select
             aria-label="Gliederung"
@@ -267,6 +279,7 @@ export function TerminplanAnsicht({ api, status, datenstand }: AnsichtProps) {
             setAuswahl={setAuswahl}
             befehl={befehl}
             onEigenschaften={(id) => setDialog({ art: 'vorgang', id })}
+            onIst={(id) => setDialog({ art: 'ist', id })}
             onZuklappen={(id, zuklappenJa) => zuklappen(daten.plan.id, id, zuklappenJa)}
             onNeu={() => void neu('vorgang')}
             onLoeschen={() => void loeschen()}
@@ -341,6 +354,18 @@ export function TerminplanAnsicht({ api, status, datenstand }: AnsichtProps) {
       {dialog?.art === 'plan' && (
         <PlanDialog
           daten={daten}
+          nurLesen={nurLesen}
+          befehl={befehl}
+          fehler={fehler}
+          onSchliessen={dialogSchliessen}
+        />
+      )}
+      {dialog?.art === 'ist' && (
+        <IstDialog
+          api={api}
+          daten={daten}
+          vorgangId={dialog.id}
+          datenstand={datenstand}
           nurLesen={nurLesen}
           befehl={befehl}
           fehler={fehler}

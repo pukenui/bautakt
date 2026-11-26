@@ -42,6 +42,7 @@ export function ExportDialog(props: {
         planId: props.daten.plan.id,
         ersteller: f.ersteller.trim(),
         zugeklappt: f.gliederungUebernehmen ? props.zugeklappt : [],
+        sollStandId: props.daten.vergleich?.standId ?? null,
       },
     });
     setLaeuft(false);

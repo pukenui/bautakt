@@ -99,6 +99,10 @@ export function Balkenplan(p: BalkenplanProps) {
   const hoehe = zeilen.length * ZEILE;
   const mitte = (i: number) => i * ZEILE + ZEILE / 2;
   const heute = achse.xTag(heuteTag());
+  // Soll-Ist (E-32): Stichtag-Linie, Soll-Balken aus dem Vergleichsstand
+  const stichtagX = daten.plan.stichtag ? achse.xTag(tagVonDatum(daten.plan.stichtag) + 1) : null;
+  const soll = daten.vergleich?.termine ?? {};
+  const endeX = (iso: string) => achse.xTag(tagVonDatum(iso) + 1);
 
   return (
     <div className="tp-balken" ref={scrollRef} onScroll={onScroll}>
@@ -212,6 +216,20 @@ export function Balkenplan(p: BalkenplanProps) {
           );
         })}
 
+        {stichtagX !== null && (
+          <g>
+            <line
+              x1={stichtagX}
+              x2={stichtagX}
+              y1={0}
+              y2={Math.max(hoehe, p.hoehe)}
+              className="tp-stichtag"
+            />
+            <text x={stichtagX + 4} y={24} className="tp-stichtag-text">
+              Stichtag {datumKurz(daten.plan.stichtag ?? '')}
+            </text>
+          </g>
+        )}
         {/* Linien: Heute und Soll-Ende */}
         <line x1={heute} x2={heute} y1={0} y2={Math.max(hoehe, p.hoehe)} className="tp-heute">
           <title>Heute</title>
@@ -299,7 +317,18 @@ export function Balkenplan(p: BalkenplanProps) {
                   {...klick}
                 >
                   <title>{titel}</title>
-                  <path d={`M${x},${y - 8} L${x + 8},${y} L${x},${y + 8} L${x - 8},${y} Z`} />
+                  {soll[v.id] && (
+                    <path
+                      d={`M${endeX(soll[v.id]?.ende ?? '')},${y + 3} l5,5 l-5,5 l-5,-5 Z`}
+                      className="tp-soll-raute"
+                    >
+                      <title>{`Soll: ${datumKurz(soll[v.id]?.ende ?? '')}`}</title>
+                    </path>
+                  )}
+                  <path
+                    d={`M${x},${y - 8} L${x + 8},${y} L${x},${y + 8} L${x - 8},${y} Z`}
+                    className={t.status === 'fertig' ? 'fertig' : ''}
+                  />
                   <text x={x + 12} y={y + 4} className="tp-balkentext">
                     {v.name}
                   </text>
@@ -332,14 +361,39 @@ export function Balkenplan(p: BalkenplanProps) {
                     className="tp-negativ"
                   />
                 )}
+                {soll[v.id] && (
+                  <rect
+                    x={achse.xDatum(soll[v.id]?.anfang ?? '')}
+                    y={y + 6}
+                    width={Math.max(
+                      2,
+                      endeX(soll[v.id]?.ende ?? '') - achse.xDatum(soll[v.id]?.anfang ?? ''),
+                    )}
+                    height={4}
+                    className="tp-soll"
+                  >
+                    <title>{`Soll (${daten.vergleich?.standName}): ${datumKurz(soll[v.id]?.anfang ?? '')} – ${datumKurz(soll[v.id]?.ende ?? '')}`}</title>
+                  </rect>
+                )}
                 <rect
                   x={x1}
-                  y={y - 7}
+                  y={soll[v.id] ? y - 8 : y - 7}
                   width={Math.max(2, x2 - x1)}
-                  height={14}
+                  height={soll[v.id] ? 12 : 14}
                   rx={2}
-                  className={`tp-balken-rect${t.kritisch ? ' kritisch' : ''}`}
+                  className={`tp-balken-rect${t.kritisch ? ' kritisch' : ''}${t.status === 'fertig' ? ' fertig' : ''}`}
                 />
+                {t.status === 'begonnen' && stichtagX !== null && (
+                  <rect
+                    x={x1}
+                    y={soll[v.id] ? y - 4 : y - 3}
+                    width={Math.max(0, Math.min(stichtagX, x2) - x1)}
+                    height={soll[v.id] ? 4 : 6}
+                    className="tp-fortschritt"
+                  >
+                    <title>bisher erledigt (Ist)</title>
+                  </rect>
+                )}
                 {risiko && (
                   <RisikoMarke x={Math.max(x2, t.gp > 0 ? xs : x2) + 10} y={y} nr={risiko} />
                 )}

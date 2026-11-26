@@ -3,6 +3,9 @@ import { Arbeitskalender } from '@bautakt/rechnen-kalender';
 import { netzplanBerechnen, NetzplanFehler, type VorgangEingabe } from '@bautakt/rechnen-termine';
 import type {
   BeziehungZeile,
+  IstZeile,
+  SollTermine,
+  Vergleich,
   Berechnung,
   KalenderDaten,
   PlanDaten,
@@ -97,8 +100,41 @@ export function meilensteinDatum(kal: Arbeitskalender, t: number): string {
   return t >= 1 ? kal.endeDatum(t) : kal.anfangDatum(t);
 }
 
+/**
+ * Je Vorgang die jüngste Ist-Meldung bis zum Stichtag (E-45). Ohne Stichtag: keine.
+ */
+export function istLesen(
+  db: Leser,
+  planId: string,
+  stichtag: string | null,
+): Record<string, IstZeile> {
+  if (!stichtag) return {};
+  const zeilen = db.lesen<IstZeile>(
+    `SELECT i.* FROM t_ist i JOIN t_vorgang v ON v.id = i.vorgang_id
+     WHERE v.plan_id = ? AND i.stichtag <= ? ORDER BY i.stichtag`,
+    planId,
+    stichtag,
+  );
+  const ergebnis: Record<string, IstZeile> = {};
+  for (const z of zeilen) ergebnis[z.vorgang_id] = z; // spätere überschreiben frühere
+  return ergebnis;
+}
+
+/** Restdauer nach E-43: eingetragene Restdauer, sonst ⌈Dauer × (100 − %) / 100⌉. */
+export function restdauer(
+  dauer: number,
+  ist: Pick<IstZeile, 'restdauer_at' | 'fertig_prozent'>,
+): number {
+  if (ist.restdauer_at != null) return ist.restdauer_at;
+  return Math.ceil((dauer * (100 - (ist.fertig_prozent ?? 0))) / 100);
+}
+
 /** Liest einen Plan vollständig und rechnet ihn (Architektur 4.1: Ergebnisse werden nicht gespeichert). */
-export function planDatenLaden(db: Leser, planId: string): PlanDaten {
+export function planDatenLaden(
+  db: Leser,
+  planId: string,
+  sollStandId: string | null = null,
+): PlanDaten {
   const plan = planLesen(db, planId);
   const kalender = kalenderLesen(db, plan.kalender_id);
   const ruhezeiten = plan.kalender_id
@@ -109,13 +145,68 @@ export function planDatenLaden(db: Leser, planId: string): PlanDaten {
     : [];
   const vorgaenge = alsBaum(vorgaengeLesen(db, planId));
   const beziehungen = beziehungenLesen(db, planId);
+  const ist = istLesen(db, planId, plan.stichtag);
+  const berechnung = rechnen(plan, kalender, ruhezeiten, vorgaenge, beziehungen, ist);
+  const vergleich = sollStandId
+    ? vergleichLesen(db, plan, kalender, ruhezeiten, sollStandId, berechnung)
+    : null;
+  return { plan, kalender, ruhezeiten, vorgaenge, beziehungen, berechnung, ist, vergleich };
+}
+
+/** Soll-Termine aus einem Stand und Abweichung der aktuellen Prognose (E-46). */
+function vergleichLesen(
+  db: Leser,
+  plan: PlanZeile,
+  kalender: KalenderDaten,
+  ruhezeiten: RuhezeitZeile[],
+  standId: string,
+  berechnung: Berechnung,
+): Vergleich | null {
+  const stand = db.eins<{ id: string; name: string }>(
+    'SELECT id, name FROM stand WHERE id = ?',
+    standId,
+  );
+  if (!stand) return null;
+  const kal = arbeitskalender(plan, kalender, ruhezeiten);
+  const zeilen = db.lesen<{
+    orig_id: string;
+    faz: number | null;
+    fez: number | null;
+    anfang: string | null;
+    ende: string | null;
+  }>(
+    'SELECT orig_id, faz, fez, anfang, ende FROM t_vorgang_stand WHERE stand_id = ? AND plan_id = ?',
+    standId,
+    plan.id,
+  );
+  const termine: Record<string, SollTermine> = {};
+  for (const z of zeilen) {
+    if (z.faz === null || z.fez === null || !z.anfang || !z.ende) continue;
+    const jetzt = berechnung.ok ? berechnung.termine[z.orig_id] : undefined;
+    termine[z.orig_id] = {
+      faz: z.faz,
+      fez: z.fez,
+      anfang: z.anfang,
+      ende: z.ende,
+      // Abweichung in AT des aktuellen Kalenders: Prognose-Ende − Soll-Ende
+      abweichung: jetzt ? jetzt.fez - kal.zeitpunktSpaetestensBis(z.ende) : null,
+    };
+  }
+  const p = db.eins<{ projektende_datum: string | null }>(
+    'SELECT projektende_datum FROM t_plan_stand WHERE stand_id = ? AND orig_id = ?',
+    standId,
+    plan.id,
+  );
+  const sollEnde = p?.projektende_datum ?? null;
   return {
-    plan,
-    kalender,
-    ruhezeiten,
-    vorgaenge,
-    beziehungen,
-    berechnung: rechnen(plan, kalender, ruhezeiten, vorgaenge, beziehungen),
+    standId: stand.id,
+    standName: stand.name,
+    termine,
+    projektendeDatum: sollEnde,
+    abweichungProjektende:
+      sollEnde && berechnung.ok
+        ? berechnung.projektende - kal.zeitpunktSpaetestensBis(sollEnde)
+        : null,
   };
 }
 
@@ -125,10 +216,29 @@ function rechnen(
   ruhezeiten: RuhezeitZeile[],
   vorgaenge: VorgangMitEbene[],
   beziehungen: BeziehungZeile[],
+  istStand: Record<string, IstZeile>,
 ): Berechnung {
   try {
     const kal = arbeitskalender(plan, kalender, ruhezeiten);
+    const stichtag = plan.stichtag ? kal.zeitpunktSpaetestensBis(plan.stichtag) : null;
+    // Ist-Meldung → Zeitpunkte (Anfang = Beginn des Tages, Ende = Ende des Tages)
+    const istEingabe = (v: VorgangMitEbene): VorgangEingabe['ist'] => {
+      const i = istStand[v.id];
+      if (!i?.ist_anfang || v.typ === 'sammel') return null;
+      if (i.ist_ende) {
+        const ende = kal.zeitpunktSpaetestensBis(i.ist_ende);
+        return {
+          anfang:
+            v.typ === 'meilenstein'
+              ? ende
+              : Math.min(kal.zeitpunktFruehestensAb(i.ist_anfang), ende),
+          ende,
+        };
+      }
+      return { anfang: kal.zeitpunktFruehestensAb(i.ist_anfang), rest: restdauer(v.dauer_at, i) };
+    };
     const eingaben: VorgangEingabe[] = vorgaenge.map((v) => ({
+      ist: istEingabe(v),
       id: v.id,
       nr: v.nr,
       typ: v.typ,
@@ -159,6 +269,7 @@ function rechnen(
         sollEnde,
         rueckwaertsVon:
           plan.rueckwaerts_von === 'soll_ende' && sollEnde !== null ? 'soll_ende' : 'berechnet',
+        stichtag,
       },
     );
     const typ = new Map(vorgaenge.map((v) => [v.id, v.typ]));

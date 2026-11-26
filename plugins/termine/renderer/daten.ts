@@ -1,4 +1,4 @@
-import type { BautaktApi } from '@bautakt/kern/vertrag';
+import type { BautaktApi, StandZeile } from '@bautakt/kern/vertrag';
 import {
   Arbeitskalender,
   datumDeutsch,
@@ -13,8 +13,9 @@ import { setzen, useZustand } from './zustand.js';
 
 /** Lädt Planliste und den ausgewählten Plan; lädt bei jeder Datenänderung neu. */
 export function usePlan(api: BautaktApi, datenstand: number) {
-  const { planId } = useZustand();
+  const { planId, vergleich } = useZustand();
   const [plaene, setPlaene] = useState<PlanZeile[] | null>(null);
+  const [staende, setStaende] = useState<StandZeile[]>([]);
   const [daten, setDaten] = useState<PlanDaten | null>(null);
   const [ladefehler, setLadefehler] = useState<string | null>(null);
 
@@ -32,7 +33,15 @@ export function usePlan(api: BautaktApi, datenstand: number) {
         return;
       }
       if (gewaehlt.id !== planId) setzen({ planId: gewaehlt.id });
-      const d = await api.abfrage<PlanDaten>('termine', 'plan', { planId: gewaehlt.id });
+      const st = await api.abfrage<StandZeile[]>('kern', 'staende');
+      const liste = st.ok ? st.wert : [];
+      if (!aktiv) return;
+      setStaende(liste);
+      const sollStandId = vergleichsStand(liste, vergleich[gewaehlt.id]);
+      const d = await api.abfrage<PlanDaten>('termine', 'plan', {
+        planId: gewaehlt.id,
+        sollStandId,
+      });
       if (!aktiv) return;
       if (d.ok) {
         setDaten(d.wert);
@@ -42,9 +51,19 @@ export function usePlan(api: BautaktApi, datenstand: number) {
     return () => {
       aktiv = false;
     };
-  }, [api, datenstand, planId]);
+  }, [api, datenstand, planId, vergleich]);
 
-  return { plaene, daten: daten && daten.plan.id === planId ? daten : null, ladefehler };
+  return { plaene, staende, daten: daten && daten.plan.id === planId ? daten : null, ladefehler };
+}
+
+/** Gewählter Vergleichsstand; ohne Auswahl der jüngste Stand der Art „Soll“ (E-46). */
+export function vergleichsStand(
+  staende: StandZeile[],
+  wahl: string | null | undefined,
+): string | null {
+  if (wahl === null) return null;
+  if (wahl && staende.some((s) => s.id === wahl)) return wahl;
+  return staende.find((s) => s.art === 'soll')?.id ?? null; // Liste ist nach Zeit absteigend sortiert
 }
 
 /** Führt Befehle aus und hält die letzte Fehlermeldung für die Ansicht. */

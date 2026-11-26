@@ -105,6 +105,14 @@ export function Kennzahlen({ daten }: { daten: PlanDaten }) {
   ).length;
   return (
     <div className="tp-kennzahlen" role="status">
+      {daten.plan.stichtag && (
+        <span
+          className="tp-prognose"
+          title="Fertige und begonnene Vorgänge nach Ist-Stand, offene frühestens ab Stichtag"
+        >
+          Prognose zum Stichtag <strong>{datumKurz(daten.plan.stichtag)}</strong>
+        </span>
+      )}
       <span>
         Projektende <strong>{daten.vorgaenge.length ? datumKurz(b.projektendeDatum) : '–'}</strong>{' '}
         ({zahlAnzeigen(b.projektende)} AT)
@@ -117,6 +125,21 @@ export function Kennzahlen({ daten }: { daten: PlanDaten }) {
               {b.abweichungSollEnde > 0
                 ? ` – überschritten um ${zahlAnzeigen(b.abweichungSollEnde)} AT`
                 : ` – Reserve ${zahlAnzeigen(-b.abweichungSollEnde)} AT`}
+            </span>
+          )}
+        </span>
+      )}
+      {daten.vergleich && (
+        <span title={`Vergleich mit Stand „${daten.vergleich.standName}“`}>
+          Soll „{daten.vergleich.standName}“{' '}
+          {daten.vergleich.projektendeDatum && (
+            <strong>{datumKurz(daten.vergleich.projektendeDatum)}</strong>
+          )}
+          {daten.vergleich.abweichungProjektende !== null && (
+            <span className={daten.vergleich.abweichungProjektende > 0 ? 'negativ' : 'positiv'}>
+              {' '}
+              ({daten.vergleich.abweichungProjektende > 0 ? '+' : ''}
+              {zahlAnzeigen(daten.vergleich.abweichungProjektende)} AT)
             </span>
           )}
         </span>

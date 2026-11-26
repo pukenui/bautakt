@@ -17,6 +17,18 @@ gerechnet (Vorwärts-/Rückwärtsrechnung nach DIN 69900).
 6. **Planeinstellungen …**: Projektstart, Soll-Ende, Rückwärtsrechnung vom Soll-Ende
    (negative Puffer werden rot), Arbeitstage, Feiertage NRW, Ruhezeiten.
 
+## Soll-Ist (Ist-Erfassung)
+
+1. **Stände …** → „Soll Vertrag“ speichern (einmal, vor Baubeginn).
+2. Oben einen **Stichtag** setzen (z. B. Datum der Sprechstunde).
+3. Vorgang wählen → **Ist erfassen …**: Ist-Anfang, bei fertigen Vorgängen Ist-Ende, sonst
+   Fertigstellungsgrad oder Restdauer (die Restdauer hat Vorrang). Ursache aus der Liste plus
+   eigener Text. Doppelklick in die Spalte **%** öffnet denselben Dialog.
+4. Bautakt rechnet ab dem Stichtag neu (Prognose): Fertige Vorgänge liegen fest, begonnene enden
+   am Stichtag + Restdauer, nicht begonnene beginnen frühestens am Stichtag.
+5. **Vergleich**: Der dünne graue Balken zeigt den Soll-Stand, die Spalte **Abw.** die Verschiebung
+   des Endes in AT (+ = später).
+
 ## Darstellung
 
 - Rot = kritischer Weg; schraffiert = Gesamtpuffer; dünner roter Strich = negativer Puffer.

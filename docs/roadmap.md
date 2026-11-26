@@ -37,7 +37,7 @@ Ziel: Ab ca. **13.12.** sollen damit F.1 (Rollen-Netzplan) und F.2 (Projekttermi
 
 ## Phase V – Version 1 (ab 21.12.2026)
 
-- [ ] **M4** Ist-Erfassung, Stichtag/Prognose, Soll-Ist-Balken, Abweichungsursachen (E-32)
+- [x] **M4** Ist-Erfassung, Stichtag/Prognose, Soll-Ist-Balken, Abweichungsursachen (E-32)
 - [ ] **M5** Terminliste und Meilensteinplan (E-30)
 - [ ] **M6** Bibliothek-Plugin (global, eingefrorene Kopien) + Aufwandswert-Rechner mit Formelzeile (E-23, E-24) · Test R-09
 - [ ] **M7** Kosten-Plugin: DIN-276-Baum, DIN-277-Flächen, KKW, Index, Regionalfaktor, MwSt./Vorsteuer (E-15, E-16) · Tests R-10, R-11
@@ -72,3 +72,4 @@ Ziel: Ab ca. **13.12.** sollen damit F.1 (Rollen-Netzplan) und F.2 (Projekttermi
 - 24.11.2026 – **M1 fertig.** Reine Bibliotheken `rechnen-kalender` (Arbeitstage, NRW-Feiertage, Ruhezeiten, AT↔Datum, KT-Abstände, ISO-KW) und `rechnen-termine` (Vorwärts-/Rückwärtsrechnung EA/AA/EE/AE mit AT/KT, GP/FP, kritischer Weg inkl. kritischer Pfeile, Soll-Ende, Bedingungen, Sammelvorgänge, Zykluserkennung, Parser Kurz-/Langform). Referenztests R-01 bis R-08 grün, dazu 300 Zufallsnetze als Eigenschaftstests; insgesamt 396 Tests. Präzisierungen in Architektur 10.
 - 24.11.2026 – **M2 fertig.** Plugin „termine“ mit Datenmodell (Vorgänge, Beziehungen, Kalender, Ruhezeiten; Migration 2 inkl. Übernahme von M0-Dateien) und allen Änderungen als undo-fähige Befehle. Oberfläche: Terminplan (virtualisierte Tabelle mit Tastatureingabe + vernetzter Balkenplan Tag/KW/Monat/Quartal mit Puffern, Meilensteinen, Schnittstellen, Soll-Ende-/Heute-Linie, Ruhezeiten, Risiko-Legende, Verbinden per Maus), Netzplan im Übungsformat (Auto-Layout, Verschieben, Verbinden), Dialoge für Vorgang, Vorgänger (Langform) und Plan/Kalender/Ruhezeiten, Rahmenterminplan durch Zuklappen, mehrere Pläne. 410 Tests grün; Bedienung in der gebauten App per Tastatur und Maus geprüft. Präzisierungen in Architektur 11.
 - 26.11.2026 – **M3 fertig.** Soll-Stände (Kern-Befehle stand.speichern/laden/umbenennen/loeschen, Plugin-Kopien inkl. eingefrorener Termine, automatische Sicherung vor jedem Rücksprung), Export PDF A3 quer (mehrseitig, Plankopf/Legende/Risiken auf jeder Seite) und PNG (1–3-fache Auflösung) für Balken- und Netzplan, Hilfe-Seitenleiste mit Markdown und allgemeiner Hilfe, Installer „Bautakt-Setup-0.1.0.exe“ gebaut. 414 Tests grün. GitHub-Release v0.1.0 (privat) veröffentlicht.
+- 26.11.2026 – **M4 fertig** (vorgezogen). Ist-Erfassung je Stichtag mit Verlauf (t_ist), Prognose nach E-43/E-44 im Rechenkern (Referenztest R-12), Soll-Ist-Vergleich gegen wählbaren Stand (E-46) mit Soll-Balken, Fortschritt, Stichtag-Linie, Spalten „%“ und „Abw.“, Status im Netzplan; auch im PDF/PNG-Export. Neue Entscheidungen E-43–E-46. 423 Tests grün.

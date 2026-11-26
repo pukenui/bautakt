@@ -1,5 +1,5 @@
 /** Typen, die Main- und Renderer-Teil des Plugins „termine“ teilen (nur Typen). */
-import type { Art, Einheit } from '@bautakt/rechnen-termine';
+import type { Art, Einheit, Vorgangsstatus } from '@bautakt/rechnen-termine';
 
 export type PlanArt = 'bauablauf' | 'rollen' | 'frei';
 export type VorgangTyp = 'vorgang' | 'sammel' | 'meilenstein';
@@ -13,6 +13,8 @@ export interface PlanZeile {
   soll_ende: string | null;
   rueckwaerts_von: 'berechnet' | 'soll_ende';
   kalender_id: string | null;
+  /** Stichtag der Prognose (E-32); null = reiner Plan ohne Ist-Stand. */
+  stichtag: string | null;
 }
 
 export interface KalenderDaten {
@@ -79,6 +81,7 @@ export interface VorgangTermine {
   gp: number;
   fp: number | null;
   kritisch: boolean;
+  status: Vorgangsstatus;
   /** Anzeige-Daten (JJJJ-MM-TT): Anfang/Ende früheste und späteste Lage. */
   anfang: string;
   ende: string;
@@ -100,6 +103,48 @@ export type Berechnung =
     }
   | { ok: false; fehler: string };
 
+/** Abweichungsursachen (E-32): feste Liste, dazu Freitext. */
+export const URSACHEN = {
+  witterung: 'Witterung',
+  lieferverzug: 'Lieferverzug',
+  planaenderung: 'Planänderung',
+  personal: 'Personal',
+  baugrund: 'Baugrund',
+  sonstiges: 'Sonstiges',
+} as const;
+export type Ursache = keyof typeof URSACHEN;
+
+/** Ist-Meldung eines Vorgangs zu einem Stichtag (t_ist, E-45). */
+export interface IstZeile {
+  id: string;
+  vorgang_id: string;
+  stichtag: string;
+  ist_anfang: string | null;
+  ist_ende: string | null;
+  fertig_prozent: number | null;
+  restdauer_at: number | null;
+  ursache: Ursache | null;
+  ursache_text: string;
+}
+
+/** Soll-Termine eines Vorgangs aus einem Stand, mit Abweichung der Prognose in AT (> 0 = später). */
+export interface SollTermine {
+  faz: number;
+  fez: number;
+  anfang: string;
+  ende: string;
+  abweichung: number | null;
+}
+
+export interface Vergleich {
+  standId: string;
+  standName: string;
+  termine: Record<string, SollTermine>;
+  projektendeDatum: string | null;
+  /** Prognose-Projektende − Soll-Projektende in AT (> 0 = später). */
+  abweichungProjektende: number | null;
+}
+
 export interface PlanDaten {
   plan: PlanZeile;
   kalender: KalenderDaten;
@@ -107,6 +152,10 @@ export interface PlanDaten {
   vorgaenge: VorgangMitEbene[];
   beziehungen: BeziehungZeile[];
   berechnung: Berechnung;
+  /** Je Vorgang die für die Prognose genutzte Ist-Meldung (jüngste bis zum Stichtag). */
+  ist: Record<string, IstZeile>;
+  /** Soll-Ist-Vergleich gegen einen Stand (E-46), wenn angefragt. */
+  vergleich: Vergleich | null;
 }
 
 /** Felder, die der Befehl `vorgang.aendern` setzen darf. */

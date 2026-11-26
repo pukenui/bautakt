@@ -99,7 +99,7 @@ export function NetzKantenLinie({ k, kritisch }: { k: KantenGeometrie; kritisch:
 }
 
 export function knotenKlasse(v: VorgangMitEbene, t: VorgangTermine | undefined): string {
-  return `np-knoten${t?.kritisch ? ' kritisch' : ''}${v.typ === 'meilenstein' ? ' meilenstein' : ''}${v.schnittstelle ? ' schnittstelle' : ''}`;
+  return `np-knoten${t?.kritisch ? ' kritisch' : ''}${v.typ === 'meilenstein' ? ' meilenstein' : ''}${v.schnittstelle ? ' schnittstelle' : ''}${t && t.status !== 'geplant' ? ` ${t.status}` : ''}`;
 }
 
 /** Inhalt eines DIN-69900-Knotens (E-20): Nr. Name / FAZ | D | FEZ / SAZ | GP | FP | SEZ. */

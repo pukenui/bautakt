@@ -12,6 +12,8 @@ export interface Zustand {
   zugeklappt: Record<string, string[]>;
   netzZoom: number;
   auswahl: string | null;
+  /** Soll-Vergleich je Plan: Stand-ID, null = aus; fehlt = jüngster Soll-Stand (E-46). */
+  vergleich: Record<string, string | null>;
 }
 
 const SPEICHER = 'bautakt.termine.anzeige';
@@ -25,6 +27,7 @@ function laden(): Zustand {
     zugeklappt: {},
     netzZoom: 1,
     auswahl: null,
+    vergleich: {},
   };
   try {
     const gespeichert = JSON.parse(localStorage.getItem(SPEICHER) ?? '{}') as Partial<Zustand>;

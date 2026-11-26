@@ -73,6 +73,13 @@ Zusätzlich im Kern, weil sie das Fundament betreffen: Kalender (E-12), Soll-End
 - Balkenplan: Soll-Balken dünn unter Ist-/Prognose-Balken.
 - Datenmodell und Soll-Stände im Kern; Ist-Erfassung und Vergleichsansicht als erstes nach dem 20.12.
 
+| Nr. | Entscheidung |
+|---|---|
+| E-43 | **Prognose begonnener Vorgänge** (26.11.2026): Eine eingetragene **Restdauer** ist maßgebend; fehlt sie, gilt Rest = ⌈Dauer × (100 − Fertigstellungsgrad) / 100⌉ AT. Prognostiziertes Ende = Stichtag + Rest. Für begonnene Vorgänge ist Restdauer oder Fertigstellungsgrad Pflicht. |
+| E-44 | **Nicht begonnene Vorgänge** beginnen in der Prognose **frühestens am Stichtag** (FAZ ≥ Stichtag), zusätzlich zu ihren Anordnungsbeziehungen. |
+| E-45 | **Ist-Verlauf:** Ist-Meldungen werden **je Stichtag** gespeichert (Verlauf bleibt erhalten). Die Prognose nutzt je Vorgang die jüngste Meldung bis zum gewählten Stichtag. |
+| E-46 | **Soll-Ist-Vergleich** gegen einen **wählbaren Soll-Stand**; vorbelegt mit dem jüngsten Stand der Art „Soll“. |
+
 ### 3.4 Undo und Änderungsprotokoll (E-22)
 
 - Unbegrenztes Undo/Redo in der Sitzung.

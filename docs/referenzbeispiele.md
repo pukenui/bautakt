@@ -152,3 +152,29 @@ Mit Zuschlag „Winterbau +15 %“ auf Schalung: 325 h × 1,15 = 373,75 h ÷ 32 
 
 NUF 800 m², TF 60 m², VF 140 m², KGF 150 m²:
 NRF = 800 + 60 + 140 = **1.000 m²**, BGF = NRF + KGF = **1.150 m²**.
+
+## R-12 Fertigteilhalle mit Ist-Stand zum Stichtag (Prognose, E-43/E-44)
+
+Wie R-01, **Stichtag = Zeitpunkt 100** (Ende AT 100). Ist-Meldungen:
+
+| Nr. | Ist-Anfang | Ist-Ende | Fertig | Restdauer | Status |
+|---|---|---|---|---|---|
+| 1 | 0 | 75 | 100 % | – | fertig (5 AT später als geplant) |
+| 2 | 85 | – | 50 % | – | begonnen → Rest ⌈20 × 0,5⌉ = 10 |
+| 3 | 90 | – | – | 12 | begonnen → Rest 12 |
+| 4–6 | – | – | – | – | nicht begonnen → FAZ ≥ 100 |
+
+**Sollwerte der Prognose:**
+
+| Nr. | FAZ | FEZ | SAZ | SEZ | GP | FP | kritisch |
+|---|---|---|---|---|---|---|---|
+| 1 | 0 | 75 | 0 | 75 | 0 | 0 | nein (fertig) |
+| 2 | 85 | 110 | 102 | 127 | 17 | 2 | nein |
+| 3 | 90 | 112 | 90 | 112 | 0 | 0 | ja |
+| 4 | 112 | 147 | 127 | 162 | 15 | 15 | nein |
+| 5 | 112 | 192 | 112 | 192 | 0 | 0 | ja |
+| 6 | 192 | 242 | 192 | 242 | 0 | 0 | ja |
+
+- Prognostiziertes Projektende **242 AT** (Soll 235 → **+7 AT**).
+- Begonnene Vorgänge: FEZ = max(Stichtag, Ist-Anfang) + Rest; ihre Dauer in der Rückwärtsrechnung ist FEZ − FAZ (2: 25 AT, 3: 22 AT).
+- Fertige Vorgänge liegen fest (SAZ = FAZ, SEZ = FEZ), sind nicht kritisch und haben keinen Puffer.

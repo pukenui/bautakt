@@ -19,7 +19,21 @@ export interface VorgangEingabe {
   fruehestensAb?: number | null;
   /** Bedingung „muss enden am“ als Zeitpunkt (spätestes Ende). */
   spaetestensBis?: number | null;
+  /** Ist-Stand zum Stichtag (Prognose, E-43–E-45); fehlt er, gilt der Vorgang als nicht begonnen. */
+  ist?: IstEingabe | null;
 }
+
+/** Ist-Stand eines Vorgangs als Zeitpunkte in AT. */
+export interface IstEingabe {
+  /** Ist-Anfang (Zeitpunkt, an dem der Vorgang begonnen hat). */
+  anfang: number;
+  /** Ist-Ende; gesetzt = Vorgang fertig. */
+  ende?: number | null;
+  /** Restdauer ab Stichtag in AT (nur begonnen, nicht fertig). */
+  rest?: number | null;
+}
+
+export type Vorgangsstatus = 'geplant' | 'begonnen' | 'fertig';
 
 export interface BeziehungEingabe {
   id?: string;
@@ -43,6 +57,8 @@ export interface NetzplanOptionen {
   sollEnde?: number | null;
   /** Rückwärtsrechnung vom berechneten Ende (Standard) oder vom Soll-Ende. */
   rueckwaertsVon?: 'berechnet' | 'soll_ende';
+  /** Stichtag als Zeitpunkt: nicht begonnene Vorgänge beginnen frühestens hier (E-44). */
+  stichtag?: number | null;
 }
 
 export interface VorgangErgebnis {
@@ -56,6 +72,7 @@ export interface VorgangErgebnis {
   /** Freier Puffer; bei Sammelvorgängen `null`. */
   fp: number | null;
   kritisch: boolean;
+  status: Vorgangsstatus;
 }
 
 export interface BeziehungErgebnis {

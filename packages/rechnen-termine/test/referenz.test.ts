@@ -298,3 +298,112 @@ describe('R-08 Kalendertage-Abstand im Netzplan', () => {
     ).toThrow(/Kalender/);
   });
 });
+
+describe('R-12 Fertigteilhalle mit Ist-Stand zum Stichtag (Prognose)', () => {
+  const istStand: Record<string, VorgangEingabe['ist']> = {
+    '1': { anfang: 0, ende: 75 },
+    '2': { anfang: 85, rest: 10 }, // 50 % von 20 AT → Rest 10 (Umrechnung im Plugin)
+    '3': { anfang: 90, rest: 12 },
+  };
+  const rechnen = () => {
+    const { vorgaenge, beziehungen } = plan(R01);
+    const mitIst = vorgaenge.map((v) => ({ ...v, ist: istStand[v.nr ?? ''] ?? null }));
+    return netzplanBerechnen(mitIst, beziehungen, { stichtag: 100 });
+  };
+
+  it('Sollwerte der Prognose, Projektende 242 AT', () => {
+    const e = rechnen();
+    const soll: Record<string, Soll & { status: string }> = {
+      '1': { faz: 0, fez: 75, saz: 0, sez: 75, gp: 0, fp: 0, kritisch: false, status: 'fertig' },
+      '2': {
+        faz: 85,
+        fez: 110,
+        saz: 102,
+        sez: 127,
+        gp: 17,
+        fp: 2,
+        kritisch: false,
+        status: 'begonnen',
+      },
+      '3': {
+        faz: 90,
+        fez: 112,
+        saz: 90,
+        sez: 112,
+        gp: 0,
+        fp: 0,
+        kritisch: true,
+        status: 'begonnen',
+      },
+      '4': {
+        faz: 112,
+        fez: 147,
+        saz: 127,
+        sez: 162,
+        gp: 15,
+        fp: 15,
+        kritisch: false,
+        status: 'geplant',
+      },
+      '5': {
+        faz: 112,
+        fez: 192,
+        saz: 112,
+        sez: 192,
+        gp: 0,
+        fp: 0,
+        kritisch: true,
+        status: 'geplant',
+      },
+      '6': {
+        faz: 192,
+        fez: 242,
+        saz: 192,
+        sez: 242,
+        gp: 0,
+        fp: 0,
+        kritisch: true,
+        status: 'geplant',
+      },
+    };
+    for (const [n, werte] of Object.entries(soll)) {
+      expect(e.vorgaenge.get(`v${n}`), `Vorgang ${n}`).toMatchObject(werte);
+    }
+    expect(e.projektende).toBe(242);
+    expect(nr(e.kritischerPfad)).toEqual(['3', '5', '6']);
+  });
+
+  it('ohne Ist-Stand, aber mit Stichtag beginnen offene Vorgänge frühestens am Stichtag', () => {
+    const { vorgaenge, beziehungen } = plan(R01);
+    const e = netzplanBerechnen(vorgaenge, beziehungen, { stichtag: 100 });
+    expect(e.vorgaenge.get('v1')).toMatchObject({ faz: 100, fez: 170, status: 'geplant' });
+    expect(e.projektende).toBe(335);
+  });
+
+  it('prüft den Ist-Stand', () => {
+    const { vorgaenge, beziehungen } = plan(R01);
+    const mit = (ist: VorgangEingabe['ist']) =>
+      netzplanBerechnen(
+        vorgaenge.map((v) => (v.nr === '1' ? { ...v, ist } : v)),
+        beziehungen,
+        { stichtag: 100 },
+      );
+    expect(() => mit({ anfang: 10, ende: 5 })).toThrow(/vor dem Ist-Anfang/);
+    expect(() => mit({ anfang: 10 })).toThrow(/Restdauer/);
+    expect(() => mit({ anfang: 10, rest: -1 })).toThrow(/negativ/);
+  });
+
+  it('Sammelvorgang: Status aus den Kindern', () => {
+    const e = netzplanBerechnen(
+      [
+        { id: 'S', typ: 'sammel', dauer: 0 },
+        { id: 'a', dauer: 2, parent: 'S', ist: { anfang: 0, ende: 2 } },
+        { id: 'b', dauer: 2, parent: 'S' },
+      ],
+      [],
+      { stichtag: 2 },
+    );
+    expect(e.vorgaenge.get('S')?.status).toBe('begonnen');
+    expect(e.vorgaenge.get('b')).toMatchObject({ faz: 2, status: 'geplant' });
+  });
+});

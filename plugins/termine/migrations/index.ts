@@ -128,4 +128,25 @@ export const MIGRATIONEN: readonly Migration[] = [
       CREATE INDEX t_beziehung_stand_s ON t_beziehung_stand (stand_id);
     `,
   },
+  {
+    version: 4,
+    name: 'Ist-Erfassung und Stichtag (E-32, E-43–E-45)',
+    sql: `
+      ALTER TABLE t_plan ADD COLUMN stichtag TEXT;
+      ALTER TABLE t_plan_stand ADD COLUMN stichtag TEXT;
+      CREATE TABLE t_ist (
+        id TEXT PRIMARY KEY,
+        vorgang_id TEXT NOT NULL,
+        stichtag TEXT NOT NULL,
+        ist_anfang TEXT,
+        ist_ende TEXT,
+        fertig_prozent INTEGER,
+        restdauer_at INTEGER,
+        ursache TEXT,
+        ursache_text TEXT NOT NULL DEFAULT '',
+        UNIQUE (vorgang_id, stichtag)
+      );
+      CREATE INDEX t_ist_vorgang ON t_ist (vorgang_id, stichtag);
+    `,
+  },
 ];

@@ -35,12 +35,14 @@ export function DruckBalkenplan({
     [parameter],
   );
   const ersteller = String(parameter['ersteller'] ?? '');
+  const sollStandId =
+    typeof parameter['sollStandId'] === 'string' ? parameter['sollStandId'] : null;
 
   useEffect(() => {
     void api
-      .abfrage<PlanDaten>('termine', 'plan', { planId })
+      .abfrage<PlanDaten>('termine', 'plan', { planId, sollStandId })
       .then((a) => (a.ok ? setDaten(a.wert) : fehler(a.fehler)));
-  }, [api, planId, fehler]);
+  }, [api, planId, sollStandId, fehler]);
 
   useEffect(() => {
     if (!daten) return;
@@ -274,6 +276,15 @@ function GanttTeil({
       {heuteX >= 0 && heuteX <= GANTT && (
         <line x1={heuteX} x2={heuteX} y1={ACHSE} y2={hoehe} className="tp-heute" />
       )}
+      {daten.plan.stichtag && (
+        <line
+          x1={achse.xTag(tagVonDatum(daten.plan.stichtag) + 1)}
+          x2={achse.xTag(tagVonDatum(daten.plan.stichtag) + 1)}
+          y1={ACHSE}
+          y2={hoehe}
+          className="tp-stichtag"
+        />
+      )}
       {ber.sollEnde !== null && (
         <line
           x1={achse.xEnde(ber.sollEnde)}
@@ -354,6 +365,7 @@ function GanttTeil({
         const x1 = achse.xAnfang(t.faz);
         const x2 = achse.xEnde(t.fez);
         const xs = achse.xEnde(t.sez);
+        const soll = daten.vergleich?.termine[v.id];
         return (
           <g key={v.id}>
             {t.gp > 0 && (
@@ -375,14 +387,38 @@ function GanttTeil({
                 className="tp-negativ"
               />
             )}
+            {soll && (
+              <rect
+                x={achse.xDatum(soll.anfang)}
+                y={ym + 4}
+                width={Math.max(
+                  1.5,
+                  achse.xTag(tagVonDatum(soll.ende) + 1) - achse.xDatum(soll.anfang),
+                )}
+                height={3}
+                className="tp-soll"
+              />
+            )}
             <rect
               x={x1}
-              y={ym - 5}
+              y={soll ? ym - 6 : ym - 5}
               width={Math.max(1.5, x2 - x1)}
-              height={10}
+              height={soll ? 9 : 10}
               rx={1.5}
-              className={`tp-balken-rect${t.kritisch ? ' kritisch' : ''}`}
+              className={`tp-balken-rect${t.kritisch ? ' kritisch' : ''}${t.status === 'fertig' ? ' fertig' : ''}`}
             />
+            {t.status === 'begonnen' && daten.plan.stichtag && (
+              <rect
+                x={x1}
+                y={ym - 3}
+                width={Math.max(
+                  0,
+                  Math.min(achse.xTag(tagVonDatum(daten.plan.stichtag) + 1), x2) - x1,
+                )}
+                height={3}
+                className="tp-fortschritt"
+              />
+            )}
             {nr && <RisikoMarke x={Math.max(x2, t.gp > 0 ? xs : x2) + 9} y={ym} nr={nr} />}
           </g>
         );
@@ -458,6 +494,27 @@ function Legende({
           <line x1={15} x2={15} y1={0} y2={18} className="tp-heute" />
         </Symbol>
         Stand (heute)
+        {daten.plan.stichtag && (
+          <>
+            <Symbol>
+              <rect x={2} y={4} width={26} height={9} className="tp-balken-rect" />
+              <rect x={2} y={7} width={14} height={3} className="tp-fortschritt" />
+            </Symbol>
+            erledigt (Ist)
+            <Symbol>
+              <line x1={15} x2={15} y1={0} y2={18} className="tp-stichtag" />
+            </Symbol>
+            Stichtag {datumKurz(daten.plan.stichtag)}
+          </>
+        )}
+        {daten.vergleich && (
+          <>
+            <Symbol>
+              <rect x={2} y={8} width={26} height={3} className="tp-soll" />
+            </Symbol>
+            Soll „{daten.vergleich.standName}“
+          </>
+        )}
       </div>
       {risiken.length > 0 && (
         <div className="druck-risiken">
