@@ -21,6 +21,8 @@ export interface AnsichtZustand {
   offen: ReadonlySet<string>;
   schnitt: Schnitt;
   messen: boolean;
+  /** Bauteilliste nach Geschoss oder nach Kostengruppe (B2) */
+  gliederung: 'geschoss' | 'kg';
 }
 
 export const schluessel = (modellId: string, expressId: number) => `${modellId}:${expressId}`;
@@ -32,6 +34,7 @@ let zustand: AnsichtZustand = {
   offen: new Set(),
   schnitt: { art: 'aus' },
   messen: false,
+  gliederung: 'geschoss',
 };
 const abonnenten = new Set<() => void>();
 

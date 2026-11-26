@@ -25,12 +25,28 @@
 
 /* Bauteilliste */
 .bim-liste {
-  width: 300px;
+  width: 320px;
   flex-shrink: 0;
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   border-right: 1px solid var(--linie);
   font-size: 13px;
+}
+.bim-liste-kopf {
+  padding: 6px;
+  border-bottom: 1px solid var(--linie);
+}
+.bim-baum {
+  flex: 1;
+  overflow: auto;
   padding: 4px 0;
+}
+.bim-zusatz {
+  font-size: 12px;
+  color: var(--text);
+  white-space: nowrap;
+  margin-right: 4px;
 }
 .bim-zeile {
   display: flex;
@@ -185,4 +201,67 @@
   border-radius: 8px;
   background: #e6f0e6;
   color: #2e7d32;
+}
+
+/* Kostengruppe und Mengen (B2) */
+.bim-kg {
+  margin: 8px 0;
+  padding: 6px 8px;
+  border: 1px solid var(--linie);
+  border-radius: 4px;
+  background: #f8faf8;
+}
+.bim-kg-kopf {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.bim-kg-kopf button {
+  padding: 1px 8px;
+  font-size: 12px;
+}
+.bim-eigenschaften .bim-kg-zaehlt th,
+.bim-eigenschaften .bim-kg-zaehlt td {
+  font-weight: 600;
+  color: var(--text);
+}
+.bim-formular {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin: 10px 0;
+}
+.bim-formular label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.bim-luecke {
+  flex: 1;
+}
+.bim-regeln {
+  max-height: 60vh;
+  overflow: auto;
+}
+.bim-regeln .tabelle {
+  min-width: 0;
+  font-size: 13px;
+}
+.bim-regeln td,
+.bim-regeln th {
+  padding: 3px 5px;
+}
+.bim-regeln input {
+  width: 112px;
+}
+.bim-regeln select {
+  max-width: 200px;
+}
+.bim-regeln select[aria-label='außen'],
+.bim-regeln select[aria-label='tragend'] {
+  width: 82px;
+}
+.bim-regeln select[aria-label='Mengenart'] {
+  width: 116px;
 }

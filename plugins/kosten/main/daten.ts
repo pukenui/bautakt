@@ -13,6 +13,7 @@ import {
   type FlaecheEingabe,
 } from '@bautakt/rechnen-kosten';
 import type {
+  ModellMengenQuelle,
   EinstellungZeile,
   FlaecheZeile,
   KnotenDaten,
@@ -20,6 +21,14 @@ import type {
   KostenZeile,
   ZeileBerechnet,
 } from '../gemeinsam/typen.js';
+
+/** Umgebung der Kostenrechnung: optionale Dienste anderer Plugins. */
+export interface KostenUmgebung {
+  /** aktuelle Version eines Bibliothekskennwerts (E-58) */
+  kennwertVersion?: (id: string) => number | null;
+  /** Modellmengen je KG (BIM-Plugin, E-93) für den angegebenen Lesezugriff */
+  modell?: (db: PluginDb) => ModellMengenQuelle | null;
+}
 
 export function einstellungLesen(db: PluginDb): EinstellungZeile {
   const e = db.eins<EinstellungZeile>('SELECT * FROM k_einstellung LIMIT 1');
@@ -31,10 +40,9 @@ export function einstellungLesen(db: PluginDb): EinstellungZeile {
  * Kostendaten mit allen Rechenergebnissen (E-15, E-16, E-56–E-58). Berechnet wird bei jeder
  * Abfrage, gespeichert werden nur Eingaben.
  */
-export function kostenDatenLaden(
-  db: PluginDb,
-  kennwertVersion?: (id: string) => number | null,
-): KostenDaten {
+export function kostenDatenLaden(db: PluginDb, umgebung: KostenUmgebung = {}): KostenDaten {
+  const { kennwertVersion } = umgebung;
+  const modell = umgebung.modell?.(db) ?? null;
   const einstellung = einstellungLesen(db);
   const fl = db.lesen<FlaecheZeile>('SELECT * FROM k_flaeche');
   const eingaben: Partial<Record<FlaecheEingabe, number | null>> = {};
@@ -49,8 +57,17 @@ export function kostenDatenLaden(
     .lesen<KostenZeile>('SELECT * FROM k_zeile ORDER BY kg')
     .map((z) => {
       const hinweise: string[] = [];
+      // Menge aus dem Modell (E-93): live je KG, mit Hinweisen zur Herkunft
+      const modellMenge = z.menge_quelle === 'ifc' && modell ? modell(z.kg, z.einheit) : null;
+      if (z.menge_quelle === 'ifc' && !modell)
+        hinweise.push('Mengenquelle „Modell“, aber das Projekt enthält kein IFC-Modell.');
+      if (modellMenge) hinweise.push(...modellMenge.hinweise);
       const mengeWirksam =
-        z.menge_quelle === 'flaeche' && z.flaeche ? (flaechen[z.flaeche] ?? null) : z.menge;
+        z.menge_quelle === 'flaeche' && z.flaeche
+          ? (flaechen[z.flaeche] ?? null)
+          : z.menge_quelle === 'ifc'
+            ? (modellMenge?.menge ?? null)
+            : z.menge;
       if (z.menge_quelle === 'flaeche' && z.flaeche && mengeWirksam === null)
         hinweise.push(`Fläche ${z.flaeche} ist noch nicht eingetragen.`);
       const index = indexfaktor({
@@ -92,6 +109,7 @@ export function kostenDatenLaden(
         kosten,
         hinweise,
         neuereVersion,
+        modellMenge,
       };
     });
 

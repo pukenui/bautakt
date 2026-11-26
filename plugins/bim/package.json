@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@bautakt/kern": "workspace:*",
+    "@bautakt/rechnen-kosten": "workspace:*",
     "@bautakt/ui": "workspace:*",
     "react": "^19.2.0",
     "three": "0.187.0",
@@ -22,6 +23,7 @@
   "devDependencies": {
     "@types/node": "^24.0.0",
     "@types/react": "^19.2.0",
-    "@types/three": "^0.187.0"
+    "@types/three": "^0.187.0",
+    "@bautakt/plugin-kosten": "workspace:*"
   }
 }

@@ -1,5 +1,5 @@
 import { neueId, type StandHandler, type Transaktion, type Zeile } from '@bautakt/kern';
-import { kostenDatenLaden } from './daten.js';
+import { kostenDatenLaden, type KostenUmgebung } from './daten.js';
 
 const TABELLEN = [
   'k_einstellung',
@@ -23,16 +23,22 @@ function spalten(tx: Transaktion, tabelle: string): Set<string> {
  * Stände des Plugins „kosten“ (Architektur 3.3): Kopie von Einstellungen, Flächen,
  * Kostenzeilen (mit Kosten zum Zeitpunkt des Stands), Stufen, Aufträgen, Rechnungen und Ursachen.
  */
-export const kostenStaende: StandHandler = {
+export const kostenStaende = (umgebung: KostenUmgebung): StandHandler => ({
   speichern(tx, standId) {
-    const kosten = new Map(kostenDatenLaden(tx).zeilen.map((z) => [z.id, z.kosten]));
+    // Menge und Kosten zum Zeitpunkt des Stands festhalten (auch Modellmengen, E-93)
+    const k = kostenDatenLaden(tx, umgebung).zeilen;
+    const kosten = new Map(k.map((z) => [z.id, z.kosten]));
+    const menge = new Map(k.map((z) => [z.id, z.mengeWirksam]));
     for (const tabelle of TABELLEN) {
       const erlaubt = spalten(tx, `${tabelle}_stand`);
       for (const zeile of tx.lesen<Zeile & { id: string }>(`SELECT * FROM ${tabelle}`)) {
         const { id, ...rest } = zeile;
         const kopie: Zeile & { id: string } = { id: neueId(), stand_id: standId, orig_id: id };
         for (const [k, w] of Object.entries(rest)) if (erlaubt.has(k)) kopie[k] = w;
-        if (tabelle === 'k_zeile') kopie['kosten'] = kosten.get(id) ?? null;
+        if (tabelle === 'k_zeile') {
+          kopie['kosten'] = kosten.get(id) ?? null;
+          if (rest['menge_quelle'] === 'ifc') kopie['menge'] = menge.get(id) ?? null;
+        }
         tx.einfuegen(`${tabelle}_stand`, kopie);
       }
     }
@@ -65,4 +71,4 @@ export const kostenStaende: StandHandler = {
       ))
         tx.loeschen(`${tabelle}_stand`, id);
   },
-};
+});

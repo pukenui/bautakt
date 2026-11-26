@@ -127,7 +127,7 @@ export function kostenBefehle(
             bezeichnung: text(300),
             menge: nichtNegativ('Die Menge').nullable(),
             einheit: text(30),
-            menge_quelle: z.enum(['manuell', 'flaeche']),
+            menge_quelle: z.enum(['manuell', 'flaeche', 'ifc']),
             flaeche: z.enum(FLAECHEN).nullable(),
             kkw_von: nichtNegativ('Von').nullable(),
             kkw_mittel: nichtNegativ('Mittel').nullable(),

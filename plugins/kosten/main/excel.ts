@@ -10,7 +10,7 @@ import {
 } from '@bautakt/rechnen-kosten';
 import ExcelJS from 'exceljs';
 import type { KnotenDaten, KostenDaten } from '../gemeinsam/typen.js';
-import { kostenDatenLaden } from './daten.js';
+import { kostenDatenLaden, type KostenUmgebung } from './daten.js';
 import { sollIstLaden } from './sollist.js';
 
 const EURO = '#,##0.00 "€"';
@@ -493,9 +493,9 @@ function istBlaetter(wb: ExcelJS.Workbook, db: PluginDb): void {
 export async function kostenExcel(
   db: PluginDb,
   parameter: Record<string, unknown>,
-  kennwertVersion?: (id: string) => number | null,
+  umgebung: KostenUmgebung = {},
 ): Promise<Uint8Array> {
-  const d = kostenDatenLaden(db, kennwertVersion);
+  const d = kostenDatenLaden(db, umgebung);
   const bezug = (STUFEN as readonly string[]).includes(String(parameter['bezug']))
     ? (parameter['bezug'] as Stufe)
     : 'berechnung';

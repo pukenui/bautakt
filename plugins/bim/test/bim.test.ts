@@ -158,7 +158,10 @@ describe('IFC einlesen (B1, E-37, E-86)', () => {
   it('liest das FreeCAD-Modell (ohne Geschosshöhen und ohne BaseQuantities)', async () => {
     const { s } = projekt();
     const e = await einlesen(s, HALLE);
-    expect(e.bericht).toEqual(['IFC4: 8 Bauteile in 2 Geschossen.']);
+    expect(e.bericht).toEqual([
+      'IFC4: 8 Bauteile in 2 Geschossen.',
+      'Mengen: 0 Bauteil(e) mit BaseQuantities, 8 nur aus der Geometrie.',
+    ]);
     const [m] = s.abfrage('bim', 'modelle', undefined) as ModellZeile[];
     const st = s.abfrage('bim', 'struktur', { modellId: m?.id }) as {
       geschosse: GeschossZeile[];

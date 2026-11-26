@@ -339,10 +339,18 @@ function PlanungTeil({ api, status, datenstand }: AnsichtProps) {
                             titel={
                               z.menge_quelle === 'flaeche'
                                 ? `aus ${z.flaeche} – Doppelklick: von Hand eintragen`
-                                : undefined
+                                : z.menge_quelle === 'ifc'
+                                  ? `aus dem Modell${z.modellMenge ? ` (${z.modellMenge.gezaehlt} Bauteile: ${z.modellMenge.ausQto} BaseQuantities, ${z.modellMenge.ausGeometrie} Geometrie)` : ''} – Doppelklick: von Hand eintragen`
+                                  : undefined
                             }
                             onSpeichern={(w) => aendern(z, { menge_quelle: 'manuell', menge: w })}
                           />
+                          {z.menge_quelle === 'ifc' && (
+                            <span className="kk-marke" title="aus dem IFC-Modell">
+                              {' '}
+                              ⬡
+                            </span>
+                          )}
                           {z.menge_quelle === 'flaeche' && (
                             <span className="kk-marke" title={`aus Fläche ${z.flaeche}`}>
                               {' '}

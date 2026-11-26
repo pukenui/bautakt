@@ -1,4 +1,6 @@
-/** Datentypen des BIM-Plugins, gemeinsam für Main und Renderer (E-37, E-86–E-89). */
+import type { Mengen, Mengenart } from './zuordnung.js';
+
+/** Datentypen des BIM-Plugins, gemeinsam für Main und Renderer (E-37, E-86–E-93). */
 
 /** Eingebettetes IFC-Modell (b_modell). Die Datei selbst liegt in der Dateiablage des Kerns. */
 export interface ModellZeile {
@@ -34,6 +36,35 @@ export interface BauteilZeile {
   name: string;
   typ: string; // Typname (IfcRelDefinesByType) oder ObjectType
   geschoss_id: string | null;
+  predefined: string;
+  /** IsExternal: 1/0, null unbekannt */
+  aussen: number | null;
+  /** LoadBearing: 1/0, null unbekannt */
+  tragend: number | null;
+  /** Mengen mit Herkunft (E-92); null bei Modellen, die vor B2 eingelesen wurden */
+  mengen: Mengen | null;
+}
+
+/** Regel IFC → KG (b_kg_regel, E-90). */
+export interface RegelZeile {
+  id: string;
+  reihenfolge: number;
+  klasse: string;
+  predefined: string;
+  aussen: number | null;
+  tragend: number | null;
+  enthaelt: string;
+  kg: number;
+  mengenart: Mengenart;
+}
+
+/** Manuelle Zuordnung je Bauteil (b_kg_zuweisung, über GlobalId). */
+export interface ZuweisungZeile {
+  id: string;
+  modell_id: string;
+  globalid: string;
+  kg: number | null;
+  mengenart: Mengenart;
 }
 
 export interface Eigenschaft {
@@ -60,6 +91,10 @@ export interface ModellInhalt {
     typ: string;
     /** express_id des Geschosses oder null */
     geschoss: number | null;
+    predefined: string;
+    aussen: number | null;
+    tragend: number | null;
+    mengen: Mengen;
   }[];
   bericht: string[];
 }

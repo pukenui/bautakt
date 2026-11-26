@@ -9,7 +9,7 @@ import { tagVonDatum } from '@bautakt/rechnen-kalender';
 import { FEST_STUFEN, KOSTEN_URSACHEN, kostengruppe } from '@bautakt/rechnen-kosten';
 import { z } from 'zod';
 import type { AuftragZeile } from '../gemeinsam/typen.js';
-import { kostenDatenLaden } from './daten.js';
+import { kostenDatenLaden, type KostenUmgebung } from './daten.js';
 
 const fehler = (meldung: string) => new BautaktFehler('BEFEHL_DATEN', meldung);
 const id = z.string().min(1);
@@ -81,14 +81,14 @@ type Def = BefehlDefinition<never>;
 const def = <T>(d: BefehlDefinition<T>) => d as unknown as Def;
 
 /** Befehle für Soll-Ist (E-33, E-60–E-63). */
-export const SOLLIST_BEFEHLE: Def[] = [
+export const sollistBefehle = (umgebung: KostenUmgebung): Def[] => [
   def({
     name: 'stufe.festschreiben',
     titel: 'Kostenstufe festschreiben',
     schema: z.object({ stufe: z.enum(FEST_STUFEN) }),
     ausfuehren(tx, d) {
       // maßgebende Zeilen der Planung: Zeilen mit Kosten, die nicht von Unterzeilen überdeckt sind
-      const k = kostenDatenLaden(tx);
+      const k = kostenDatenLaden(tx, umgebung);
       const ueberdeckt = new Set(k.baum.filter((b) => b.ausUnterzeilen).map((b) => b.kg));
       const werte = k.zeilen.filter((z) => z.kosten !== null && !ueberdeckt.has(z.kg));
       if (!werte.length) throw fehler('Die Planung enthält noch keine Kosten zum Festschreiben.');

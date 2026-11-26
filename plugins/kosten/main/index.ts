@@ -1,13 +1,14 @@
-import type { BautaktPlugin } from '@bautakt/kern';
+import type { BautaktPlugin, PluginDb } from '@bautakt/kern';
 import type { KennwertZeile } from '@bautakt/plugin-bibliothek/typen';
 import { z } from 'zod';
 import { MIGRATIONEN } from '../migrations/index.js';
 import { kostenBefehle } from './befehle.js';
-import { kostenDatenLaden } from './daten.js';
+import type { ModellMengenQuelle } from '../gemeinsam/typen.js';
+import { kostenDatenLaden, type KostenUmgebung } from './daten.js';
 import { kostenBeobachtungen } from './erfahrung.js';
 import { kostenExcel } from './excel.js';
 import { sollIstLaden } from './sollist.js';
-import { SOLLIST_BEFEHLE } from './sollistBefehle.js';
+import { sollistBefehle } from './sollistBefehle.js';
 import { kostenStaende } from './staende.js';
 
 export type { KostenDaten } from '../gemeinsam/typen.js';
@@ -37,8 +38,13 @@ export const kostenPlugin: BautaktPlugin = {
     const kennwertVersion = (kid: string) =>
       holen<(id: string) => number | null>('bibliothek.kennwertAktuelleVersion')?.(kid) ?? null;
 
+    // BIM (optional): Modellmengen je KG für Zeilen mit Mengenquelle „Modell“ (E-93)
+    const modell = (db: PluginDb): ModellMengenQuelle | null =>
+      holen<{ jeKg(db: PluginDb): ModellMengenQuelle | null }>('bim.mengen')?.jeKg(db) ?? null;
+    const umgebung: KostenUmgebung = { kennwertVersion, modell };
+
     for (const b of kostenBefehle(kennwert)) ctx.befehle.registrieren(b);
-    for (const b of SOLLIST_BEFEHLE) ctx.befehle.registrieren(b);
+    for (const b of sollistBefehle(umgebung)) ctx.befehle.registrieren(b);
     ctx.abfragen.registrieren({
       name: 'sollist',
       schema: z
@@ -56,18 +62,18 @@ export const kostenPlugin: BautaktPlugin = {
         )
         .map((a) => a.anhang),
     );
-    ctx.stand.registrieren(kostenStaende);
-    ctx.exporte.registrieren('excel', (db, p) => kostenExcel(db, p, kennwertVersion), {
+    ctx.stand.registrieren(kostenStaende(umgebung));
+    ctx.exporte.registrieren('excel', (db, p) => kostenExcel(db, p, umgebung), {
       endung: 'xlsx',
       beschreibung: 'Excel-Arbeitsmappe',
     });
     ctx.abfragen.registrieren({
       name: 'kosten',
       schema: z.undefined(),
-      ausfuehren: (db) => kostenDatenLaden(db, kennwertVersion),
+      ausfuehren: (db) => kostenDatenLaden(db, umgebung),
     });
     // Erfahrungsdatenbank (E-75)
-    ctx.dienste.bereitstellen('kosten.erfahrung', () => kostenBeobachtungen(ctx.db));
-    ctx.dienste.bereitstellen('kosten.daten', () => kostenDatenLaden(ctx.db, kennwertVersion));
+    ctx.dienste.bereitstellen('kosten.erfahrung', () => kostenBeobachtungen(ctx.db, umgebung));
+    ctx.dienste.bereitstellen('kosten.daten', () => kostenDatenLaden(ctx.db, umgebung));
   },
 };

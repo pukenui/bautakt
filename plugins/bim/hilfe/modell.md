@@ -49,3 +49,20 @@ und m³.
 
 **📏 Messen** einschalten und nacheinander zwei Punkte auf Bauteiloberflächen anklicken – der
 Abstand erscheint in Metern. **Messungen löschen** entfernt alle Maße.
+
+### Mengen und Kostengruppen (5D)
+
+Beim Einlesen ermittelt Bautakt je Bauteil Fläche, Volumen und Länge – zuerst aus den
+**BaseQuantities** des Modells, sonst aus der **Geometrie** (Volumen und Hauptfläche = größte
+Ansichtsseite, z. B. die Seitenfläche einer Wand). Die Herkunft steht oben in der
+Eigenschaften-Leiste.
+
+Welche **Kostengruppe** ein Bauteil bekommt, regelt die Tabelle **Regeln …**: IFC-Klasse,
+optional PredefinedType, außen/tragend (aus IsExternal/LoadBearing) und „Name/Typ enthält“ →
+Kostengruppe und Mengenart (Fläche, Volumen, Länge, Stück). Es gilt die erste passende Regel von
+oben. Fehlen im Modell IsExternal und LoadBearing, hilft „Name/Typ enthält“ (z. B. „Exterior“ →
+331). Einzelne Bauteile ordnen Sie in der Eigenschaften-Leiste mit **Ändern …** abweichend zu.
+
+Die Bauteilliste lässt sich **nach Kostengruppe** gliedern; jede KG zeigt dann ihre Summe. In
+der Kostenplanung wählen Sie bei einer Zeile als Menge **aus dem Modell (IFC)** – die Menge folgt
+Modell, Regeln und Zuordnungen automatisch.

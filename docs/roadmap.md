@@ -52,7 +52,7 @@ Ziel: Ab ca. **13.12.** sollen damit F.1 (Rollen-Netzplan) und F.2 (Projekttermi
 ## Phase B – BIM
 
 - [x] **B1** IFC-Viewer (IFC2x3/IFC4), Bauteilliste, Testmodelle aus BIMCraft und FreeCAD (E-37, E-40)
-- [ ] **B2** 5D: Mengen (Qto/Geometrie, Herkunft sichtbar), Regeltabelle IFC → KG, Übergabe an Kosten
+- [x] **B2** 5D: Mengen (Qto/Geometrie, Herkunft sichtbar), Regeltabelle IFC → KG, Übergabe an Kosten
 - [ ] **B3** DIN-277-Flächen aus IfcSpace, Reimport über GlobalId mit Änderungsbericht
 - [ ] **B4** 4D: Vorgänge ↔ Bauteile, Bauablauf-Simulation, Ort ↔ Geschoss/Zone
 - [ ] **B5** Optionale Kopplungs-Plugins BIMCraft-CLI / FreeCAD; GAEB; IFC4.3
@@ -85,3 +85,4 @@ Ziel: Ab ca. **13.12.** sollen damit F.1 (Rollen-Netzplan) und F.2 (Projekttermi
 - 26.11.2026 – **M14 fertig.** Glossar mit rund 55 Fachbegriffen (eigene Erklärungen mit Mini-Beispiel), Hover-Erklärung in Spaltenköpfen, Kennzahl- und Flächenbezeichnungen sowie automatisch in den Hilfetexten, durchsuchbares Glossar in der Hilfe, Erststart-Tour mit sechs Schritten (jederzeit neu startbar), leere Ansichten geprüft und ergänzt. Neue Entscheidungen E-83–E-85. 509 Tests grün; Tour, Hover (Maus und Tastatur), Glossarsuche und Hilfe-Verweise in der gebauten App geprüft.
 - 26.11.2026 – **Release v0.2.0** (Phase A komplett, Stand M14): Installer „Bautakt-Setup-0.2.0.exe“ gebaut, gepackte App geprüft (alle Plugins, Version, Abhängigkeiten im Paket), GitHub-Release (privat) veröffentlicht.
 - 26.11.2026 – **B1 fertig.** Plugin „bim“: IFC2x3/IFC4 einlesen und in die Projektdatei einbetten (neue Dateiablage im Kern, außerhalb von Undo/Protokoll), mehrere Fachmodelle deckungsgleich, Bauteilliste Modell → Geschoss → Klasse → Bauteil, Eigenschaften (Attribute, Typ, Psets, BaseQuantities in SI-Einheiten), Ein-/Ausblenden und Isolieren, Geschossschnitt und freie Schnittebene, Messen. Viewer mit web-ifc (MPL-2.0) und three.js (MIT) direkt; Geometrie im Worker. Testmodelle aus BIMCraft (Haus, Hochhaus mit 9.500 Bauteilen) und FreeCAD (Halle, Tragwerk). Neue Entscheidungen E-86–E-89. 520 Tests grün; Bedienung in der gebauten und der gepackten App geprüft.
+- 26.11.2026 – **B2 fertig.** 5D: Mengen je Bauteil beim Einlesen (BaseQuantities in SI-Einheiten, sonst Volumen und Hauptfläche aus der Geometrie; Herkunft sichtbar), Regeltabelle IFC → KG je Projekt mit 23 Standardregeln (Klasse, PredefinedType, außen, tragend, „Name/Typ enthält“ → KG und Mengenart), Überschreibung je Bauteil über die GlobalId, Bauteilliste nach Kostengruppe mit Summen, Kostenzeilen mit Mengenquelle „Modell (IFC)“ live gekoppelt (auch in Excel, Ständen und Stufen). Neue Entscheidungen E-90–E-93. 528 Tests grün; Bedienung in der gebauten App geprüft.

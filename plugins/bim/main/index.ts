@@ -1,7 +1,16 @@
 import { BautaktFehler, jetztUtc, neueId, type BautaktPlugin, type Migration } from '@bautakt/kern';
 import { z } from 'zod';
-import type { BauteilZeile, GeschossZeile, ModellInhalt, ModellZeile } from '../gemeinsam/typen.js';
+import { kostengruppe } from '@bautakt/rechnen-kosten';
+import type {
+  BauteilZeile,
+  GeschossZeile,
+  ModellInhalt,
+  ModellZeile,
+  ZuweisungZeile,
+} from '../gemeinsam/typen.js';
+import { MENGENARTEN, STANDARD_REGELN } from '../gemeinsam/zuordnung.js';
 import { SCHEMATA, eigenschaftenLesen, ifcApi, modellAuslesen, modellOeffnen } from './ifc.js';
+import { bimMengenDienst, regelnLesen } from './mengen.js';
 
 const MIGRATIONEN: readonly Migration[] = [
   {
@@ -41,7 +50,76 @@ const MIGRATIONEN: readonly Migration[] = [
       CREATE INDEX b_bauteil_globalid ON b_bauteil (globalid);
     `,
   },
+  {
+    version: 2,
+    name: 'Merkmale und Mengen der Bauteile, Regeltabelle IFC → KG, Zuweisungen (E-90–E-93)',
+    sql: `
+      ALTER TABLE b_bauteil ADD COLUMN predefined TEXT NOT NULL DEFAULT '';
+      ALTER TABLE b_bauteil ADD COLUMN aussen INTEGER;
+      ALTER TABLE b_bauteil ADD COLUMN tragend INTEGER;
+      -- JSON (Mengen mit Herkunft); NULL bei Modellen, die vor B2 eingelesen wurden
+      ALTER TABLE b_bauteil ADD COLUMN mengen TEXT;
+      CREATE TABLE b_kg_regel (
+        id TEXT PRIMARY KEY,
+        reihenfolge INTEGER NOT NULL,
+        klasse TEXT NOT NULL,
+        predefined TEXT NOT NULL DEFAULT '',
+        aussen INTEGER,
+        tragend INTEGER,
+        enthaelt TEXT NOT NULL DEFAULT '',
+        kg INTEGER NOT NULL,
+        mengenart TEXT NOT NULL CHECK (mengenart IN ('flaeche', 'volumen', 'laenge', 'stueck'))
+      );
+      CREATE TABLE b_kg_zuweisung (
+        id TEXT PRIMARY KEY,
+        modell_id TEXT NOT NULL REFERENCES b_modell(id),
+        globalid TEXT NOT NULL,
+        kg INTEGER,
+        mengenart TEXT NOT NULL CHECK (mengenart IN ('flaeche', 'volumen', 'laenge', 'stueck')),
+        UNIQUE (modell_id, globalid)
+      );
+    `,
+    // Standardregeln vorbelegen (E-90)
+    daten: (db) =>
+      STANDARD_REGELN.forEach((r, i) =>
+        db.ausfuehren(
+          'INSERT INTO b_kg_regel (id, reihenfolge, klasse, predefined, aussen, tragend, enthaelt, kg, mengenart) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          neueId(),
+          i + 1,
+          r.klasse,
+          r.predefined,
+          r.aussen,
+          r.tragend,
+          '',
+          r.kg,
+          r.mengenart,
+        ),
+      ),
+  },
 ];
+
+const mengenartSchema = z.enum(
+  MENGENARTEN as unknown as ['flaeche', 'volumen', 'laenge', 'stueck'],
+);
+const kgSchema = z
+  .number()
+  .int()
+  .refine((kg) => !!kostengruppe(kg), 'Unbekannte Kostengruppe');
+const jaNein = z.union([z.literal(0), z.literal(1)]).nullable();
+const regelFelder = z.object({
+  klasse: z.string().trim().min(1, 'IFC-Klasse fehlt').max(100),
+  predefined: z.string().trim().max(100).default(''),
+  aussen: jaNein.default(null),
+  tragend: jaNein.default(null),
+  enthaelt: z.string().trim().max(200).default(''),
+  kg: kgSchema,
+  mengenart: mengenartSchema,
+});
+const mengeSchema = z.object({
+  wert: z.number(),
+  herkunft: z.enum(['qto', 'geometrie']),
+  name: z.string().optional(),
+});
 
 const einlesenSchema = z.object({
   name: z.string().trim().min(1).max(200),
@@ -60,6 +138,14 @@ const einlesenSchema = z.object({
       name: z.string(),
       typ: z.string(),
       geschoss: z.number().int().nullable(),
+      predefined: z.string(),
+      aussen: jaNein,
+      tragend: jaNein,
+      mengen: z.object({
+        flaeche: mengeSchema.optional(),
+        volumen: mengeSchema.optional(),
+        laenge: mengeSchema.optional(),
+      }),
     }),
   ),
 });
@@ -67,13 +153,14 @@ const einlesenSchema = z.object({
 const modellIdSchema = z.object({ modellId: z.string().min(1) });
 
 /**
- * Plugin BIM (B1): IFC-Modelle einbetten (E-86), Bauteile und Geschosse als Liste, Eigenschaften
- * bei Bedarf aus der eingebetteten Datei. Mehrere Modelle je Projekt (E-88).
+ * Plugin BIM (B1, B2): IFC-Modelle einbetten (E-86), Bauteile und Geschosse als Liste, Eigenschaften
+ * bei Bedarf aus der eingebetteten Datei, mehrere Modelle je Projekt (E-88). Mengen und Zuordnung
+ * IFC → KG über eine Regeltabelle je Projekt; Dienst `bim.mengen` für die Kosten (E-90–E-93).
  */
 export const bimPlugin: BautaktPlugin = {
   id: 'bim',
   name: 'BIM',
-  version: '0.1.0',
+  version: '0.2.0',
   tabellenPraefix: 'b_',
   migrationen: MIGRATIONEN,
 
@@ -135,6 +222,10 @@ export const bimPlugin: BautaktPlugin = {
             name: b.name,
             typ: b.typ,
             geschoss_id: b.geschoss === null ? null : (geschossId.get(b.geschoss) ?? null),
+            predefined: b.predefined,
+            aussen: b.aussen,
+            tragend: b.tragend,
+            mengen: JSON.stringify(b.mengen),
           });
         }
       },
@@ -162,9 +253,116 @@ export const bimPlugin: BautaktPlugin = {
           d.id,
         ))
           tx.loeschen('b_geschoss', g.id);
+        for (const z of tx.lesen<{ id: string }>(
+          'SELECT id FROM b_kg_zuweisung WHERE modell_id = ?',
+          d.id,
+        ))
+          tx.loeschen('b_kg_zuweisung', z.id);
         tx.loeschen('b_modell', d.id);
       },
     });
+
+    // --- Regeltabelle IFC → KG (E-90) --------------------------------------------------------
+    ctx.befehle.registrieren({
+      name: 'regel.anlegen',
+      titel: 'Regel anlegen',
+      schema: regelFelder,
+      ausfuehren(tx, d) {
+        const n =
+          tx.eins<{ n: number | null }>('SELECT MAX(reihenfolge) AS n FROM b_kg_regel')?.n ?? 0;
+        tx.einfuegen('b_kg_regel', { id: neueId(), reihenfolge: n + 1, ...d });
+      },
+    });
+
+    ctx.befehle.registrieren({
+      name: 'regel.aendern',
+      titel: 'Regel ändern',
+      schema: regelFelder.partial().extend({ id: z.string() }),
+      ausfuehren(tx, { id, ...felder }) {
+        const f = Object.fromEntries(Object.entries(felder).filter(([, v]) => v !== undefined));
+        tx.aendern('b_kg_regel', id, f as Record<string, string | number | null>);
+      },
+    });
+
+    ctx.befehle.registrieren({
+      name: 'regel.loeschen',
+      titel: 'Regel löschen',
+      schema: z.object({ id: z.string() }),
+      ausfuehren: (tx, d) => tx.loeschen('b_kg_regel', d.id),
+    });
+
+    ctx.befehle.registrieren({
+      name: 'regel.verschieben',
+      titel: 'Regel verschieben',
+      schema: z.object({ id: z.string(), richtung: z.union([z.literal(-1), z.literal(1)]) }),
+      ausfuehren(tx, d) {
+        const liste = regelnLesen(tx);
+        const i = liste.findIndex((r) => r.id === d.id);
+        const j = i + d.richtung;
+        const a = liste[i];
+        const b = liste[j];
+        if (!a || !b) return;
+        tx.aendern('b_kg_regel', a.id, { reihenfolge: b.reihenfolge });
+        tx.aendern('b_kg_regel', b.id, { reihenfolge: a.reihenfolge });
+      },
+    });
+
+    ctx.befehle.registrieren({
+      name: 'regeln.standard',
+      titel: 'Standardregeln wiederherstellen',
+      schema: z.object({}),
+      ausfuehren(tx) {
+        for (const r of regelnLesen(tx)) tx.loeschen('b_kg_regel', r.id);
+        STANDARD_REGELN.forEach((r, i) =>
+          tx.einfuegen('b_kg_regel', { id: neueId(), reihenfolge: i + 1, enthaelt: '', ...r }),
+        );
+      },
+    });
+
+    // --- Manuelle Zuordnung je Bauteil (E-90) -------------------------------------------------
+    ctx.befehle.registrieren({
+      name: 'zuweisung.setzen',
+      titel: 'KG des Bauteils festlegen',
+      schema: z.object({
+        modellId: z.string(),
+        globalid: z.string().min(1),
+        kg: kgSchema.nullable(),
+        mengenart: mengenartSchema,
+      }),
+      ausfuehren(tx, d) {
+        const da = tx.eins<ZuweisungZeile>(
+          'SELECT * FROM b_kg_zuweisung WHERE modell_id = ? AND globalid = ?',
+          d.modellId,
+          d.globalid,
+        );
+        if (da) tx.aendern('b_kg_zuweisung', da.id, { kg: d.kg, mengenart: d.mengenart });
+        else
+          tx.einfuegen('b_kg_zuweisung', {
+            id: neueId(),
+            modell_id: d.modellId,
+            globalid: d.globalid,
+            kg: d.kg,
+            mengenart: d.mengenart,
+          });
+      },
+    });
+
+    ctx.befehle.registrieren({
+      name: 'zuweisung.entfernen',
+      titel: 'KG des Bauteils wieder nach Regel',
+      schema: z.object({ modellId: z.string(), globalid: z.string() }),
+      ausfuehren(tx, d) {
+        const da = tx.eins<{ id: string }>(
+          'SELECT id FROM b_kg_zuweisung WHERE modell_id = ? AND globalid = ?',
+          d.modellId,
+          d.globalid,
+        );
+        if (da) tx.loeschen('b_kg_zuweisung', da.id);
+      },
+    });
+
+    // Modellmengen je KG für die Kosten (E-93)
+    ctx.dienste.bereitstellen('bim.mengen', bimMengenDienst);
 
     ctx.importe.registrieren(
       'ifc',
@@ -227,11 +425,25 @@ export const bimPlugin: BautaktPlugin = {
           'SELECT * FROM b_geschoss WHERE modell_id = ? ORDER BY reihenfolge',
           a.modellId,
         ),
-        bauteile: db.lesen<BauteilZeile>(
-          'SELECT * FROM b_bauteil WHERE modell_id = ? ORDER BY klasse, name, express_id',
-          a.modellId,
-        ),
+        bauteile: db
+          .lesen<Omit<BauteilZeile, 'mengen'> & { mengen: string | null }>(
+            'SELECT * FROM b_bauteil WHERE modell_id = ? ORDER BY klasse, name, express_id',
+            a.modellId,
+          )
+          .map((b) => ({ ...b, mengen: b.mengen ? JSON.parse(b.mengen) : null })),
       }),
+    });
+
+    ctx.abfragen.registrieren({
+      name: 'regeln',
+      schema: z.undefined(),
+      ausfuehren: (db) => regelnLesen(db),
+    });
+
+    ctx.abfragen.registrieren({
+      name: 'zuweisungen',
+      schema: z.undefined(),
+      ausfuehren: (db) => db.lesen<ZuweisungZeile>('SELECT * FROM b_kg_zuweisung'),
     });
 
     // Die eingebettete IFC-Datei für den Viewer (Geometrie entsteht im Renderer)

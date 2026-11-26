@@ -12,8 +12,9 @@ Baupreisindex, Regionalfaktor und MwSt.
 3. Zeile doppelklicken → **Kennwert** aus der Bibliothek übernehmen (Werte, Quelle, Stand und
    Index werden eingefroren) oder Von/Mittel/Bis mit Quelle selbst eintragen. **KKW gewählt** ist
    mit „Mittel“ vorbelegt.
-4. **Menge**: an eine Fläche gekoppelt (Vorschlag: KG 100/200 → GF, 500 → AF, sonst BGF) oder von
-   Hand. In der Tabelle ändern Sie Menge und KKW gewählt per Doppelklick direkt.
+4. **Menge**: an eine Fläche gekoppelt (Vorschlag: KG 100/200 → GF, 500 → AF, sonst BGF), von
+   Hand oder **aus dem Modell (IFC)**: dann ist die Menge die Summe der Bauteile dieser KG und
+   ihrer Unter-KG und folgt Modell und Regeln automatisch (Markierung ⬡; Herkunft im Tooltip). In der Tabelle ändern Sie Menge und KKW gewählt per Doppelklick direkt.
 5. **Einstellungen …**: aktueller Baupreisindex mit Stand und Quelle, Regionalfaktor, MwSt.-Satz,
    „vorsteuerabzugsberechtigt“ (dann ist netto maßgebend).
 

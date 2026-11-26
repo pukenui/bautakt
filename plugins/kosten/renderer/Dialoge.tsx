@@ -257,7 +257,7 @@ export function ZeileDialog(props: {
   const eingefroren = !!z.kkw_ref;
   const [f, setF] = useState(() => ({
     bezeichnung: z.bezeichnung,
-    menge_quelle: z.menge_quelle === 'flaeche' ? 'flaeche' : 'manuell',
+    menge_quelle: z.menge_quelle,
     flaeche: (z.flaeche ?? 'BGF') as Flaeche,
     menge: zahlText(z.menge),
     einheit: z.einheit,
@@ -310,7 +310,7 @@ export function ZeileDialog(props: {
       anmerkung: f.anmerkung,
     };
     if (f.menge_quelle === 'flaeche') g['flaeche'] = f.flaeche;
-    else g['menge'] = eingabeZahl(f.menge);
+    else if (f.menge_quelle === 'manuell') g['menge'] = eingabeZahl(f.menge);
     if (!eingefroren) {
       Object.assign(g, {
         kkw_von: eingabeZahl(f.kkw_von),
@@ -395,8 +395,31 @@ export function ZeileDialog(props: {
             />
             von Hand
           </label>
+          <label className="inline">
+            <input
+              type="radio"
+              checked={f.menge_quelle === 'ifc'}
+              onChange={() => {
+                setze('menge_quelle', 'ifc');
+                // Einheit der Modellmenge vorschlagen (E-93)
+                if (z.modellMenge?.einheit) setze('einheit', z.modellMenge.einheit);
+              }}
+            />
+            aus dem Modell (IFC)
+          </label>
         </div>
-        {f.menge_quelle === 'flaeche' ? (
+        {f.menge_quelle === 'ifc' ? (
+          <Feld
+            label="Modellmenge"
+            hinweis="Summe der Bauteile dieser KG und ihrer Unter-KG; folgt Modell und Regeln automatisch."
+          >
+            <span className="kk-modellmenge">
+              {z.menge_quelle === 'ifc' && z.modellMenge
+                ? `${z.modellMenge.menge === null ? '–' : z.modellMenge.menge.toLocaleString('de-DE', { maximumFractionDigits: 3 })} ${z.modellMenge.einheit} aus ${z.modellMenge.gezaehlt} von ${z.modellMenge.anzahl} Bauteil(en) (${z.modellMenge.ausQto} BaseQuantities, ${z.modellMenge.ausGeometrie} Geometrie)`
+                : 'wird nach dem Übernehmen aus dem Modell ermittelt'}
+            </span>
+          </Feld>
+        ) : f.menge_quelle === 'flaeche' ? (
           <Feld label="Fläche" hinweis={`aktuell ${props.daten.flaechen[f.flaeche] ?? '–'} m²`}>
             <select value={f.flaeche} onChange={(e) => setze('flaeche', e.target.value as Flaeche)}>
               {ALLE_FLAECHEN.map((k) => (

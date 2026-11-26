@@ -1,5 +1,6 @@
 import * as W from 'web-ifc';
 import type { EigenschaftsGruppe, ModellInhalt } from '../gemeinsam/typen.js';
+import { QTO_NAMEN, type Mengen } from '../gemeinsam/zuordnung.js';
 
 /*
  * IFC lesen im Main-Prozess (E-37, E-87): Bauteile, Geschosse und – bei Bedarf – Eigenschaften.
@@ -182,29 +183,85 @@ export function modellAuslesen(a: W.IfcAPI, inhalt: Uint8Array): ModellInhalt {
       return null;
     };
 
-    // Typnamen
-    const typName = new Map<number, string>();
+    // Typen (Name, PredefinedType, Psets des Typs)
+    const typVon = new Map<number, Record<string, unknown>>();
     for (const r of ids(a.GetLineIDsWithType(m, W.IFCRELDEFINESBYTYPE))) {
       const rel = a.GetLine(m, r) as Record<string, unknown>;
       const typ = a.GetLine(m, Number(roh(rel['RelatingType']))) as Record<string, unknown>;
-      const name = text(typ['Name']);
-      for (const e of verweise(rel['RelatedObjects'])) typName.set(e, name);
+      for (const e of verweise(rel['RelatedObjects'])) typVon.set(e, typ);
     }
+
+    // Eigenschaften und Mengen je Element (IfcRelDefinesByProperties)
+    const defs = new Map<number, number[]>();
+    for (const r of ids(a.GetLineIDsWithType(m, W.IFCRELDEFINESBYPROPERTIES))) {
+      const rel = a.GetLine(m, r) as Record<string, unknown>;
+      const def = Number(roh(rel['RelatingPropertyDefinition']));
+      for (const e of verweise(rel['RelatedObjects'])) defs.set(e, [...(defs.get(e) ?? []), def]);
+    }
+    const geometrie = geometrieMengen(a, m);
+    // Werte je Eigenschaftssatz einmal lesen (Typ-Psets gelten für viele Elemente)
+    const psetZwischen = new Map<number, Map<string, string>>();
+    const psetWerte = (def: number): Map<string, string> => {
+      let w = psetZwischen.get(def);
+      if (!w) {
+        const ps = a.GetLine(m, def, true) as Record<string, unknown>;
+        w = new Map(
+          ((ps['HasProperties'] as Record<string, unknown>[] | undefined) ?? []).map((p) => [
+            text(p['Name']),
+            anzeigen(p['NominalValue']),
+          ]),
+        );
+        psetZwischen.set(def, w);
+      }
+      return w;
+    };
 
     // Bauteile: alle IfcElement-Klassen außer Hilfsobjekten, dazu Räume (IfcSpace)
     const klassen = klassenNamen(a, m);
     const bauteile: ModellInhalt['bauteile'] = [];
+    let ausQto = 0;
+    let ausGeometrie = 0;
     for (const [code, klasse] of klassen) {
       if (!a.IsIfcElement(code) || KEINE_BAUTEILE.has(klasse)) continue;
       for (const id of ids(a.GetLineIDsWithType(m, code))) {
         const e = a.GetLine(m, id) as Record<string, unknown>;
+        const typ = typVon.get(id);
+        const d = [...(defs.get(id) ?? []), ...verweise(typ?.['HasPropertySets'])];
+        const merkmal = (name: string): number | null => {
+          // Element vor Typ: Element-Psets stehen zuerst in d
+          for (const def of d) {
+            const v = psetWerte(def).get(name);
+            if (v === 'ja') return 1;
+            if (v === 'nein') return 0;
+          }
+          return null;
+        };
+        const qto = qtoMengen(a, m, defs.get(id) ?? [], einheiten);
+        const geo = geometrie.get(id);
+        const mengen: Mengen = {};
+        for (const art of ['flaeche', 'volumen', 'laenge'] as const) {
+          const q = qto[art];
+          const g = art === 'flaeche' ? geo?.flaeche : art === 'volumen' ? geo?.volumen : undefined;
+          if (q) mengen[art] = q;
+          else if (g !== undefined && g > 0) mengen[art] = { wert: g, herkunft: 'geometrie' };
+        }
+        if (qto.flaeche || qto.volumen || qto.laenge) ausQto++;
+        else if (mengen.flaeche || mengen.volumen) ausGeometrie++;
+        const pre = text(e['PredefinedType']);
         bauteile.push({
           express_id: id,
           globalid: text(e['GlobalId']),
           klasse,
           name: text(e['Name']),
-          typ: typName.get(id) ?? text(e['ObjectType']),
+          typ: (typ ? text(typ['Name']) : '') || text(e['ObjectType']),
           geschoss: geschossVon(id),
+          predefined:
+            pre && pre !== 'NOTDEFINED' && pre !== 'USERDEFINED'
+              ? pre
+              : text(typ?.['PredefinedType']).replace(/^(NOTDEFINED|USERDEFINED)$/, ''),
+          aussen: merkmal('IsExternal'),
+          tragend: merkmal('LoadBearing'),
+          mengen,
         });
       }
     }
@@ -213,10 +270,136 @@ export function modellAuslesen(a: W.IfcAPI, inhalt: Uint8Array): ModellInhalt {
     if (ohneGeschoss) bericht.push(`${ohneGeschoss} Bauteil(e) ohne Geschoss-Zuordnung.`);
     const doppelt = bauteile.length - new Set(bauteile.map((b) => b.globalid)).size;
     if (doppelt) bericht.push(`${doppelt} Bauteil(e) mit doppelter GlobalId.`);
+    bericht.push(
+      `Mengen: ${ausQto} Bauteil(e) mit BaseQuantities, ${ausGeometrie} nur aus der Geometrie.`,
+    );
     return { schema, geschosse, bauteile, bericht };
   } finally {
     a.CloseModel(m);
   }
+}
+
+/** BaseQuantities eines Elements in SI-Einheiten, je Mengenart die erste nach E-91. */
+function qtoMengen(a: W.IfcAPI, m: number, defs: readonly number[], e: Einheiten): Mengen {
+  const gefunden = new Map<string, number>();
+  for (const def of defs) {
+    const d = a.GetLine(m, def, true) as Record<string, unknown>;
+    for (const q of (d['Quantities'] as Record<string, unknown>[] | undefined) ?? []) {
+      const name = text(q['Name']);
+      const felder: [string, number][] = [
+        ['LengthValue', e.laenge],
+        ['AreaValue', e.flaeche],
+        ['VolumeValue', e.volumen],
+      ];
+      for (const [feld, faktor] of felder) {
+        const v = roh(q[feld]);
+        if (typeof v === 'number' && !gefunden.has(name)) gefunden.set(name, v * faktor);
+      }
+    }
+  }
+  const r: Mengen = {};
+  for (const art of ['flaeche', 'volumen', 'laenge'] as const)
+    for (const name of QTO_NAMEN[art]) {
+      const v = gefunden.get(name);
+      if (v !== undefined && v > 0) {
+        r[art] = { wert: Math.round(v * 1000) / 1000, herkunft: 'qto', name };
+        break;
+      }
+    }
+  return r;
+}
+
+/**
+ * Mengen aus der Geometrie (E-92): Volumen aus dem Netz (Summe der Tetraeder) und Hauptfläche =
+ * Fläche der größten Ansichtsseite (größte Projektion einer Seite auf eine Ebene).
+ */
+export function geometrieMengen(
+  a: W.IfcAPI,
+  m: number,
+): Map<number, { volumen: number; flaeche: number }> {
+  const dreiecke = new Map<number, number[]>(); // je Element: x1,y1,z1,x2,…
+  a.StreamAllMeshes(m, (mesh) => {
+    const liste = dreiecke.get(mesh.expressID) ?? [];
+    for (let i = 0; i < mesh.geometries.size(); i++) {
+      const pg = mesh.geometries.get(i);
+      if (pg.geomType !== 0) continue;
+      const g = a.GetGeometry(m, pg.geometryExpressID);
+      const v = a.GetVertexArray(g.GetVertexData(), g.GetVertexDataSize());
+      const ix = a.GetIndexArray(g.GetIndexData(), g.GetIndexDataSize());
+      const t = pg.flatTransformation;
+      const p = (k: number): [number, number, number] => {
+        const x = v[k * 6] ?? 0;
+        const y = v[k * 6 + 1] ?? 0;
+        const z = v[k * 6 + 2] ?? 0;
+        return [0, 1, 2].map(
+          (c) => (t[c] ?? 0) * x + (t[4 + c] ?? 0) * y + (t[8 + c] ?? 0) * z + (t[12 + c] ?? 0),
+        ) as [number, number, number];
+      };
+      for (let j = 0; j + 2 < ix.length; j += 3)
+        liste.push(...p(ix[j] ?? 0), ...p(ix[j + 1] ?? 0), ...p(ix[j + 2] ?? 0));
+      g.delete();
+    }
+    dreiecke.set(mesh.expressID, liste);
+  });
+  const ergebnis = new Map<number, { volumen: number; flaeche: number }>();
+  for (const [id, d] of dreiecke) ergebnis.set(id, netzMengen(d));
+  return ergebnis;
+}
+
+/** Volumen und Hauptfläche eines Dreiecksnetzes (Koordinaten je Dreieck hintereinander). */
+export function netzMengen(d: readonly number[]): { volumen: number; flaeche: number } {
+  let vol = 0;
+  const flaechen: { n: [number, number, number]; a: number }[] = [];
+  for (let i = 0; i + 8 < d.length; i += 9) {
+    const [ax, ay, az, bx, by, bz, cx, cy, cz] = d.slice(i, i + 9) as number[] as [
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+    ];
+    // Volumen über Tetraeder zum Ursprung (Vorzeichen hebt sich bei geschlossenen Netzen auf)
+    vol += (ax * (by * cz - bz * cy) - ay * (bx * cz - bz * cx) + az * (bx * cy - by * cx)) / 6;
+    const ux = bx - ax;
+    const uy = by - ay;
+    const uz = bz - az;
+    const vx = cx - ax;
+    const vy = cy - ay;
+    const vz = cz - az;
+    const nx = uy * vz - uz * vy;
+    const ny = uz * vx - ux * vz;
+    const nz = ux * vy - uy * vx;
+    const l = Math.hypot(nx, ny, nz);
+    if (l > 1e-12) flaechen.push({ n: [nx / l, ny / l, nz / l], a: l / 2 });
+  }
+  // Kandidaten für die Blickrichtung: Achsen und die Normalen der größten Dreiecke
+  const kandidaten: [number, number, number][] = [
+    [1, 0, 0],
+    [0, 1, 0],
+    [0, 0, 1],
+    [-1, 0, 0],
+    [0, -1, 0],
+    [0, 0, -1],
+    ...[...flaechen]
+      .sort((x, y) => y.a - x.a)
+      .slice(0, 12)
+      .map((f) => f.n),
+  ];
+  let flaeche = 0;
+  for (const k of kandidaten) {
+    let s = 0;
+    for (const f of flaechen) {
+      const c = f.n[0] * k[0] + f.n[1] * k[1] + f.n[2] * k[2];
+      if (c > 0) s += f.a * c;
+    }
+    flaeche = Math.max(flaeche, s);
+  }
+  const runden = (x: number) => Math.round(x * 1000) / 1000;
+  return { volumen: runden(Math.abs(vol)), flaeche: runden(flaeche) };
 }
 
 /** Geöffnetes Modell mit Verweisen Element → Eigenschaftsdefinitionen (für die Eigenschaften-Leiste). */

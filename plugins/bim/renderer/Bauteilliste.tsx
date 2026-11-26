@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { BauteilZeile, GeschossZeile, ModellZeile } from '../gemeinsam/typen.js';
-import { schluessel, setzen, useAnsicht } from './zustand.js';
+import { EINHEIT, kgMenge, type Zuordnung } from '../gemeinsam/zuordnung.js';
+import { kgText } from './Kostengruppen.js';
+import { schluessel, setzen, useAnsicht, type AnsichtZustand } from './zustand.js';
 
 export interface Struktur {
   geschosse: GeschossZeile[];
@@ -10,7 +12,9 @@ export interface Struktur {
 interface Knoten {
   key: string;
   titel: string;
-  art: 'modell' | 'geschoss' | 'klasse' | 'bauteil';
+  art: 'modell' | 'gruppe' | 'klasse' | 'bauteil';
+  /** z. B. Menge einer KG */
+  zusatz?: string;
   modellId: string;
   /** alle Bauteile unter dem Knoten */
   bauteile: BauteilZeile[];
@@ -20,27 +24,74 @@ interface Knoten {
 /** Höchstzahl gezeigter Bauteile je Klasse, bevor „weitere“ erscheint (große Modelle). */
 const SEITE = 200;
 
-/** Baum Modell → Geschoss → IFC-Klasse → Bauteil (E-89). */
-function baum(modell: ModellZeile, s: Struktur): Knoten {
-  const geschosse = [
-    ...s.geschosse.map((g) => ({ id: g.id, name: g.name })),
-    { id: null, name: 'ohne Geschoss' },
-  ];
-  const kinder = geschosse
-    .map((g): Knoten => {
-      const bt = s.bauteile.filter((b) => b.geschoss_id === g.id);
-      const klassen = [...new Set(bt.map((b) => b.klasse))].sort((a, b) => a.localeCompare(b));
-      const gKey = `${modell.id}/${g.id ?? '-'}`;
-      return {
-        key: gKey,
-        titel: g.name,
-        art: 'geschoss',
-        modellId: modell.id,
+type Gliederung = AnsichtZustand['gliederung'];
+type ZuordnungVon = (b: BauteilZeile) => Zuordnung | undefined;
+
+/** Schlüssel der Gruppe (Geschoss oder KG) eines Bauteils im Baum. */
+export function gruppenSchluessel(b: BauteilZeile, g: Gliederung, zuordnung: ZuordnungVon): string {
+  return g === 'kg'
+    ? `${b.modell_id}/kg:${zuordnung(b)?.kg ?? '-'}`
+    : `${b.modell_id}/${b.geschoss_id ?? '-'}`;
+}
+
+const zahl = (x: number) => x.toLocaleString('de-DE', { maximumFractionDigits: 2 });
+
+/** Baum Modell → Geschoss bzw. Kostengruppe → IFC-Klasse → Bauteil (E-89, E-90). */
+function baum(modell: ModellZeile, s: Struktur, g: Gliederung, zuordnung: ZuordnungVon): Knoten {
+  const gruppen: { key: string; titel: string; zusatz?: string; bauteile: BauteilZeile[] }[] = [];
+  if (g === 'geschoss') {
+    for (const x of [...s.geschosse, { id: null, name: 'ohne Geschoss' }])
+      gruppen.push({
+        key: `${modell.id}/${x.id ?? '-'}`,
+        titel: x.name,
+        bauteile: s.bauteile.filter((b) => b.geschoss_id === x.id),
+      });
+  } else {
+    const jeKg = new Map<number | null, BauteilZeile[]>();
+    for (const b of s.bauteile) {
+      const kg = zuordnung(b)?.kg ?? null;
+      jeKg.set(kg, [...(jeKg.get(kg) ?? []), b]);
+    }
+    const kgs = [...jeKg.keys()].sort((x, y) => (x ?? 9999) - (y ?? 9999));
+    for (const kg of kgs) {
+      const bt = jeKg.get(kg) ?? [];
+      const m =
+        kg === null
+          ? null
+          : kgMenge(
+              kg,
+              bt.map((b) => ({
+                zuordnung: zuordnung(b) ?? { kg, mengenart: null, regel: null, manuell: false },
+                mengen: b.mengen ?? {},
+              })),
+            );
+      gruppen.push({
+        key: `${modell.id}/kg:${kg ?? '-'}`,
+        titel: kg === null ? 'ohne Kostengruppe' : kgText(kg),
+        ...(m?.menge !== null && m?.mengenart
+          ? { zusatz: `${zahl(m.menge)} ${EINHEIT[m.mengenart]}` }
+          : {}),
         bauteile: bt,
+      });
+    }
+  }
+  const kinder = gruppen
+    .filter((x) => x.bauteile.length > 0)
+    .map((x): Knoten => {
+      const klassen = [...new Set(x.bauteile.map((b) => b.klasse))].sort((a, b) =>
+        a.localeCompare(b),
+      );
+      return {
+        key: x.key,
+        titel: x.titel,
+        ...(x.zusatz ? { zusatz: x.zusatz } : {}),
+        art: 'gruppe',
+        modellId: modell.id,
+        bauteile: x.bauteile,
         kinder: klassen.map((k) => {
-          const liste = bt.filter((b) => b.klasse === k);
+          const liste = x.bauteile.filter((b) => b.klasse === k);
           return {
-            key: `${gKey}/${k}`,
+            key: `${x.key}/${k}`,
             titel: k,
             art: 'klasse',
             modellId: modell.id,
@@ -56,8 +107,7 @@ function baum(modell: ModellZeile, s: Struktur): Knoten {
           };
         }),
       };
-    })
-    .filter((k) => k.bauteile.length > 0);
+    });
   return {
     key: modell.id,
     titel: modell.name,
@@ -75,15 +125,16 @@ export function Bauteilliste(props: {
   onModellAktion: (aktion: 'umbenennen' | 'entfernen', m: ModellZeile) => void;
   onIsolieren: (bauteile: BauteilZeile[]) => void;
   onEinpassen: (bauteile: BauteilZeile[]) => void;
+  zuordnung: ZuordnungVon;
 }) {
   const z = useAnsicht();
   const baeume = useMemo(
     () =>
       props.modelle.flatMap((m) => {
         const s = props.struktur.get(m.id);
-        return s ? [baum(m, s)] : [];
+        return s ? [baum(m, s, z.gliederung, props.zuordnung)] : [];
       }),
-    [props.modelle, props.struktur],
+    [props.modelle, props.struktur, z.gliederung, props.zuordnung],
   );
   const [mehr, setMehr] = useState<Record<string, number>>({});
   const auswahlKey = z.auswahl ? schluessel(z.auswahl.modellId, z.auswahl.expressId) : null;
@@ -95,7 +146,7 @@ export function Bauteilliste(props: {
     const { modellId, expressId } = z.auswahl;
     const b = props.struktur.get(modellId)?.bauteile.find((x) => x.express_id === expressId);
     if (!b) return;
-    const g = `${modellId}/${b.geschoss_id ?? '-'}`;
+    const g = gruppenSchluessel(b, z.gliederung, props.zuordnung);
     const pfad = [modellId, g, `${g}/${b.klasse}`];
     const offen = new Set(z.offen);
     if (pfad.some((p) => !offen.has(p))) {
@@ -192,6 +243,7 @@ export function Bauteilliste(props: {
           >
             {k.titel}
           </span>
+          {k.zusatz && <span className="bim-zusatz">{k.zusatz}</span>}
           {k.art !== 'bauteil' && <span className="bim-anzahl">{k.bauteile.length}</span>}
           <span className="bim-knoepfe">
             <button
@@ -239,8 +291,20 @@ export function Bauteilliste(props: {
   };
 
   return (
-    <div className="bim-liste" role="tree" aria-label="Bauteilliste" ref={liste}>
-      {baeume.map((b) => zeile(b, 0))}
+    <div className="bim-liste">
+      <div className="bim-liste-kopf">
+        <select
+          aria-label="Gliederung der Bauteilliste"
+          value={z.gliederung}
+          onChange={(e) => setzen({ gliederung: e.target.value as AnsichtZustand['gliederung'] })}
+        >
+          <option value="geschoss">nach Geschoss</option>
+          <option value="kg">nach Kostengruppe</option>
+        </select>
+      </div>
+      <div className="bim-baum" role="tree" aria-label="Bauteilliste" ref={liste}>
+        {baeume.map((b) => zeile(b, 0))}
+      </div>
     </div>
   );
 }

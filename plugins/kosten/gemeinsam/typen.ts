@@ -56,6 +56,24 @@ export interface KostenZeile {
 }
 
 /** Kostenzeile mit Rechenergebnis. */
+/**
+ * Modellmenge einer KG aus dem BIM-Plugin (Dienst „bim.mengen“, E-93). Kosten kennt nur diese
+ * schmale Form und hängt nicht vom BIM-Plugin ab.
+ */
+export interface ModellMenge {
+  menge: number | null;
+  einheit: string;
+  /** zugeordnete Bauteile, davon gezählt, Herkunft der Mengen */
+  anzahl: number;
+  gezaehlt: number;
+  ausQto: number;
+  ausGeometrie: number;
+  hinweise: string[];
+}
+
+/** Modellmengen je KG für einen Lesezugriff; null, wenn das Projekt kein Modell enthält. */
+export type ModellMengenQuelle = (kg: number, zeilenEinheit: string) => ModellMenge;
+
 export interface ZeileBerechnet extends KostenZeile {
   katalogBezeichnung: string;
   mengeWirksam: number | null;
@@ -66,6 +84,8 @@ export interface ZeileBerechnet extends KostenZeile {
   hinweise: string[];
   /** Aktuelle Bibliotheksversion, wenn neuer als die eingefrorene Kopie */
   neuereVersion: number | null;
+  /** bei Mengenquelle „Modell (IFC)“: Herkunft der Menge */
+  modellMenge: ModellMenge | null;
 }
 
 export interface KnotenDaten {

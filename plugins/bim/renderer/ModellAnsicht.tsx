@@ -2,8 +2,16 @@ import type { BautaktApi } from '@bautakt/kern/vertrag';
 import { Dialog, LeereAnsicht, type AnsichtProps } from '@bautakt/ui';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
-import type { BauteilZeile, EigenschaftsGruppe, ModellZeile } from '../gemeinsam/typen.js';
+import type {
+  BauteilZeile,
+  EigenschaftsGruppe,
+  ModellZeile,
+  RegelZeile,
+  ZuweisungZeile,
+} from '../gemeinsam/typen.js';
+import { zuordnen, type Mengenart, type Zuordnung } from '../gemeinsam/zuordnung.js';
 import { Bauteilliste, type Struktur } from './Bauteilliste.js';
+import { KgDialog, RegelnDialog, ZuordnungBereich } from './Kostengruppen.js';
 import { geometrie } from './geometrie.js';
 import { Szene, type Ansicht } from './szene.js';
 import { lesen, schluessel, setzen, useAnsicht, type Schnitt } from './zustand.js';
@@ -42,6 +50,9 @@ export function ModellAnsicht({ api, status, datenstand }: AnsichtProps) {
   const [fehler, setFehler] = useState<string | null>(null);
   const [bericht, setBericht] = useState<{ datei: string; zeilen: string[] } | null>(null);
   const [umbenennen, setUmbenennen] = useState<ModellZeile | null>(null);
+  const [regeln, setRegeln] = useState<RegelZeile[]>([]);
+  const [zuweisungen, setZuweisungen] = useState<ZuweisungZeile[]>([]);
+  const [dialog, setDialog] = useState<'regeln' | 'kg' | null>(null);
   const [eigenschaften, setEigenschaften] = useState<{
     key: string;
     gruppen: EigenschaftsGruppe[];
@@ -69,9 +80,13 @@ export function ModellAnsicht({ api, status, datenstand }: AnsichtProps) {
         const m = await holen<ModellZeile[]>(api, 'modelle');
         const s = new Map<string, Struktur>();
         for (const x of m) s.set(x.id, await holen<Struktur>(api, 'struktur', { modellId: x.id }));
+        const rg = await holen<RegelZeile[]>(api, 'regeln');
+        const zw = await holen<ZuweisungZeile[]>(api, 'zuweisungen');
         if (!aktiv) return;
         setModelle(m);
         setStruktur(s);
+        setRegeln(rg);
+        setZuweisungen(zw);
       } catch (e) {
         if (aktiv) setFehler((e as Error).message);
       }
@@ -128,6 +143,29 @@ export function ModellAnsicht({ api, status, datenstand }: AnsichtProps) {
       aktiv = false;
     };
   }, [api, z.auswahl]);
+
+  // Kostengruppe je Bauteil: Überschreibung, sonst erste passende Regel (E-90)
+  const zuordnungen = useMemo(() => {
+    const ueber = new Map(
+      zuweisungen.map((x) => [
+        `${x.modell_id}:${x.globalid}`,
+        { kg: x.kg, mengenart: x.mengenart },
+      ]),
+    );
+    const m = new Map<string, Zuordnung>();
+    for (const st of struktur.values())
+      for (const b of st.bauteile)
+        m.set(
+          schluessel(b.modell_id, b.express_id),
+          zuordnen(b, regeln, ueber.get(`${b.modell_id}:${b.globalid}`)),
+        );
+    return m;
+  }, [struktur, regeln, zuweisungen]);
+  const zuordnungVon = useCallback(
+    (b: BauteilZeile) => zuordnungen.get(schluessel(b.modell_id, b.express_id)),
+    [zuordnungen],
+  );
+  const alleBauteile = useMemo(() => [...struktur.values()].flatMap((x) => x.bauteile), [struktur]);
 
   // Schnittebene
   const bauteilVon = useCallback(
@@ -276,6 +314,9 @@ export function ModellAnsicht({ api, status, datenstand }: AnsichtProps) {
     <div className="bim-ansicht">
       <div className="tp-werkzeuge bim-werkzeuge" role="toolbar" aria-label="Modell">
         {!nurLesen && <button onClick={() => void importieren()}>IFC einlesen …</button>}
+        <button onClick={() => setDialog('regeln')} title="Regeltabelle IFC → Kostengruppe">
+          Regeln …
+        </button>
         <div className="tp-gruppe">
           <button onClick={() => einpassen()} title="Ganzes Modell zeigen">
             Einpassen
@@ -406,6 +447,7 @@ export function ModellAnsicht({ api, status, datenstand }: AnsichtProps) {
           nurLesen={nurLesen}
           onIsolieren={isolieren}
           onEinpassen={(b) => einpassen(b)}
+          zuordnung={zuordnungVon}
           onModellAktion={(aktion, m) => {
             if (aktion === 'umbenennen') return setUmbenennen(m);
             // rückgängig machbar (Strg+Z), daher ohne Rückfrage wie andere Löschbefehle
@@ -422,9 +464,51 @@ export function ModellAnsicht({ api, status, datenstand }: AnsichtProps) {
           {laedt.length > 0 && <div className="bim-status">Modell wird aufbereitet …</div>}
           {messung && <div className="bim-status unten">{messung}</div>}
         </div>
-        <Eigenschaften bauteil={gewaehlt} gruppen={gruppen} />
+        <Eigenschaften bauteil={gewaehlt} gruppen={gruppen}>
+          {gewaehlt && (
+            <ZuordnungBereich
+              bauteil={gewaehlt}
+              zuordnung={zuordnungVon(gewaehlt)}
+              nurLesen={nurLesen}
+              onAendern={() => setDialog('kg')}
+            />
+          )}
+        </Eigenschaften>
       </div>
       {bericht && <BerichtDialog bericht={bericht} onSchliessen={() => setBericht(null)} />}
+      {dialog === 'regeln' && (
+        <RegelnDialog
+          regeln={regeln}
+          bauteile={alleBauteile}
+          klassen={[...new Set(alleBauteile.map((b) => b.klasse))].sort()}
+          nurLesen={nurLesen}
+          befehl={befehl}
+          onSchliessen={() => setDialog(null)}
+        />
+      )}
+      {dialog === 'kg' && gewaehlt && (
+        <KgDialog
+          bauteil={gewaehlt}
+          zuordnung={zuordnungVon(gewaehlt)}
+          onSchliessen={() => setDialog(null)}
+          onSetzen={async (kg: number | null, mengenart: Mengenart) => {
+            const ok = await befehl('zuweisung.setzen', {
+              modellId: gewaehlt.modell_id,
+              globalid: gewaehlt.globalid,
+              kg,
+              mengenart,
+            });
+            if (ok) setDialog(null);
+          }}
+          onRegel={async () => {
+            const ok = await befehl('zuweisung.entfernen', {
+              modellId: gewaehlt.modell_id,
+              globalid: gewaehlt.globalid,
+            });
+            if (ok) setDialog(null);
+          }}
+        />
+      )}
       {umbenennen && (
         <UmbenennenDialog
           modell={umbenennen}
@@ -468,6 +552,7 @@ function ebene(
 function Eigenschaften(props: {
   bauteil: BauteilZeile | undefined;
   gruppen: EigenschaftsGruppe[] | null;
+  children?: React.ReactNode;
 }) {
   if (!props.bauteil)
     return (
@@ -485,6 +570,7 @@ function Eigenschaften(props: {
         {props.bauteil.klasse}
         {props.bauteil.typ ? ` · ${props.bauteil.typ}` : ''}
       </p>
+      {props.children}
       {!props.gruppen ? (
         <p className="leise">Lädt …</p>
       ) : (

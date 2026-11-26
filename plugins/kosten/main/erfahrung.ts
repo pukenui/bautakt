@@ -1,6 +1,6 @@
 import type { PluginDb } from '@bautakt/kern';
 import { KOSTEN_URSACHEN, kgUnter, rundeCent, type KostenUrsache } from '@bautakt/rechnen-kosten';
-import { kostenDatenLaden } from './daten.js';
+import { kostenDatenLaden, type KostenUmgebung } from './daten.js';
 import { sollIstLaden } from './sollist.js';
 
 /** Beobachtung „Kosten je KG“ (E-75). */
@@ -31,9 +31,9 @@ export interface KostenErfahrung {
 }
 
 /** Soll = Berechnung (sonst Schätzung, sonst Rahmen); Ist = Feststellung bzw. Prognose. */
-export function kostenBeobachtungen(db: PluginDb): KostenErfahrung {
+export function kostenBeobachtungen(db: PluginDb, umgebung: KostenUmgebung = {}): KostenErfahrung {
   const s = sollIstLaden(db, 'berechnung');
-  const k = kostenDatenLaden(db);
+  const k = kostenDatenLaden(db, umgebung);
   const kosten: KostenBeobachtung[] = [];
   for (const z of s.zeilen) {
     const soll = z.stufen.berechnung ?? z.stufen.schaetzung ?? z.stufen.rahmen;
