@@ -131,6 +131,8 @@ export function PlanDialoge(props: {
           projektname={props.projektname}
           zugeklappt={z.zugeklappt[daten.plan.id] ?? []}
           listeFilter={z.listeFilter}
+          mtaAusgeblendet={z.mtaAusgeblendet[daten.plan.id] ?? []}
+          mtaAktuell={z.mtaAktuell}
           darstellung={props.darstellung}
           onSchliessen={props.onSchliessen}
         />

@@ -4,6 +4,7 @@ import type { AufwandZeile, IstZeile, PlanZeile } from '../gemeinsam/typen.js';
 import { MIGRATIONEN } from '../migrations/index.js';
 import { aufwandBefehle, type BibliothekZugriff } from './aufwand.js';
 import { BEFEHLE } from './befehle.js';
+import { MTA_BEFEHLE, mtaLaden } from './mta.js';
 import { ORTE_BEFEHLE } from './orte.js';
 import { vorgangslisteExcel } from './excel.js';
 import { planDatenLaden } from './daten.js';
@@ -18,13 +19,19 @@ export type { PlanZeile } from '../gemeinsam/typen.js';
 export const terminePlugin: BautaktPlugin = {
   id: 'termine',
   name: 'Terminplanung',
-  version: '0.6.0',
+  version: '0.7.0',
   tabellenPraefix: 't_',
   migrationen: MIGRATIONEN,
 
   aktivieren(ctx) {
     for (const b of BEFEHLE) ctx.befehle.registrieren(b);
     for (const b of ORTE_BEFEHLE) ctx.befehle.registrieren(b);
+    for (const b of MTA_BEFEHLE) ctx.befehle.registrieren(b);
+    ctx.abfragen.registrieren({
+      name: 'mta',
+      schema: z.object({ planId: z.string().min(1) }),
+      ausfuehren: (db, a) => mtaLaden(db, a.planId),
+    });
 
     // Bibliothek (global, E-23) ist optional: ohne sie nur eigene Aufwandswerte
     const bibliothek = (): BibliothekZugriff | null => {

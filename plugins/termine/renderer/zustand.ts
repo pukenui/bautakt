@@ -19,6 +19,10 @@ export interface Zustand {
   listeFilter: ListenFilter;
   /** Liniendiagramm (E-68): Zeit waagerecht (Standard) oder Orte waagerecht */
   linienAusrichtung: 'zeit-x' | 'ort-x';
+  /** MTA (E-72): ausgeblendete Meilensteine je Plan (Standard: alle sichtbar) */
+  mtaAusgeblendet: Record<string, string[]>;
+  /** MTA: aktuellen, noch nicht festgehaltenen Stand anhängen */
+  mtaAktuell: boolean;
 }
 
 const SPEICHER = 'bautakt.termine.anzeige';
@@ -35,6 +39,8 @@ function laden(): Zustand {
     vergleich: {},
     listeFilter: OHNE_FILTER,
     linienAusrichtung: 'zeit-x',
+    mtaAusgeblendet: {},
+    mtaAktuell: true,
   };
   try {
     const gespeichert = JSON.parse(localStorage.getItem(SPEICHER) ?? '{}') as Partial<Zustand>;

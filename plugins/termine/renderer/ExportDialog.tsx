@@ -4,13 +4,14 @@ import { useState } from 'react';
 import type { PlanDaten } from '../gemeinsam/typen.js';
 import { filterAktiv, OHNE_FILTER, type ListenFilter } from './listen.js';
 
-export type Darstellung = 'balkenplan' | 'netzplan' | 'terminliste' | 'meilensteinplan';
+export type Darstellung = 'balkenplan' | 'netzplan' | 'terminliste' | 'meilensteinplan' | 'mta';
 
 const TITEL: Record<Darstellung, string> = {
   balkenplan: 'Balkenplan',
   netzplan: 'Netzplan',
   terminliste: 'Terminliste',
   meilensteinplan: 'Meilensteinplan',
+  mta: 'Meilenstein-Trendanalyse',
 };
 
 const ERSTELLER = 'bautakt.ersteller';
@@ -23,6 +24,9 @@ export function ExportDialog(props: {
   zugeklappt: string[];
   /** Filter der Terminliste (E-47); wird beim Export der Terminliste übernommen. */
   listeFilter?: ListenFilter;
+  /** MTA: ausgeblendete Meilensteine und aktueller Stand (wie angezeigt) */
+  mtaAusgeblendet?: string[];
+  mtaAktuell?: boolean;
   darstellung: Darstellung;
   onSchliessen: () => void;
 }) {
@@ -61,6 +65,8 @@ export function ExportDialog(props: {
         sollStandId: props.daten.vergleich?.standId ?? null,
         filter: f.filterUebernehmen ? listeFilter : OHNE_FILTER,
         projektname: props.projektname,
+        mtaAusgeblendet: props.mtaAusgeblendet ?? [],
+        mtaAktuell: props.mtaAktuell ?? true,
       },
     });
     setLaeuft(false);
@@ -95,6 +101,7 @@ export function ExportDialog(props: {
             <option value="netzplan">Netzplan (DIN 69900)</option>
             <option value="terminliste">Terminliste</option>
             <option value="meilensteinplan">Meilensteinplan</option>
+            <option value="mta">Meilenstein-Trendanalyse (MTA)</option>
           </select>
         </label>
         <label className="feld">

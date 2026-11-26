@@ -196,4 +196,27 @@ export const MIGRATIONEN: readonly Migration[] = [
       CREATE INDEX t_ort_stand_s ON t_ort_stand (stand_id);
     `,
   },
+  {
+    version: 7,
+    name: 'Meilenstein-Trendanalyse: Berichte (E-71)',
+    sql: `
+      CREATE TABLE t_mta_bericht (
+        id TEXT PRIMARY KEY,
+        plan_id TEXT NOT NULL,
+        berichtsdatum TEXT NOT NULL,
+        zeit TEXT NOT NULL,
+        notiz TEXT NOT NULL DEFAULT '',
+        UNIQUE (plan_id, berichtsdatum)
+      );
+      CREATE TABLE t_mta_termin (
+        id TEXT PRIMARY KEY,
+        bericht_id TEXT NOT NULL,
+        vorgang_id TEXT NOT NULL,
+        termin TEXT NOT NULL,
+        erreicht INTEGER NOT NULL DEFAULT 0
+      );
+      CREATE INDEX t_mta_termin_b ON t_mta_termin (bericht_id);
+      CREATE INDEX t_mta_termin_v ON t_mta_termin (vorgang_id);
+    `,
+  },
 ];

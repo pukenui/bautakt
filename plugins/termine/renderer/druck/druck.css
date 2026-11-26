@@ -193,3 +193,23 @@ body.druckmodus #app {
   margin-bottom: 10px;
   border: 1px solid #888;
 }
+
+/* Meilenstein-Trendanalyse (E-73) */
+.druck-mta {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  flex: 1;
+}
+.druck-mta .mta-svg {
+  border: 1px solid #888;
+}
+.druck-mta-tabelle .tabelle {
+  font-size: 10.5px;
+  border-collapse: collapse;
+}
+.druck-mta-tabelle .tabelle th,
+.druck-mta-tabelle .tabelle td {
+  padding: 2px 6px;
+  border-bottom: 1px solid #e2e2de;
+}

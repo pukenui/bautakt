@@ -956,3 +956,94 @@ input.kurz {
 .takt-breit {
   grid-column: 1 / -1;
 }
+
+/* --- Meilenstein-Trendanalyse (E-72) --- */
+.mta-rahmen {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.mta-oben {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.mta-svg {
+  display: block;
+  background: #fff;
+  border: 1px solid var(--linie);
+  flex: none;
+}
+.mta-flaeche {
+  fill: #fff;
+}
+.mta-vergangen {
+  fill: #f3f3f0;
+}
+.mta-raster {
+  stroke: #ececea;
+}
+.mta-diagonale {
+  stroke: #7a7a74;
+  stroke-width: 1.5;
+}
+.mta-achse {
+  font-size: 10px;
+  fill: #555;
+}
+.mta-titel {
+  font-size: 11px;
+  fill: #333;
+  font-weight: 600;
+}
+.mta-bericht {
+  stroke: #1d1d1b;
+  stroke-width: 1.5;
+}
+.mta-strich {
+  fill: none;
+  stroke-width: 2.5;
+}
+.mta-strich.aktuell {
+  stroke-dasharray: 5 4;
+}
+.mta-punkt {
+  stroke-width: 1.5;
+}
+.mta-linie.gewaehlt .mta-strich {
+  stroke-width: 4;
+}
+.mta-name {
+  font-size: 11px;
+  font-weight: 600;
+}
+.mta-auswahl {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 220px;
+}
+.mta-farbe {
+  display: inline-block;
+  width: 14px;
+  height: 4px;
+  border-radius: 2px;
+  vertical-align: middle;
+}
+.mta-tabelle {
+  width: auto;
+}
+.mta-loeschen {
+  border: none;
+  background: none;
+  color: var(--text-leise);
+  cursor: pointer;
+  padding: 0 0 0 4px;
+}
+.mta-notiz {
+  font-weight: 400;
+  font-size: 11px;
+}

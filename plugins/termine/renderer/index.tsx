@@ -3,6 +3,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import type { PlanZeile } from '../gemeinsam/typen.js';
 import hilfeLinien from '../hilfe/liniendiagramm.md?raw';
 import hilfeMeilensteine from '../hilfe/meilensteinplan.md?raw';
+import hilfeMta from '../hilfe/mta.md?raw';
 import hilfeNetzplan from '../hilfe/netzplan.md?raw';
 import hilfeTerminliste from '../hilfe/terminliste.md?raw';
 import hilfePlaene from '../hilfe/plaene.md?raw';
@@ -14,6 +15,8 @@ import { DruckNetzplan } from './druck/DruckNetzplan.js';
 import { DruckTerminliste } from './druck/DruckTerminliste.js';
 import { LinienAnsicht } from './LinienAnsicht.js';
 import { MeilensteinAnsicht } from './MeilensteinAnsicht.js';
+import { MtaAnsicht } from './MtaAnsicht.js';
+import { DruckMta } from './druck/DruckMta.js';
 import { NetzplanAnsicht } from './NetzplanAnsicht.js';
 import { TerminlisteAnsicht } from './TerminlisteAnsicht.js';
 import { TerminplanAnsicht } from './TerminplanAnsicht.js';
@@ -165,6 +168,7 @@ export const termineRenderer: RendererPlugin = {
       komponente: LinienAnsicht,
       hilfe: hilfeLinien,
     },
+    { id: 'termine.mta', titel: 'MTA', komponente: MtaAnsicht, hilfe: hilfeMta },
     { id: 'termine.plaene', titel: 'Pläne', komponente: Plaene, hilfe: hilfePlaene },
   ],
   druckansichten: [
@@ -172,5 +176,6 @@ export const termineRenderer: RendererPlugin = {
     { id: 'termine.netzplan', titel: 'Netzplan', komponente: DruckNetzplan },
     { id: 'termine.terminliste', titel: 'Terminliste', komponente: DruckTerminliste },
     { id: 'termine.meilensteinplan', titel: 'Meilensteinplan', komponente: DruckMeilensteinplan },
+    { id: 'termine.mta', titel: 'Meilenstein-Trendanalyse', komponente: DruckMta },
   ],
 };

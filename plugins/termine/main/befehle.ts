@@ -125,6 +125,12 @@ export function zugehoerigeLoeschen(tx: Transaktion, vid: string): void {
   for (const a of tx.lesen<{ id: string }>('SELECT id FROM t_aufwand WHERE vorgang_id = ?', vid)) {
     tx.loeschen('t_aufwand', a.id);
   }
+  for (const m of tx.lesen<{ id: string }>(
+    'SELECT id FROM t_mta_termin WHERE vorgang_id = ?',
+    vid,
+  )) {
+    tx.loeschen('t_mta_termin', m.id);
+  }
 }
 
 const kanten = (bs: readonly BeziehungZeile[]) =>
@@ -215,6 +221,11 @@ export const BEFEHLE: Def[] = [
           tx.loeschen('t_ruhezeit', r.id);
         }
       }
+      for (const b of tx.lesen<{ id: string }>(
+        'SELECT id FROM t_mta_bericht WHERE plan_id = ?',
+        d.id,
+      ))
+        tx.loeschen('t_mta_bericht', b.id);
       tx.loeschen('t_plan', d.id);
       if (plan.kalender_id && tx.eins('SELECT 1 FROM t_kalender WHERE id = ?', plan.kalender_id)) {
         tx.loeschen('t_kalender', plan.kalender_id);
