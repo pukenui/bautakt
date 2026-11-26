@@ -1,6 +1,7 @@
 import {
   BautaktFehler,
   DATEIENDUNG,
+  type GlobaleDaten,
   ProjektSitzung,
   type Antwort,
   type Meldungen,
@@ -22,6 +23,7 @@ export class ProjektVerwaltung {
   constructor(
     private readonly fenster: () => BrowserWindow | null,
     private readonly senden: Senden,
+    private readonly globaleDaten: () => GlobaleDaten | null = () => null,
   ) {}
 
   get aktiv(): ProjektSitzung | null {
@@ -36,6 +38,7 @@ export class ProjektVerwaltung {
     return {
       appVersion: app.getVersion(),
       plugins: PLUGINS,
+      globaleDienste: { dienst: <T>(name: string) => this.globaleDaten()?.dienst<T>(name) },
       fehler: (e: unknown) => this.senden('hinweis', { text: fehlerText(e), art: 'fehler' }),
     };
   }

@@ -822,3 +822,35 @@ input.kurz {
   font-size: 10px;
   fill: #555;
 }
+
+/* --- Aufwandswert-Rechner (E-24) --- */
+.aw-formular select[size] {
+  width: 100%;
+  margin-top: 4px;
+}
+.aw-hinweis {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 4px;
+  padding: 4px 8px;
+  background: #fff3cd;
+  border: 1px solid #e3c46a;
+  border-radius: 4px;
+  font-size: 12px;
+}
+.aw-zuschlag {
+  margin-bottom: 4px;
+}
+.aw-prozent {
+  width: 80px;
+  text-align: right;
+}
+.tp-aw {
+  margin-left: 4px;
+  font-size: 10px;
+  color: var(--akzent);
+}
+.tp-aw.warnung {
+  color: #a15c00;
+}

@@ -177,6 +177,13 @@ export function TerminplanAnsicht({ api, status, datenstand }: AnsichtProps) {
           >
             Vorgänger …
           </button>
+          <button
+            disabled={!gewaehlt || gewaehlt.typ !== 'vorgang'}
+            onClick={() => gewaehlt && setDialog({ art: 'aufwand', id: gewaehlt.id })}
+            title="Dauer aus Menge, Aufwandswert und Kolonne herleiten (E-24)"
+          >
+            Aufwandswert …
+          </button>
         </div>
         <SollIstLeiste
           daten={daten}

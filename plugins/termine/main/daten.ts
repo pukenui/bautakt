@@ -1,3 +1,4 @@
+import { aufwandHinweise } from './aufwand.js';
 import { BautaktFehler, type PluginDb } from '@bautakt/kern';
 import { Arbeitskalender } from '@bautakt/rechnen-kalender';
 import { netzplanBerechnen, NetzplanFehler, type VorgangEingabe } from '@bautakt/rechnen-termine';
@@ -134,6 +135,7 @@ export function planDatenLaden(
   db: Leser,
   planId: string,
   sollStandId: string | null = null,
+  aktuelleVersion?: (bibId: string) => number | null,
 ): PlanDaten {
   const plan = planLesen(db, planId);
   const kalender = kalenderLesen(db, plan.kalender_id);
@@ -150,7 +152,18 @@ export function planDatenLaden(
   const vergleich = sollStandId
     ? vergleichLesen(db, plan, kalender, ruhezeiten, sollStandId, berechnung)
     : null;
-  return { plan, kalender, ruhezeiten, vorgaenge, beziehungen, berechnung, ist, vergleich };
+  const aufwand = aufwandHinweise(db, planId, aktuelleVersion);
+  return {
+    plan,
+    kalender,
+    ruhezeiten,
+    vorgaenge,
+    beziehungen,
+    berechnung,
+    ist,
+    vergleich,
+    aufwand,
+  };
 }
 
 /** Soll-Termine aus einem Stand und Abweichung der aktuellen Prognose (E-46). */

@@ -47,6 +47,27 @@ export interface TabelleProps {
   hoehe: number;
 }
 
+/** Kennzeichen „ƒ“ für Dauern aus dem Aufwandswert-Rechner, mit Formelzeile als Tooltip (E-54). */
+function AwMarke(props: { daten: PlanDaten; id: string; dauer: number }) {
+  const a = props.daten.aufwand[props.id];
+  if (!a) return null;
+  const abweichend = a.dauer !== props.dauer;
+  const hinweise = [
+    a.formel,
+    ...(abweichend ? [`⚠ Dauer weicht von der Herleitung (${a.dauer} AT) ab`] : []),
+    ...(a.neuereVersion ? [`⚠ Neuere Bibliotheksversion ${a.neuereVersion} vorhanden`] : []),
+  ];
+  return (
+    <span
+      className={`tp-aw${abweichend || a.neuereVersion ? ' warnung' : ''}`}
+      title={hinweise.join('\n')}
+      aria-label="Dauer aus Aufwandswert"
+    >
+      {abweichend || a.neuereVersion ? 'ƒ⚠' : 'ƒ'}
+    </span>
+  );
+}
+
 export function Tabelle(p: TabelleProps) {
   const { scrollRef, onScroll } = p;
   const { daten, zeilen, zustand, nurLesen, auswahl } = p;
@@ -423,6 +444,9 @@ export function Tabelle(p: TabelleProps) {
                     ) : (
                       <span className="tp-text">
                         {ohneQuelle ? <span className="tp-warnung">⚠ fehlt</span> : wert(v, s.key)}
+                        {s.key === 'dauer' && (
+                          <AwMarke daten={daten} id={v.id} dauer={v.dauer_at} />
+                        )}
                       </span>
                     )}
                   </div>

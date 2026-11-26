@@ -2,7 +2,14 @@ import { neueId, type StandHandler, type Transaktion, type Zeile } from '@bautak
 import { planDatenLaden } from './daten.js';
 
 /** Datentabellen des Plugins, die ein Stand kopiert (Architektur 3.3). */
-const TABELLEN = ['t_plan', 't_kalender', 't_ruhezeit', 't_vorgang', 't_beziehung'] as const;
+const TABELLEN = [
+  't_plan',
+  't_kalender',
+  't_ruhezeit',
+  't_vorgang',
+  't_beziehung',
+  't_aufwand',
+] as const;
 
 /** Spalten einer Tabelle (ohne Berechnung, nur Lesen über PRAGMA). */
 function spalten(tx: Transaktion, tabelle: string): string[] {

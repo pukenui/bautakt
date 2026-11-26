@@ -113,9 +113,13 @@ function pruefeBeziehung(
   }
 }
 
-function istLoeschen(tx: Transaktion, vid: string): void {
+/** Ist-Meldungen und Herleitung (Aufwandswert) eines Vorgangs löschen. */
+function zugehoerigeLoeschen(tx: Transaktion, vid: string): void {
   for (const i of tx.lesen<{ id: string }>('SELECT id FROM t_ist WHERE vorgang_id = ?', vid)) {
     tx.loeschen('t_ist', i.id);
+  }
+  for (const a of tx.lesen<{ id: string }>('SELECT id FROM t_aufwand WHERE vorgang_id = ?', vid)) {
+    tx.loeschen('t_aufwand', a.id);
   }
 }
 
@@ -197,7 +201,7 @@ export const BEFEHLE: Def[] = [
         for (let p = v.parent_id; p; p = vs.find((x) => x.id === p)?.parent_id ?? null) t++;
         return t;
       };
-      for (const v of vs) istLoeschen(tx, v.id);
+      for (const v of vs) zugehoerigeLoeschen(tx, v.id);
       for (const v of [...vs].sort((a, b) => tiefe(b) - tiefe(a))) tx.loeschen('t_vorgang', v.id);
       if (plan.kalender_id) {
         for (const r of tx.lesen<{ id: string }>(
@@ -393,7 +397,7 @@ export const BEFEHLE: Def[] = [
             tx.loeschen('t_beziehung', b.id);
         }
       }
-      for (const vid of weg) istLoeschen(tx, vid);
+      for (const vid of weg) zugehoerigeLoeschen(tx, vid);
       for (const vid of weg) tx.loeschen('t_vorgang', vid); // Nachkommen stehen vor ihren Eltern
     },
   }),

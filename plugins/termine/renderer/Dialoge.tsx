@@ -27,9 +27,12 @@ export function VorgangDialog(props: {
   befehl: Befehl;
   fehler: string | null;
   onBeziehungen: () => void;
+  /** Aufwandswert-Rechner öffnen (E-24). */
+  onAufwand?: () => void;
   onSchliessen: () => void;
 }) {
   const v = props.daten.vorgaenge.find((x) => x.id === props.vorgangId);
+  const aw = props.daten.aufwand[props.vorgangId];
   const [f, setF] = useState(() => ({
     nr: v?.nr ?? '',
     name: v?.name ?? '',
@@ -118,12 +121,23 @@ export function VorgangDialog(props: {
                 : undefined
           }
         >
-          <input
-            inputMode="numeric"
-            value={f.typ === 'vorgang' ? f.dauer_at : '0'}
-            disabled={f.typ !== 'vorgang'}
-            onChange={(e) => setze('dauer_at', e.target.value)}
-          />
+          <span className="inline">
+            <input
+              inputMode="numeric"
+              value={f.typ === 'vorgang' ? f.dauer_at : '0'}
+              disabled={f.typ !== 'vorgang'}
+              onChange={(e) => setze('dauer_at', e.target.value)}
+            />
+            {props.onAufwand && v.typ === 'vorgang' && (
+              <button
+                type="button"
+                onClick={props.onAufwand}
+                title="Dauer mit dem Aufwandswert-Rechner herleiten (Menge × AW ÷ Kolonne)"
+              >
+                Herleiten …
+              </button>
+            )}
+          </span>
         </Feld>
         <Feld
           label="Quelle/Annahme (Pflicht)"
@@ -142,6 +156,17 @@ export function VorgangDialog(props: {
         {v.dauer_herleitung && (
           <Feld label="Herleitung der Dauer" breit>
             <code className="formelzeile">{v.dauer_herleitung}</code>
+            {aw && aw.dauer !== v.dauer_at && (
+              <span className="feld-hinweis tp-warnung">
+                ⚠ Die Dauer ({v.dauer_at} AT) weicht von der Herleitung ({aw.dauer} AT) ab.
+              </span>
+            )}
+            {aw?.neuereVersion && (
+              <span className="feld-hinweis tp-warnung">
+                ⚠ In der Bibliothek gibt es Version {aw.neuereVersion} des Aufwandswerts (verwendet:
+                Version {aw.bibVersion}). Umstellen über „Herleiten …“.
+              </span>
+            )}
           </Feld>
         )}
         <Feld label="Anmerkung/Begründung" breit>

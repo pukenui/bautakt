@@ -17,6 +17,19 @@ gerechnet (Vorwärts-/Rückwärtsrechnung nach DIN 69900).
 6. **Planeinstellungen …**: Projektstart, Soll-Ende, Rückwärtsrechnung vom Soll-Ende
    (negative Puffer werden rot), Arbeitstage, Feiertage NRW, Ruhezeiten.
 
+## Dauer aus Aufwandswerten
+
+1. Vorgang wählen → **Aufwandswert …** (oder in den Eigenschaften **Herleiten …**).
+2. Aufwandswert aus der **Bibliothek** wählen oder einen **eigenen Wert** mit Quelle eingeben.
+3. Menge, Arbeitskräfte (AK) und Arbeitszeit je Tag eintragen, bei Bedarf Zu-/Abschläge
+   (z. B. Winterbau +15 %, Wiederholeffekt −5 %; sie werden addiert).
+4. **Dauer übernehmen**: Die Dauer wird aufgerundet, der Rechenweg steht als Formelzeile in der
+   Herleitung, z. B. `650 m² × 0,50 h/m² = 325 h ÷ (4 × 8 h) = 10,2 → 11 AT`. Ist die
+   Quelle/Annahme leer, trägt Bautakt den Aufwandswert mit Quelle ein.
+
+In der Spalte Dauer zeigt **ƒ** eine hergeleitete Dauer (Formel im Tooltip). **ƒ⚠** heißt: Die
+Dauer wurde danach von Hand geändert oder es gibt eine neuere Version in der Bibliothek.
+
 ## Soll-Ist (Ist-Erfassung)
 
 1. **Stände …** → „Soll Vertrag“ speichern (einmal, vor Baubeginn).

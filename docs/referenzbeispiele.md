@@ -132,6 +132,9 @@ Formel: Dauer [AT] = Menge × AW ÷ (AK × h/AT), aufrunden auf ganze AT.
 | Montage Fertigteilstützen | 24 Stk | 2,0 h/Stk | 48 h | 32 h/AT | 1,5 → **2 AT** | `24 Stk × 2,00 h/Stk = 48 h ÷ (4 × 8 h) = 1,5 → 2 AT` |
 
 Mit Zuschlag „Winterbau +15 %“ auf Schalung: 325 h × 1,15 = 373,75 h ÷ 32 = 11,68 → **12 AT**.
+Erwartete Formelzeile (E-53): `650 m² × 0,50 h/m² = 325 h × (1 + 15 % Winterbau) = 373,75 h ÷ (4 × 8 h) = 11,7 → 12 AT`.
+
+Mehrere Zu-/Abschläge werden addiert (E-53): Einarbeitung +10 %, Winterbau +15 %, Wiederholeffekt −5 % → Faktor 1,20 → 325 h × 1,20 = 390 h ÷ 32 = 12,19 → **13 AT**.
 
 ## R-10 Kostenzeile mit Index, Regionalfaktor, MwSt. (fiktive Testwerte)
 

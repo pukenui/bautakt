@@ -15,10 +15,18 @@ export const AUFRUFE = [
   'befehl:wiederholen',
   'export:starten',
   'abfrage',
+  'global:abfrage',
+  'global:aktion',
 ] as const;
 
 export type Aufruf = (typeof AUFRUFE)[number];
 
 /** Push-Kanäle Main → Renderer (Präfix + Meldungsname aus `Meldungen`). */
 export const MELDUNG_PRAEFIX = 'meldung:';
-export const MELDUNGEN = ['status', 'datenGeaendert', 'hinweis', 'menue'] as const;
+export const MELDUNGEN = [
+  'status',
+  'datenGeaendert',
+  'hinweis',
+  'menue',
+  'globalGeaendert',
+] as const;

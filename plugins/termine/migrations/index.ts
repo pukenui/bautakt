@@ -149,4 +149,34 @@ export const MIGRATIONEN: readonly Migration[] = [
       CREATE INDEX t_ist_vorgang ON t_ist (vorgang_id, stichtag);
     `,
   },
+  {
+    version: 5,
+    name: 'Aufwandswert-Rechner: Herleitung mit eingefrorener Bibliothekskopie (E-24, E-54)',
+    sql: `
+      CREATE TABLE t_aufwand (
+        id TEXT PRIMARY KEY,
+        vorgang_id TEXT NOT NULL UNIQUE,
+        bib_id TEXT,
+        bib_version INTEGER,
+        bezeichnung TEXT NOT NULL,
+        einheit TEXT NOT NULL,
+        h_je_me REAL NOT NULL,
+        quelle TEXT NOT NULL,
+        stand TEXT NOT NULL DEFAULT '',
+        menge REAL NOT NULL,
+        ak REAL NOT NULL,
+        h_je_at REAL NOT NULL,
+        zuschlaege TEXT NOT NULL DEFAULT '[]',
+        formel TEXT NOT NULL,
+        dauer INTEGER NOT NULL
+      );
+      CREATE TABLE t_aufwand_stand (
+        id TEXT PRIMARY KEY, stand_id TEXT NOT NULL, orig_id TEXT NOT NULL,
+        vorgang_id TEXT, bib_id TEXT, bib_version INTEGER, bezeichnung TEXT, einheit TEXT,
+        h_je_me REAL, quelle TEXT, stand TEXT, menge REAL, ak REAL, h_je_at REAL,
+        zuschlaege TEXT, formel TEXT, dauer INTEGER
+      );
+      CREATE INDEX t_aufwand_stand_s ON t_aufwand_stand (stand_id);
+    `,
+  },
 ];

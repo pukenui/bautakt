@@ -35,6 +35,8 @@ export interface SitzungsOptionen {
   /** Intervall für Autosave (Standard 2 min, E-41); 0 = aus (für Tests). */
   autosaveMs?: number;
   fehler?: (e: unknown) => void;
+  /** Dienste globaler Plugin-Teile (z. B. Bibliothek), für `dienste.holen`. */
+  globaleDienste?: { dienst<T>(name: string): T | undefined };
 }
 
 interface Erweiterungen {
@@ -164,7 +166,9 @@ export class ProjektSitzung {
           if (erw.dienste.has(name)) throw new BautaktFehler('PLUGIN', `Dienst „${name}“ doppelt.`);
           erw.dienste.set(name, impl);
         },
-        holen<T>(name: string): T {
+        holen: <T>(name: string): T => {
+          const global = this.optionen.globaleDienste?.dienst<T>(name);
+          if (!erw.dienste.has(name) && global !== undefined) return global;
           if (!erw.dienste.has(name)) {
             throw new BautaktFehler('PLUGIN', `Dienst „${name}“ ist nicht verfügbar.`);
           }

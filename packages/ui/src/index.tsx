@@ -88,10 +88,26 @@ export interface Druckansicht {
   komponente: ComponentType<DruckProps>;
 }
 
+/** Props einer Ansicht auf globale Daten (z. B. Bibliothek) – auch ohne geöffnetes Projekt. */
+export interface GlobaleAnsichtProps {
+  api: BautaktApi;
+  /** Zähler, der bei jeder Änderung globaler Daten steigt. */
+  datenstand: number;
+}
+
+export interface GlobaleAnsicht {
+  id: string;
+  titel: string;
+  komponente: ComponentType<GlobaleAnsichtProps>;
+  hilfe: string;
+}
+
 /** Renderer-Teil eines Plugins (Architektur 3.5, „RendererModul“). */
 export interface RendererPlugin {
   id: string; // muss zur ID des Main-Teils passen
   ansichten: Ansicht[];
+  /** Ansichten auf globale Daten (E-23), immer erreichbar. */
+  globaleAnsichten?: GlobaleAnsicht[];
   druckansichten?: Druckansicht[];
 }
 

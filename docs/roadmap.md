@@ -39,7 +39,7 @@ Ziel: Ab ca. **13.12.** sollen damit F.1 (Rollen-Netzplan) und F.2 (Projekttermi
 
 - [x] **M4** Ist-Erfassung, Stichtag/Prognose, Soll-Ist-Balken, Abweichungsursachen (E-32)
 - [x] **M5** Terminliste und Meilensteinplan (E-30)
-- [ ] **M6** Bibliothek-Plugin (global, eingefrorene Kopien) + Aufwandswert-Rechner mit Formelzeile (E-23, E-24) · Test R-09
+- [x] **M6** Bibliothek-Plugin (global, eingefrorene Kopien) + Aufwandswert-Rechner mit Formelzeile (E-23, E-24) · Test R-09
 - [ ] **M7** Kosten-Plugin: DIN-276-Baum, DIN-277-Flächen, KKW, Index, Regionalfaktor, MwSt./Vorsteuer (E-15, E-16) · Tests R-10, R-11
 - [ ] **M8** Kosten Soll-Ist: Stufen, Aufträge, Rechnungen (E-33)
 - [ ] **M9** Excel-Export (Vorgangsliste, Kostentabelle im Dynexite-Aufbau) (E-25)
@@ -74,3 +74,4 @@ Ziel: Ab ca. **13.12.** sollen damit F.1 (Rollen-Netzplan) und F.2 (Projekttermi
 - 26.11.2026 – **M3 fertig.** Soll-Stände (Kern-Befehle stand.speichern/laden/umbenennen/loeschen, Plugin-Kopien inkl. eingefrorener Termine, automatische Sicherung vor jedem Rücksprung), Export PDF A3 quer (mehrseitig, Plankopf/Legende/Risiken auf jeder Seite) und PNG (1–3-fache Auflösung) für Balken- und Netzplan, Hilfe-Seitenleiste mit Markdown und allgemeiner Hilfe, Installer „Bautakt-Setup-0.1.0.exe“ gebaut. 414 Tests grün. GitHub-Release v0.1.0 (privat) veröffentlicht.
 - 26.11.2026 – **M4 fertig** (vorgezogen). Ist-Erfassung je Stichtag mit Verlauf (t_ist), Prognose nach E-43/E-44 im Rechenkern (Referenztest R-12), Soll-Ist-Vergleich gegen wählbaren Stand (E-46) mit Soll-Balken, Fortschritt, Stichtag-Linie, Spalten „%“ und „Abw.“, Status im Netzplan; auch im PDF/PNG-Export. Neue Entscheidungen E-43–E-46. 423 Tests grün.
 - 26.11.2026 – **M5 fertig.** Terminliste (Filter Gewerk/Verantwortlich/Zeitraum, Gruppierung nach Gewerk, Soll-Ist-Spalten) und Meilensteinplan (Zeitleiste mit Soll-Rauten, Stichtag-/Soll-Ende-/Heute-Linie, Tabelle mit Bedingung und Schnittstelle), beide direkt bearbeitbar und als PDF/PNG exportierbar. Neue Entscheidungen E-47–E-50. 433 Tests grün; Bedienung und Export in der gebauten App geprüft.
+- 26.11.2026 – **M6 fertig.** Kern kann globale Plugin-Dateien im App-Datenordner (Aktionen ohne Undo, eigene Migrationen, Dienste für Projekte). Plugin „Bibliothek“ mit versionierten Aufwandswerten (Quelle Pflicht, Löschen = ausblenden, Versionsverlauf), auch ohne Projekt erreichbar. Rechenbibliothek `rechnen-aufwand` (Referenztest R-09) und Aufwandswert-Rechner im Terminplan: Bibliothekswert oder eigener Wert, Kolonne, addierte Zu-/Abschläge, Formelzeile, eingefrorene Kopie im Projekt, Hinweis bei neuerer Version und bei abweichender Dauer. Neue Entscheidungen E-51–E-54. 454 Tests grün; Bedienung in der gebauten App geprüft.

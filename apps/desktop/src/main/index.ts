@@ -1,4 +1,4 @@
-import type { Meldungen } from '@bautakt/kern';
+import { GlobaleDaten, type Meldungen } from '@bautakt/kern';
 import {
   app,
   BrowserWindow,
@@ -13,6 +13,7 @@ import { z } from 'zod';
 import { AUFRUFE, MELDUNG_PRAEFIX, type Aufruf } from '../shared/kanaele';
 import { druckFenster, exportieren, exportSchema } from './export';
 import { menueErstellen } from './menue';
+import { PLUGINS } from './plugins';
 import { antwort, ProjektVerwaltung } from './projekt';
 
 let fenster: BrowserWindow | null = null;
@@ -20,7 +21,24 @@ let fenster: BrowserWindow | null = null;
 const senden = <K extends keyof Meldungen>(name: K, daten: Meldungen[K]) => {
   if (fenster && !fenster.isDestroyed()) fenster.webContents.send(MELDUNG_PRAEFIX + name, daten);
 };
-const projekte = new ProjektVerwaltung(() => fenster, senden);
+let globaleDaten: GlobaleDaten | null = null;
+const projekte = new ProjektVerwaltung(
+  () => fenster,
+  senden,
+  () => globaleDaten,
+);
+
+/** Globale Daten (Bibliothek, E-23) im App-Datenordner; Testordner nur in der Entwicklung. */
+function globaleDatenOeffnen(): void {
+  const testOrdner = app.isPackaged ? undefined : process.env['BAUTAKT_DATENORDNER'];
+  globaleDaten = GlobaleDaten.oeffnen(testOrdner || app.getPath('userData'), PLUGINS);
+  globaleDaten.onGeaendert((plugin) => senden('globalGeaendert', { plugin }));
+}
+
+function globale(): GlobaleDaten {
+  if (!globaleDaten) throw new Error('Die globalen Daten sind nicht verfügbar.');
+  return globaleDaten;
+}
 
 // Eingaben aus dem Renderer werden geprüft, bevor sie den Kern erreichen.
 const befehlSchema = z.object({
@@ -90,6 +108,16 @@ const handler: Record<Aufruf, (args: unknown[]) => unknown> = {
     antwort(() => {
       const a = abfrageSchema.parse(daten);
       return aktiveSitzung().abfrage(a.plugin, a.name, a.argumente);
+    }),
+  'global:abfrage': ([daten]) =>
+    antwort(() => {
+      const a = abfrageSchema.parse(daten);
+      return globale().abfrage(a.plugin, a.name, a.argumente);
+    }),
+  'global:aktion': ([daten]) =>
+    antwort(() => {
+      const a = befehlSchema.omit({ grund: true }).parse(daten);
+      return globale().aktion(a.plugin, a.name, a.daten);
     }),
 };
 
@@ -172,9 +200,22 @@ if (!app.requestSingleInstanceLock()) {
     app.setAppUserModelId('de.bautakt.app');
     // Keine Berechtigungen (Kamera, Mikrofon, Benachrichtigungen …) für den Renderer
     session.defaultSession.setPermissionRequestHandler((_wc, _p, cb) => cb(false));
+    let globalFehler: string | null = null;
+    try {
+      globaleDatenOeffnen();
+    } catch (e) {
+      // ohne globale Daten läuft die App weiter (nur ohne Bibliothek)
+      globalFehler = `Die Bibliothek konnte nicht geöffnet werden: ${(e as Error).message}`;
+    }
     ipcRegistrieren();
     Menu.setApplicationMenu(menueErstellen(senden));
     fensterErstellen();
+    if (globalFehler) {
+      const text = globalFehler;
+      fenster?.webContents.once('did-finish-load', () =>
+        senden('hinweis', { text, art: 'fehler' }),
+      );
+    }
 
     const datei = dateiAusArgumenten(process.argv);
     if (datei) {
@@ -187,5 +228,9 @@ if (!app.requestSingleInstanceLock()) {
   });
 
   app.on('window-all-closed', () => app.quit());
-  app.on('before-quit', () => projekte.schliessen());
+  app.on('before-quit', () => {
+    projekte.schliessen();
+    globaleDaten?.schliessen();
+    globaleDaten = null;
+  });
 }

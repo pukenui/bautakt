@@ -59,6 +59,8 @@ export interface Meldungen {
   hinweis: { text: string; art: 'info' | 'warnung' | 'fehler' };
   /** Menüpunkt gewählt; die Oberfläche führt die Aktion aus. */
   menue: MenueAktion;
+  /** Globale Daten eines Plugins (z. B. Bibliothek) wurden geändert. */
+  globalGeaendert: { plugin: string };
 }
 
 export type MenueAktion =
@@ -99,6 +101,12 @@ export interface BautaktApi {
     starten(auftrag: ExportAuftragDaten): Promise<Antwort<string | null>>;
   };
   abfrage<T = unknown>(plugin: string, name: string, argumente?: unknown): Promise<Antwort<T>>;
+  /** Globale Daten im App-Datenordner (E-23), auch ohne geöffnetes Projekt. */
+  global: {
+    abfrage<T = unknown>(plugin: string, name: string, argumente?: unknown): Promise<Antwort<T>>;
+    /** Änderung (versioniert, ohne Undo, E-51). */
+    aktion<T = unknown>(plugin: string, name: string, daten: unknown): Promise<Antwort<T>>;
+  };
   /** Abonniert eine Push-Nachricht; Rückgabe beendet das Abo. */
   on<K extends keyof Meldungen>(name: K, fn: (daten: Meldungen[K]) => void): () => void;
 }

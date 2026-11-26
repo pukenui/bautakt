@@ -4,7 +4,7 @@ Desktop-App (Windows) für Termin- und Kostenplanung von Bauprojekten: Netzplan 
 Balkenpläne, Kostenplanung nach DIN 276/277, Soll-Ist und projektübergreifende Statistik –
 später erweitert zu einem BIM-Ökosystem (IFC-Viewer, 5D, 4D).
 
-Status: M0–M5 umgesetzt (Termin-Kern mit Netzplan, Balkenplan, Terminliste, Meilensteinplan, Soll-Ständen, Ist-Erfassung mit Prognose und Soll-Ist-Vergleich, PDF/PNG-Export und Hilfe). Letzte Veröffentlichung: Version 0.1.0 (Stand M3).
+Status: M0–M6 umgesetzt (Termin-Kern mit Netzplan, Balkenplan, Terminliste, Meilensteinplan, Soll-Ständen, Ist-Erfassung mit Prognose und Soll-Ist-Vergleich, Bibliothek mit Aufwandswert-Rechner, PDF/PNG-Export und Hilfe). Letzte Veröffentlichung: Version 0.1.0 (Stand M3).
 
 ## Installation
 

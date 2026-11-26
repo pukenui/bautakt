@@ -6,6 +6,8 @@ import { RENDERER_PLUGINS } from './plugins';
 
 const api = window.bautakt;
 const ansichten = RENDERER_PLUGINS.flatMap((p) => p.ansichten);
+/** Ansichten auf globale Daten (Bibliothek, E-23): auch ohne Projekt erreichbar. */
+const globaleAnsichten = RENDERER_PLUGINS.flatMap((p) => p.globaleAnsichten ?? []);
 
 type Hinweis = Meldungen['hinweis'] & { nr: number };
 
@@ -18,6 +20,7 @@ function inEingabe(ziel: EventTarget | null): boolean {
 export function App() {
   const [status, setStatus] = useState<ProjektStatus | null>(null);
   const [datenstand, setDatenstand] = useState(0);
+  const [globalstand, setGlobalstand] = useState(0);
   const [aktiveAnsicht, setAktiveAnsicht] = useState(ansichten[0]?.id ?? '');
   const [hinweis, setHinweis] = useState<Hinweis | null>(null);
   const [hilfeOffen, setHilfeOffen] = useState(false);
@@ -66,6 +69,11 @@ export function App() {
     const abos = [
       api.on('status', setStatus),
       api.on('datenGeaendert', () => setDatenstand((n) => n + 1)),
+      // Projektansichten zeigen z. B. „neuere Bibliotheksversion“ → ebenfalls neu laden
+      api.on('globalGeaendert', () => {
+        setGlobalstand((n) => n + 1);
+        setDatenstand((n) => n + 1);
+      }),
       api.on('hinweis', zeigen),
       api.on('menue', (a) => void ausfuehren(a)),
     ];
@@ -102,29 +110,47 @@ export function App() {
   }, [hinweis]);
 
   const ansicht = useMemo(() => ansichten.find((a) => a.id === aktiveAnsicht), [aktiveAnsicht]);
+  const globaleAnsicht = useMemo(
+    () => globaleAnsichten.find((a) => a.id === aktiveAnsicht),
+    [aktiveAnsicht],
+  );
+  const reiter = (id: string, titel: string) => (
+    <button
+      key={id}
+      role="tab"
+      aria-selected={id === aktiveAnsicht}
+      className={id === aktiveAnsicht ? 'aktiv' : ''}
+      onClick={() => setAktiveAnsicht(id)}
+    >
+      {titel}
+    </button>
+  );
 
   return (
     <div className="shell">
       <header className="kopf">
         <strong className="marke">Bautakt</strong>
         {status && (
+          <span className="projektname" title={status.pfad}>
+            {status.projektname}
+          </span>
+        )}
+        <nav className="reiter" role="tablist">
+          {status
+            ? ansichten.map((a) => reiter(a.id, a.titel))
+            : reiter(ansichten[0]?.id ?? '', 'Start')}
+          {globaleAnsichten.length > 0 && <span className="reiter-trenner" aria-hidden="true" />}
+          {globaleAnsichten.map((a) => reiter(a.id, a.titel))}
+        </nav>
+        {!status && (
+          <div className="kopf-aktionen">
+            <button onClick={() => void ausfuehren('hilfe')} title="Hilfe (F1)">
+              ? Hilfe
+            </button>
+          </div>
+        )}
+        {status && (
           <>
-            <span className="projektname" title={status.pfad}>
-              {status.projektname}
-            </span>
-            <nav className="reiter" role="tablist">
-              {ansichten.map((a) => (
-                <button
-                  key={a.id}
-                  role="tab"
-                  aria-selected={a.id === aktiveAnsicht}
-                  className={a.id === aktiveAnsicht ? 'aktiv' : ''}
-                  onClick={() => setAktiveAnsicht(a.id)}
-                >
-                  {a.titel}
-                </button>
-              ))}
-            </nav>
             <div className="kopf-aktionen">
               <button
                 disabled={!status.undo.rueckgaengig || status.schreibgeschuetzt}
@@ -165,7 +191,9 @@ export function App() {
 
       <div className="inhalt">
         <main className="hauptbereich">
-          {!status ? (
+          {globaleAnsicht ? (
+            <globaleAnsicht.komponente api={api} datenstand={globalstand} />
+          ) : !status ? (
             <LeereAnsicht titel="Kein Projekt geöffnet">
               <p>Legen Sie ein neues Projekt an oder öffnen Sie eine vorhandene .bautakt-Datei.</p>
               <div className="knoepfe">
@@ -190,7 +218,9 @@ export function App() {
             >
               ×
             </button>
-            {status && ansicht ? (
+            {globaleAnsicht ? (
+              <Markdown text={globaleAnsicht.hilfe} />
+            ) : status && ansicht ? (
               <Markdown text={ansicht.hilfe} />
             ) : (
               <p>

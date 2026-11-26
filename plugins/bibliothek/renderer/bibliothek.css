@@ -1,0 +1,25 @@
+/* Plugin Bibliothek */
+.bib-ansicht {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+}
+.bib-hinweis {
+  margin: 0;
+  font-size: 12px;
+}
+.tabelle .zahl {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.bib-tabelle tr.geloescht td {
+  color: var(--text-leise);
+  text-decoration: line-through;
+}
+.bib-tabelle tr.geloescht td.aktionen {
+  text-decoration: none;
+}

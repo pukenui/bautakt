@@ -1,0 +1,14 @@
+{
+  "name": "@bautakt/rechnen-aufwand",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Aufwandswert-Rechner: Dauer aus Menge, Aufwandswert, Kolonne und Zu-/Abschlägen mit Formelzeile",
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  }
+}

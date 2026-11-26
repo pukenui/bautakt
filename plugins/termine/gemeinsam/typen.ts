@@ -50,6 +50,8 @@ export interface VorgangZeile {
   info_braucht: string;
   info_liefert: string;
   dauer_herleitung: string;
+  /** Verweis auf die Herleitung in t_aufwand (eingefrorene Bibliothekskopie, E-54). */
+  aufwand_ref: string | null;
   bedingung_typ: BedingungTyp;
   bedingung_datum: string | null;
   schnittstelle: number; // 0/1
@@ -145,6 +147,46 @@ export interface Vergleich {
   abweichungProjektende: number | null;
 }
 
+/** Zu-/Abschlag im Aufwandswert-Rechner (E-53). */
+export interface AufwandZuschlag {
+  name: string;
+  prozent: number;
+}
+
+/**
+ * Herleitung einer Vorgangsdauer mit dem Aufwandswert-Rechner (E-24, E-54): Eingaben,
+ * Formelzeile und eingefrorene Kopie des Bibliothekswerts (t_aufwand, eine Zeile je Vorgang).
+ */
+export interface AufwandZeile {
+  id: string;
+  vorgang_id: string;
+  /** Bibliothekseintrag (id + Version); null = eigener Aufwandswert */
+  bib_id: string | null;
+  bib_version: number | null;
+  bezeichnung: string;
+  einheit: string;
+  h_je_me: number;
+  quelle: string;
+  stand: string;
+  menge: number;
+  ak: number;
+  h_je_at: number;
+  /** JSON: AufwandZuschlag[] */
+  zuschlaege: string;
+  formel: string;
+  /** Ergebnis des Rechners in AT */
+  dauer: number;
+}
+
+/** Kurzinfo zur Herleitung je Vorgang für Tabelle und Hinweise. */
+export interface AufwandHinweis {
+  formel: string;
+  dauer: number;
+  bibVersion: number | null;
+  /** Aktuelle Version in der Bibliothek, wenn neuer als die eingefrorene Kopie (E-54). */
+  neuereVersion: number | null;
+}
+
 export interface PlanDaten {
   plan: PlanZeile;
   kalender: KalenderDaten;
@@ -156,6 +198,8 @@ export interface PlanDaten {
   ist: Record<string, IstZeile>;
   /** Soll-Ist-Vergleich gegen einen Stand (E-46), wenn angefragt. */
   vergleich: Vergleich | null;
+  /** Herleitungen mit dem Aufwandswert-Rechner je Vorgang (E-54). */
+  aufwand: Record<string, AufwandHinweis>;
 }
 
 /** Felder, die der Befehl `vorgang.aendern` setzen darf. */

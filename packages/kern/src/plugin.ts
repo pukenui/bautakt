@@ -1,6 +1,7 @@
 import type { z } from 'zod';
 import type { BefehlDefinition, BefehlErgebnis, Transaktion } from './befehle.js';
 import type { Ereignisbus } from './ereignisse.js';
+import type { GlobalTeil } from './global.js';
 import type { Migration } from './migration.js';
 import type { Wert, Zeile } from './sql.js';
 
@@ -48,6 +49,7 @@ export interface MainKontext {
   ereignisse: Ereignisbus;
   dienste: {
     bereitstellen<T>(name: string, impl: T): void;
+    /** Dienst eines Projekt-Plugins oder eines globalen Plugin-Teils. */
     holen<T>(name: string): T;
   };
   exporte: { registrieren(format: string, fn: ExportFunktion): void };
@@ -69,4 +71,6 @@ export interface BautaktPlugin {
   migrationen: readonly Migration[];
   /** Wird für jedes geöffnete Projekt einmal aufgerufen. */
   aktivieren(ctx: MainKontext): void;
+  /** Globale Daten im App-Datenordner (z. B. Bibliothek, E-23), unabhängig vom Projekt. */
+  global?: GlobalTeil;
 }

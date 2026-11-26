@@ -1,5 +1,6 @@
 import type { BautaktApi } from '@bautakt/kern/vertrag';
 import type { PlanDaten } from '../gemeinsam/typen.js';
+import { AufwandDialog } from './AufwandDialog.js';
 import { BeziehungDialog, PlanDialog, VorgangDialog } from './Dialoge.js';
 import { ExportDialog, type Darstellung } from './ExportDialog.js';
 import { IstDialog } from './IstDialog.js';
@@ -7,7 +8,7 @@ import { StaendeDialog } from './StaendeDialog.js';
 import { useZustand } from './zustand.js';
 
 export type DialogZustand =
-  | { art: 'vorgang' | 'beziehung' | 'ist'; id: string }
+  | { art: 'vorgang' | 'beziehung' | 'ist' | 'aufwand'; id: string }
   | { art: 'plan' | 'staende' | 'export' }
   | null;
 
@@ -41,6 +42,20 @@ export function PlanDialoge(props: {
           befehl={befehl}
           fehler={fehler}
           onBeziehungen={() => props.setDialog({ art: 'beziehung', id: dialog.id })}
+          onAufwand={() => props.setDialog({ art: 'aufwand', id: dialog.id })}
+          onSchliessen={props.onSchliessen}
+        />
+      );
+    case 'aufwand':
+      return (
+        <AufwandDialog
+          api={props.api}
+          daten={daten}
+          vorgangId={dialog.id}
+          datenstand={props.datenstand}
+          nurLesen={nurLesen}
+          befehl={befehl}
+          fehler={fehler}
           onSchliessen={props.onSchliessen}
         />
       );

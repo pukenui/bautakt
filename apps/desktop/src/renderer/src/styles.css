@@ -89,6 +89,12 @@ input {
   border-bottom-color: var(--akzent);
   font-weight: 600;
 }
+/* Trenner zwischen Projekt- und globalen Ansichten (Bibliothek) */
+.reiter-trenner {
+  width: 1px;
+  margin: 4px 8px;
+  background: var(--linie);
+}
 .kopf-aktionen {
   margin-left: auto;
   display: flex;
@@ -194,7 +200,10 @@ input {
   gap: 8px;
   margin-bottom: 12px;
 }
-.werkzeugleiste input {
+.werkzeugleiste {
+  align-items: center;
+}
+.werkzeugleiste input:not([type='checkbox']):not([type='radio']) {
   width: 320px;
 }
 .tabelle {

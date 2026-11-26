@@ -17,7 +17,9 @@
     "react": "^19.2.0",
     "zod": "^4.1.0",
     "@bautakt/rechnen-kalender": "workspace:*",
-    "@bautakt/rechnen-termine": "workspace:*"
+    "@bautakt/rechnen-termine": "workspace:*",
+    "@bautakt/rechnen-aufwand": "workspace:*",
+    "@bautakt/plugin-bibliothek": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

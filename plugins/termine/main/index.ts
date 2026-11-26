@@ -1,7 +1,8 @@
 import type { BautaktPlugin } from '@bautakt/kern';
 import { z } from 'zod';
-import type { IstZeile, PlanZeile } from '../gemeinsam/typen.js';
+import type { AufwandZeile, IstZeile, PlanZeile } from '../gemeinsam/typen.js';
 import { MIGRATIONEN } from '../migrations/index.js';
+import { aufwandBefehle, type BibliothekZugriff } from './aufwand.js';
 import { BEFEHLE } from './befehle.js';
 import { planDatenLaden } from './daten.js';
 import { termineStaende } from './staende.js';
@@ -15,12 +16,26 @@ export type { PlanZeile } from '../gemeinsam/typen.js';
 export const terminePlugin: BautaktPlugin = {
   id: 'termine',
   name: 'Terminplanung',
-  version: '0.4.0',
+  version: '0.5.0',
   tabellenPraefix: 't_',
   migrationen: MIGRATIONEN,
 
   aktivieren(ctx) {
     for (const b of BEFEHLE) ctx.befehle.registrieren(b);
+
+    // Bibliothek (global, E-23) ist optional: ohne sie nur eigene Aufwandswerte
+    const bibliothek = (): BibliothekZugriff | null => {
+      try {
+        return {
+          aufwandswert: ctx.dienste.holen('bibliothek.aufwandswert'),
+          aktuelleVersion: ctx.dienste.holen('bibliothek.aktuelleVersion'),
+        };
+      } catch {
+        return null;
+      }
+    };
+    const aktuelleVersion = (bibId: string) => bibliothek()?.aktuelleVersion(bibId) ?? null;
+    for (const b of aufwandBefehle(bibliothek)) ctx.befehle.registrieren(b);
     ctx.stand.registrieren(termineStaende);
 
     const plaene = () => ctx.db.lesen<PlanZeile>('SELECT * FROM t_plan ORDER BY id');
@@ -32,7 +47,7 @@ export const terminePlugin: BautaktPlugin = {
         planId: z.string().min(1),
         sollStandId: z.string().min(1).nullable().optional(),
       }),
-      ausfuehren: (db, a) => planDatenLaden(db, a.planId, a.sollStandId ?? null),
+      ausfuehren: (db, a) => planDatenLaden(db, a.planId, a.sollStandId ?? null, aktuelleVersion),
     });
     ctx.abfragen.registrieren({
       name: 'istVerlauf',
@@ -42,6 +57,19 @@ export const terminePlugin: BautaktPlugin = {
           'SELECT * FROM t_ist WHERE vorgang_id = ? ORDER BY stichtag DESC',
           a.vorgangId,
         ),
+    });
+    ctx.abfragen.registrieren({
+      name: 'aufwand',
+      schema: z.object({ vorgangId: z.string().min(1) }),
+      ausfuehren: (db, a) => {
+        const aufwand =
+          db.eins<AufwandZeile>('SELECT * FROM t_aufwand WHERE vorgang_id = ?', a.vorgangId) ??
+          null;
+        return {
+          aufwand,
+          aktuelleVersion: aufwand?.bib_id ? aktuelleVersion(aufwand.bib_id) : null,
+        };
+      },
     });
     ctx.dienste.bereitstellen('termine.plaene', plaene);
     ctx.dienste.bereitstellen('termine.plan', (planId: string) => planDatenLaden(ctx.db, planId));
