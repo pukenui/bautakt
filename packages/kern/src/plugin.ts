@@ -1,5 +1,5 @@
 import type { z } from 'zod';
-import type { BefehlDefinition, BefehlErgebnis } from './befehle.js';
+import type { BefehlDefinition, BefehlErgebnis, Transaktion } from './befehle.js';
 import type { Ereignisbus } from './ereignisse.js';
 import type { Migration } from './migration.js';
 import type { Wert, Zeile } from './sql.js';
@@ -20,6 +20,19 @@ export interface AbfrageDefinition<A = unknown, R = unknown> {
 export type ExportFunktion = (db: PluginDb) => Uint8Array | string;
 export type ImportFunktion = (inhalt: Uint8Array) => void;
 
+/**
+ * Stände (Soll/Baseline, Architektur 3.3): Jedes Plugin kopiert seine Daten in eigene
+ * Stand-Tabellen. Alle drei Funktionen laufen innerhalb eines Kern-Befehls (undo-fähig).
+ */
+export interface StandHandler {
+  /** Kopiert die eigenen Daten (und ggf. Rechenergebnisse) unter der Stand-ID. */
+  speichern(tx: Transaktion, standId: string): void;
+  /** Rücksprung: ersetzt die eigenen Daten durch die Kopie des Stands. */
+  laden(tx: Transaktion, standId: string): void;
+  /** Entfernt die Kopie des Stands. */
+  loeschen(tx: Transaktion, standId: string): void;
+}
+
 /** Was ein Plugin im Main-Prozess je geöffnetem Projekt bekommt (Architektur 3.5). */
 export interface MainKontext {
   pluginId: string;
@@ -39,9 +52,7 @@ export interface MainKontext {
   };
   exporte: { registrieren(format: string, fn: ExportFunktion): void };
   importe: { registrieren(format: string, fn: ImportFunktion): void };
-  stand: {
-    registrieren(speichern: (standId: string) => void, laden: (standId: string) => void): void;
-  };
+  stand: { registrieren(handler: StandHandler): void };
 }
 
 /**

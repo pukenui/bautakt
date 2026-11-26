@@ -4,7 +4,11 @@ Desktop-App (Windows) für Termin- und Kostenplanung von Bauprojekten: Netzplan 
 Balkenpläne, Kostenplanung nach DIN 276/277, Soll-Ist und projektübergreifende Statistik –
 später erweitert zu einem BIM-Ökosystem (IFC-Viewer, 5D, 4D).
 
-Status: M0 (Gerüst), M1 (Rechenkern Termine) und M2 (Oberfläche Termine) fertig, als Nächstes M3 (Export, Stände, Hilfe).
+Status: M0–M3 umgesetzt (Termin-Kern mit Netzplan, Balkenplan, Soll-Ständen, PDF/PNG-Export und Hilfe). Version 0.1.0.
+
+## Installation
+
+Installer `Bautakt-Setup-<Version>.exe` aus den GitHub-Releases herunterladen und ausführen. Der Installer ist nicht signiert; Windows SmartScreen zeigt beim ersten Start eine Warnung ("Weitere Informationen" → "Trotzdem ausführen"). `.bautakt`-Dateien werden mit Bautakt verknüpft.
 
 ## Entwicklung
 

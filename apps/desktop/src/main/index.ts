@@ -11,6 +11,7 @@ import {
 import path from 'node:path';
 import { z } from 'zod';
 import { AUFRUFE, MELDUNG_PRAEFIX, type Aufruf } from '../shared/kanaele';
+import { druckFenster, exportieren, exportSchema } from './export';
 import { menueErstellen } from './menue';
 import { antwort, ProjektVerwaltung } from './projekt';
 
@@ -38,6 +39,15 @@ function aktiveSitzung() {
   const s = projekte.aktiv;
   if (!s) throw new Error('Kein Projekt geöffnet.');
   return s;
+}
+
+const PRELOAD = path.join(__dirname, '../preload/index.js');
+
+/** Lädt die Renderer-Seite (Entwicklung: Dev-Server, sonst Datei) mit optionalem Hash. */
+async function seiteLaden(w: BrowserWindow, hash = ''): Promise<void> {
+  const devUrl = process.env['ELECTRON_RENDERER_URL'];
+  if (!app.isPackaged && devUrl) await w.loadURL(hash ? `${devUrl}#${hash}` : devUrl);
+  else await w.loadFile(path.join(__dirname, '../renderer/index.html'), hash ? { hash } : {});
 }
 
 const handler: Record<Aufruf, (args: unknown[]) => unknown> = {
@@ -71,6 +81,11 @@ const handler: Record<Aufruf, (args: unknown[]) => unknown> = {
     }),
   'befehl:rueckgaengig': () => antwort(() => aktiveSitzung().rueckgaengig()),
   'befehl:wiederholen': () => antwort(() => aktiveSitzung().wiederholen()),
+  'export:starten': ([daten]) =>
+    antwort(async () => {
+      aktiveSitzung();
+      return exportieren(exportSchema.parse(daten), fenster, PRELOAD, seiteLaden);
+    }),
   abfrage: ([daten]) =>
     antwort(() => {
       const a = abfrageSchema.parse(daten);
@@ -78,9 +93,13 @@ const handler: Record<Aufruf, (args: unknown[]) => unknown> = {
     }),
 };
 
-/** Nur Aufrufe aus dem eigenen Fenster mit eigener Seite annehmen. */
-function vertrauenswuerdig(e: IpcMainInvokeEvent): boolean {
-  if (!fenster || e.sender !== fenster.webContents) return false;
+/** Kanäle, die Druckfenster (Export) nutzen dürfen – nur lesend. */
+const DRUCK_KANAELE: readonly Aufruf[] = ['projekt:status', 'abfrage'];
+
+/** Nur Aufrufe aus dem eigenen Fenster (bzw. Druckfenstern) mit eigener Seite annehmen. */
+function vertrauenswuerdig(e: IpcMainInvokeEvent, kanal: Aufruf): boolean {
+  const druck = druckFenster.has(e.sender.id) && DRUCK_KANAELE.includes(kanal);
+  if (!druck && (!fenster || e.sender !== fenster.webContents)) return false;
   const url = e.senderFrame?.url ?? '';
   return (
     url.startsWith('file://') ||
@@ -91,7 +110,7 @@ function vertrauenswuerdig(e: IpcMainInvokeEvent): boolean {
 function ipcRegistrieren(): void {
   for (const kanal of AUFRUFE) {
     ipcMain.handle(kanal, (e, ...args: unknown[]) => {
-      if (!vertrauenswuerdig(e)) throw new Error('Nicht erlaubter IPC-Aufruf.');
+      if (!vertrauenswuerdig(e, kanal)) throw new Error('Nicht erlaubter IPC-Aufruf.');
       return handler[kanal](args);
     });
   }
@@ -106,7 +125,7 @@ function fensterErstellen(): void {
     title: 'Bautakt',
     show: false,
     webPreferences: {
-      preload: path.join(__dirname, '../preload/index.js'),
+      preload: PRELOAD,
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
@@ -126,9 +145,7 @@ function fensterErstellen(): void {
     return { action: 'deny' };
   });
 
-  const devUrl = process.env['ELECTRON_RENDERER_URL'];
-  if (!app.isPackaged && devUrl) void fenster.loadURL(devUrl);
-  else void fenster.loadFile(path.join(__dirname, '../renderer/index.html'));
+  void seiteLaden(fenster);
 }
 
 /** Projektdatei aus der Kommandozeile (Doppelklick auf .bautakt). */

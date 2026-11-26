@@ -8,6 +8,11 @@ import {
 export type Zoom = 'tag' | 'woche' | 'monat' | 'quartal';
 
 /** Pixel je Kalendertag je Zoomstufe (E-21: Tag/KW/Monat/Quartal). */
+/** Passende Beschriftung der Zeitachse zu einem Maßstab. */
+export function zoomFuerMassstab(pxJeTag: number): Zoom {
+  return pxJeTag >= 16 ? 'tag' : pxJeTag >= 4 ? 'woche' : pxJeTag >= 1.4 ? 'monat' : 'quartal';
+}
+
 export const PX_JE_TAG: Record<Zoom, number> = { tag: 26, woche: 9, monat: 3, quartal: 1.1 };
 
 const MONAT = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
@@ -27,8 +32,10 @@ export class Zeitachse {
     readonly bisTag: number, // ausschließlich
     readonly zoom: Zoom,
     private readonly kal: Arbeitskalender,
+    /** Eigener Maßstab (z. B. Druck: Plan auf Seitenbreite); sonst nach Zoomstufe. */
+    pxJeTag?: number,
   ) {
-    this.pxJeTag = PX_JE_TAG[zoom];
+    this.pxJeTag = pxJeTag ?? PX_JE_TAG[zoom];
   }
 
   get breite(): number {

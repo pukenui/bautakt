@@ -4,6 +4,7 @@ import type { PlanZeile } from '../gemeinsam/typen.js';
 import { MIGRATIONEN } from '../migrations/index.js';
 import { BEFEHLE } from './befehle.js';
 import { planDatenLaden } from './daten.js';
+import { termineStaende } from './staende.js';
 
 export type { PlanZeile } from '../gemeinsam/typen.js';
 
@@ -14,12 +15,13 @@ export type { PlanZeile } from '../gemeinsam/typen.js';
 export const terminePlugin: BautaktPlugin = {
   id: 'termine',
   name: 'Terminplanung',
-  version: '0.2.0',
+  version: '0.3.0',
   tabellenPraefix: 't_',
   migrationen: MIGRATIONEN,
 
   aktivieren(ctx) {
     for (const b of BEFEHLE) ctx.befehle.registrieren(b);
+    ctx.stand.registrieren(termineStaende);
 
     const plaene = () => ctx.db.lesen<PlanZeile>('SELECT * FROM t_plan ORDER BY id');
 

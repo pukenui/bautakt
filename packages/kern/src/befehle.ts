@@ -273,12 +273,27 @@ function anwenden(db: Database.Database, a: Aenderung): void {
   }
 }
 
+/**
+ * Nur für Kern-Befehle (z. B. Stände): dieselbe Transaktion mit den Schreibrechten eines
+ * Plugins. Alle Änderungen landen im selben Undo-Eintrag.
+ */
+export function transaktionFuerPraefix(tx: Transaktion, praefix: string): Transaktion {
+  if (!(tx instanceof TransaktionImpl)) {
+    throw new BautaktFehler('ZUGRIFF', 'Unbekannte Transaktion.');
+  }
+  return tx.mitPraefix(praefix);
+}
+
 class TransaktionImpl implements Transaktion {
   constructor(
     private readonly db: Database.Database,
     private readonly praefix: string,
     private readonly aenderungen: Aenderung[],
   ) {}
+
+  mitPraefix(praefix: string): TransaktionImpl {
+    return new TransaktionImpl(this.db, praefix, this.aenderungen);
+  }
 
   private tabelle(name: string): string {
     pruefeBezeichner(name);

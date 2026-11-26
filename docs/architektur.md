@@ -287,3 +287,14 @@ Präzisierungen der Rechenregeln aus Abschnitt 5, wie sie in `packages/rechnen-*
 - **Anzeigezustand** (gewählter Plan, Datum/AT, Kurz-/Langform, Zoom, zugeklappte Sammelvorgänge) liegt nur in der Oberfläche (localStorage), nicht in der Projektdatei.
 - **Netzplan:** Pfeile verlassen den Knoten rechts und erreichen ihn links (unabhängig von der Art; die Art steht am Pfeil, z. B. `+10EA`); Ein-/Ausgänge werden über die Knotenhöhe verteilt. Positionen in Pixeln, gerundet.
 - Renderer nutzt `rechnen-kalender`/`rechnen-termine` direkt für Datumsanzeige, Zeitachse und Formatierung der Vorgänger (reine Bibliotheken, ohne Node).
+
+## 12. Umsetzungsnotizen (M3)
+
+- **Stände** sind projektweit (alle Pläne aller Plugins). Kern-Befehle `kern:stand.speichern`, `stand.laden`, `stand.umbenennen`, `stand.loeschen` und Abfrage `kern:staende`. Plugins registrieren einen `StandHandler { speichern, laden, loeschen }`, der innerhalb des Kern-Befehls mit den eigenen Schreibrechten läuft (`transaktionFuerPraefix`) – so ist jeder Stand-Befehl ein einziger Undo-Schritt.
+- **Rücksprung** legt vorher automatisch einen Stand der Art `sicherung` („Vor Rücksprung auf …“) an; damit bleibt der Rücksprung auch nach dem Schließen der Datei umkehrbar.
+- **termine** kopiert in `t_plan_stand`, `t_kalender_stand`, `t_ruhezeit_stand`, `t_vorgang_stand`, `t_beziehung_stand` (eigene ID, `stand_id`, `orig_id`, Spalten der Quelle). `t_vorgang_stand` speichert zusätzlich FAZ/FEZ/SAZ/SEZ/GP/FP/kritisch/Anfang/Ende, `t_plan_stand` das Projektende (stabile Soll-Ist-Vergleiche ab M4). Kopiert werden nur Spalten, die in beiden Tabellen existieren.
+- **Export:** Renderer-Plugins melden `druckansichten` an. Der Main-Prozess öffnet für den Export ein unsichtbares Fenster mit `#druck=<Auftrag>`, wartet auf `data-druck-fertig` und erzeugt `printToPDF` (A3 quer, ohne Ränder; Seitenränder und Umbruch macht die Druckansicht selbst) bzw. eine PNG-Aufnahme (Offscreen-Fenster, Auflösung über Zoomfaktor, max. 16 000 px Kante). Druckfenster dürfen nur `projekt:status` und `abfrage` aufrufen.
+- **Balkenplan-Druck:** Plan auf Seitenbreite skaliert (Zeitachse mit eigenem Maßstab), 41 Zeilen je A3-Seite, Plankopf (Projekt, Plan, Stand = Exportdatum, Ersteller, Kennzahlen, Seite), Legende und Risiko-Hinweise der Seite unten. Beziehungspfeile über Seitengrenzen werden nicht gezeichnet.
+- **Netzplan-Druck:** auf eine Seite eingepasst; unter 55 % Maßstab wird auf mehrere Seiten gekachelt („Ausschnitt n“).
+- **Hilfe:** eigener kleiner Markdown-Renderer (`@bautakt/ui`, ohne HTML-Einfügung); Seitenleiste zeigt die Hilfe der Ansicht und darunter `hilfe/allgemein.md`.
+- **Test-Schalter:** `BAUTAKT_TEST_EXPORT_ORDNER` ersetzt den Speichern-Dialog nur in nicht gepackten Builds (automatische Oberflächentests).

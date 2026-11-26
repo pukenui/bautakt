@@ -87,4 +87,45 @@ export const MIGRATIONEN: readonly Migration[] = [
       db.ausfuehren('UPDATE t_plan SET projektstart = ? WHERE projektstart IS NULL', iso);
     },
   },
+  {
+    version: 3,
+    name: 'Stände (Soll/Baseline)',
+    // Je Datentabelle eine Kopie-Tabelle: eigene ID, Stand-ID, Original-ID, dann alle Spalten.
+    // Spätere Migrationen, die Spalten hinzufügen, ergänzen sie auch in der *_stand-Tabelle.
+    sql: `
+      CREATE TABLE t_plan_stand (
+        id TEXT PRIMARY KEY, stand_id TEXT NOT NULL, orig_id TEXT NOT NULL,
+        name TEXT, art TEXT, projektstart TEXT, soll_ende TEXT, rueckwaerts_von TEXT, kalender_id TEXT,
+        projektende INTEGER, projektende_datum TEXT
+      );
+      CREATE TABLE t_kalender_stand (
+        id TEXT PRIMARY KEY, stand_id TEXT NOT NULL, orig_id TEXT NOT NULL,
+        arbeitstage TEXT, bundesland TEXT
+      );
+      CREATE TABLE t_ruhezeit_stand (
+        id TEXT PRIMARY KEY, stand_id TEXT NOT NULL, orig_id TEXT NOT NULL,
+        kalender_id TEXT, von TEXT, bis TEXT, name TEXT
+      );
+      CREATE TABLE t_vorgang_stand (
+        id TEXT PRIMARY KEY, stand_id TEXT NOT NULL, orig_id TEXT NOT NULL,
+        plan_id TEXT, parent_id TEXT, sortierung REAL, nr TEXT, name TEXT, typ TEXT, dauer_at INTEGER,
+        quelle_annahme TEXT, anmerkung TEXT, gewerk TEXT, rolle TEXT, risiko TEXT,
+        info_braucht TEXT, info_liefert TEXT, dauer_herleitung TEXT, aufwand_ref TEXT, bauteil_refs TEXT,
+        ort_von TEXT, ort_bis TEXT, bedingung_typ TEXT, bedingung_datum TEXT, schnittstelle INTEGER,
+        netz_x REAL, netz_y REAL,
+        -- Rechenergebnisse zum Zeitpunkt des Stands (für stabile Soll-Ist-Vergleiche)
+        faz INTEGER, fez INTEGER, saz INTEGER, sez INTEGER, gp INTEGER, fp INTEGER, kritisch INTEGER,
+        anfang TEXT, ende TEXT
+      );
+      CREATE TABLE t_beziehung_stand (
+        id TEXT PRIMARY KEY, stand_id TEXT NOT NULL, orig_id TEXT NOT NULL,
+        plan_id TEXT, von_id TEXT, nach_id TEXT, art TEXT, abstand INTEGER, einheit TEXT
+      );
+      CREATE INDEX t_plan_stand_s ON t_plan_stand (stand_id);
+      CREATE INDEX t_kalender_stand_s ON t_kalender_stand (stand_id);
+      CREATE INDEX t_ruhezeit_stand_s ON t_ruhezeit_stand (stand_id);
+      CREATE INDEX t_vorgang_stand_s ON t_vorgang_stand (stand_id, plan_id);
+      CREATE INDEX t_beziehung_stand_s ON t_beziehung_stand (stand_id);
+    `,
+  },
 ];

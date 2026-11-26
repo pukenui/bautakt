@@ -3,11 +3,21 @@ import { useMemo, useRef, useState, type PointerEvent } from 'react';
 import type { VorgangMitEbene } from '../gemeinsam/typen.js';
 import { useBefehl, usePlan } from './daten.js';
 import { BeziehungDialog, PlanDialog, VorgangDialog } from './Dialoge.js';
+import { ExportDialog } from './ExportDialog.js';
 import { KeinPlan, Kennzahlen, PlanLeiste } from './gemeinsam.js';
+import { StaendeDialog } from './StaendeDialog.js';
+import {
+  NetzKantenLinie,
+  NetzKnotenInhalt,
+  NetzPfeilMarker,
+  knotenKlasse,
+  netzKanten,
+} from './netzgrafik.js';
 import { KNOTEN, netzLayout } from './netzlayout.js';
 import { setzen, useZustand } from './zustand.js';
 
-type DialogZustand = { art: 'vorgang' | 'beziehung'; id: string } | { art: 'plan' } | null;
+type DialogZustand =
+  { art: 'vorgang' | 'beziehung'; id: string } | { art: 'plan' | 'staende' | 'export' } | null;
 type Punkt = { x: number; y: number };
 
 /**
@@ -60,29 +70,7 @@ export function NetzplanAnsicht({ api, status, datenstand }: AnsichtProps) {
   const breite = Math.max(800, ...knoten.map((v) => pos(v.id).x + KNOTEN.breite + KNOTEN.rand));
   const hoehe = Math.max(500, ...knoten.map((v) => pos(v.id).y + KNOTEN.hoehe + KNOTEN.rand));
 
-  // Ein-/Ausgänge je Knoten verteilen, damit Pfeile sich nicht überdecken
-  const anker = (liste: string[], id: string) => {
-    const i = liste.indexOf(id);
-    return (KNOTEN.hoehe * (i + 1)) / (liste.length + 1);
-  };
-  const aus = new Map<string, string[]>();
-  const ein = new Map<string, string[]>();
-  for (const b of daten.beziehungen) {
-    (aus.get(b.von_id) ?? aus.set(b.von_id, []).get(b.von_id))?.push(b.id);
-    (ein.get(b.nach_id) ?? ein.set(b.nach_id, []).get(b.nach_id))?.push(b.id);
-  }
-  for (const [m, seite] of [
-    [aus, 'nach_id'],
-    [ein, 'von_id'],
-  ] as const) {
-    for (const liste of m.values()) {
-      liste.sort((a, b) => {
-        const ba = daten.beziehungen.find((x) => x.id === a);
-        const bb = daten.beziehungen.find((x) => x.id === b);
-        return pos(ba?.[seite] ?? '').y - pos(bb?.[seite] ?? '').y;
-      });
-    }
-  }
+  const kanten = netzKanten(daten.beziehungen, pos);
 
   return (
     <div className="tp-ansicht">
@@ -93,6 +81,8 @@ export function NetzplanAnsicht({ api, status, datenstand }: AnsichtProps) {
           nurLesen={nurLesen}
           befehl={befehl}
           onEinstellungen={() => setDialog({ art: 'plan' })}
+          onStaende={() => setDialog({ art: 'staende' })}
+          onExport={() => setDialog({ art: 'export' })}
         />
         <div className="tp-gruppe">
           <button
@@ -217,76 +207,22 @@ export function NetzplanAnsicht({ api, status, datenstand }: AnsichtProps) {
               }
             }}
           >
-            <defs>
-              <marker
-                id="np-pfeil"
-                viewBox="0 0 8 8"
-                refX="7"
-                refY="4"
-                markerWidth="8"
-                markerHeight="8"
-                orient="auto"
-              >
-                <path d="M0,0 L8,4 L0,8 z" className="tp-pfeilspitze" />
-              </marker>
-              <marker
-                id="np-pfeil-krit"
-                viewBox="0 0 8 8"
-                refX="7"
-                refY="4"
-                markerWidth="6"
-                markerHeight="6"
-                orient="auto"
-              >
-                <path d="M0,0 L8,4 L0,8 z" className="tp-pfeilspitze kritisch" />
-              </marker>
-            </defs>
+            <NetzPfeilMarker />
             <g transform={`scale(${zoom})`}>
-              {daten.beziehungen.map((b) => {
-                const a = pos(b.von_id);
-                const c = pos(b.nach_id);
-                const x1 = a.x + KNOTEN.breite;
-                const y1 = a.y + anker(aus.get(b.von_id) ?? [], b.id);
-                const x2 = c.x;
-                const y2 = c.y + anker(ein.get(b.nach_id) ?? [], b.id);
-                const krit = kritischeBez.has(b.id);
-                let d: string;
-                let lx: number;
-                let ly: number;
-                if (x2 - x1 >= 30) {
-                  const xm = x2 - 22;
-                  d = `M${x1},${y1} H${xm} V${y2} H${x2}`;
-                  lx = x2 - 26;
-                  ly = y2 - 5;
-                } else {
-                  // Rückwärts/übereinander: unterhalb herumführen
-                  const unten = Math.max(a.y, c.y) + KNOTEN.hoehe + 18;
-                  d = `M${x1},${y1} H${x1 + 14} V${unten} H${x2 - 14} V${y2} H${x2}`;
-                  lx = x2 - 18;
-                  ly = y2 - 5;
-                }
-                const text = `${b.abstand === 0 ? '' : b.abstand > 0 ? `+${b.abstand}` : b.abstand}`;
+              {kanten.map((k) => {
+                const krit = kritischeBez.has(k.b.id);
                 return (
                   <g
-                    key={b.id}
-                    className={`np-kante${krit ? ' kritisch' : ''}${gewaehlteBez === b.id ? ' gewaehlt' : ''}`}
+                    key={k.b.id}
+                    className={`np-kante${krit ? ' kritisch' : ''}${gewaehlteBez === k.b.id ? ' gewaehlt' : ''}`}
                     onPointerDown={(e) => {
                       e.stopPropagation();
-                      setGewaehlteBez(b.id);
+                      setGewaehlteBez(k.b.id);
                     }}
-                    onDoubleClick={() => setDialog({ art: 'beziehung', id: b.nach_id })}
+                    onDoubleClick={() => setDialog({ art: 'beziehung', id: k.b.nach_id })}
                   >
-                    <path d={d} className="np-trefferflaeche" />
-                    <path
-                      d={d}
-                      className="np-linie"
-                      markerEnd={krit ? 'url(#np-pfeil-krit)' : 'url(#np-pfeil)'}
-                    />
-                    <text x={lx} y={ly} textAnchor="end" className="np-kantentext">
-                      {text}
-                      {b.art}
-                      {b.einheit === 'KT' ? ' KT' : ''}
-                    </text>
+                    <path d={k.d} className="np-trefferflaeche" />
+                    <NetzKantenLinie k={k} kritisch={krit} />
                   </g>
                 );
               })}
@@ -295,15 +231,11 @@ export function NetzplanAnsicht({ api, status, datenstand }: AnsichtProps) {
                 const p = pos(v.id);
                 const t = termine[v.id];
                 const w = KNOTEN.breite;
-                const h = KNOTEN.zeile;
-                const z3 = w / 3;
-                const z4 = w / 4;
-                const krit = t?.kritisch;
                 return (
                   <g
                     key={v.id}
                     transform={`translate(${p.x},${p.y})`}
-                    className={`np-knoten${krit ? ' kritisch' : ''}${z.auswahl === v.id ? ' gewaehlt' : ''}${v.typ === 'meilenstein' ? ' meilenstein' : ''}${v.schnittstelle ? ' schnittstelle' : ''}`}
+                    className={`${knotenKlasse(v, t)}${z.auswahl === v.id ? ' gewaehlt' : ''}`}
                     onPointerDown={(e) => {
                       e.stopPropagation();
                       setzen({ auswahl: v.id });
@@ -321,50 +253,7 @@ export function NetzplanAnsicht({ api, status, datenstand }: AnsichtProps) {
                     <title>
                       {`${v.nr} ${v.name}${v.rolle ? `\nRolle: ${v.rolle}` : ''}${v.info_braucht ? `\nbraucht: ${v.info_braucht}` : ''}${v.info_liefert ? `\nliefert: ${v.info_liefert}` : ''}${v.quelle_annahme ? `\nQuelle/Annahme: ${v.quelle_annahme}` : ''}`}
                     </title>
-                    <rect width={w} height={KNOTEN.hoehe} className="np-rahmen" />
-                    <line x1={0} x2={w} y1={h} y2={h} />
-                    <line x1={0} x2={w} y1={2 * h} y2={2 * h} />
-                    <line x1={z3} x2={z3} y1={h} y2={2 * h} />
-                    <line x1={2 * z3} x2={2 * z3} y1={h} y2={2 * h} />
-                    <line x1={z4} x2={z4} y1={2 * h} y2={KNOTEN.hoehe} />
-                    <line x1={2 * z4} x2={2 * z4} y1={2 * h} y2={KNOTEN.hoehe} />
-                    <line x1={3 * z4} x2={3 * z4} y1={2 * h} y2={KNOTEN.hoehe} />
-                    <text x={6} y={15} className="np-titel">
-                      {kuerzen(
-                        `${v.nr} ${v.name}${daten.plan.art === 'rollen' && v.rolle ? ` (${v.rolle})` : ''}`,
-                        30,
-                      )}
-                    </text>
-                    {t && (
-                      <>
-                        <text x={z3 / 2} y={h + 15} textAnchor="middle">
-                          {t.faz}
-                        </text>
-                        <text x={z3 * 1.5} y={h + 15} textAnchor="middle">
-                          {t.fez - t.faz}
-                        </text>
-                        <text x={z3 * 2.5} y={h + 15} textAnchor="middle">
-                          {t.fez}
-                        </text>
-                        <text x={z4 / 2} y={2 * h + 15} textAnchor="middle">
-                          {t.saz}
-                        </text>
-                        <text
-                          x={z4 * 1.5}
-                          y={2 * h + 15}
-                          textAnchor="middle"
-                          className={t.gp < 0 ? 'negativ' : ''}
-                        >
-                          {t.gp}
-                        </text>
-                        <text x={z4 * 2.5} y={2 * h + 15} textAnchor="middle">
-                          {t.fp ?? ''}
-                        </text>
-                        <text x={z4 * 3.5} y={2 * h + 15} textAnchor="middle">
-                          {t.sez}
-                        </text>
-                      </>
-                    )}
+                    <NetzKnotenInhalt v={v} t={t} rollen={daten.plan.art === 'rollen'} />
                     {!nurLesen && (
                       <circle
                         cx={w}
@@ -448,10 +337,24 @@ export function NetzplanAnsicht({ api, status, datenstand }: AnsichtProps) {
           }}
         />
       )}
+      {dialog?.art === 'staende' && (
+        <StaendeDialog
+          api={api}
+          datenstand={datenstand}
+          nurLesen={nurLesen}
+          onSchliessen={() => setDialog(null)}
+        />
+      )}
+      {dialog?.art === 'export' && (
+        <ExportDialog
+          api={api}
+          daten={daten}
+          projektname={status.projektname}
+          zugeklappt={z.zugeklappt[daten.plan.id] ?? []}
+          darstellung="netzplan"
+          onSchliessen={() => setDialog(null)}
+        />
+      )}
     </div>
   );
-}
-
-function kuerzen(text: string, max: number): string {
-  return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 }

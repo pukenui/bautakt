@@ -5,6 +5,8 @@ import hilfeNetzplan from '../hilfe/netzplan.md?raw';
 import hilfePlaene from '../hilfe/plaene.md?raw';
 import hilfeTerminplan from '../hilfe/terminplan.md?raw';
 import { datumKurz, useBefehl } from './daten.js';
+import { DruckBalkenplan } from './druck/DruckBalkenplan.js';
+import { DruckNetzplan } from './druck/DruckNetzplan.js';
 import { NetzplanAnsicht } from './NetzplanAnsicht.js';
 import { TerminplanAnsicht } from './TerminplanAnsicht.js';
 import { setzen, useZustand } from './zustand.js';
@@ -138,5 +140,9 @@ export const termineRenderer: RendererPlugin = {
     },
     { id: 'termine.netz', titel: 'Netzplan', komponente: NetzplanAnsicht, hilfe: hilfeNetzplan },
     { id: 'termine.plaene', titel: 'Pläne', komponente: Plaene, hilfe: hilfePlaene },
+  ],
+  druckansichten: [
+    { id: 'termine.balkenplan', titel: 'Balkenplan', komponente: DruckBalkenplan },
+    { id: 'termine.netzplan', titel: 'Netzplan', komponente: DruckNetzplan },
   ],
 };

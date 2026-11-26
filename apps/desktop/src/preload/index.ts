@@ -21,6 +21,9 @@ const api: BautaktApi = {
     rueckgaengig: () => aufruf('befehl:rueckgaengig'),
     wiederholen: () => aufruf('befehl:wiederholen'),
   },
+  export: {
+    starten: (auftrag) => aufruf('export:starten', auftrag),
+  },
   abfrage: (plugin, name, argumente) => aufruf('abfrage', { plugin, name, argumente }),
   on(name, fn) {
     if (!(MELDUNGEN as readonly string[]).includes(name))

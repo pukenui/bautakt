@@ -3,11 +3,14 @@ import { useCallback, useEffect, useMemo, useRef, useState, type UIEvent } from 
 import { Balkenplan } from './Balkenplan.js';
 import { sichtbareVorgaenge, useBefehl, useKalender, usePlan } from './daten.js';
 import { BeziehungDialog, PlanDialog, VorgangDialog } from './Dialoge.js';
+import { ExportDialog } from './ExportDialog.js';
 import { KeinPlan, Kennzahlen, PlanLeiste } from './gemeinsam.js';
+import { StaendeDialog } from './StaendeDialog.js';
 import { Tabelle } from './Tabelle.js';
 import { setzen, useZustand, zuklappen } from './zustand.js';
 
-type DialogZustand = { art: 'vorgang' | 'beziehung'; id: string } | { art: 'plan' } | null;
+type DialogZustand =
+  { art: 'vorgang' | 'beziehung'; id: string } | { art: 'plan' | 'staende' | 'export' } | null;
 
 /** Hauptansicht (E-18): links Vorgangstabelle, rechts vernetzter Balkenplan. */
 export function TerminplanAnsicht({ api, status, datenstand }: AnsichtProps) {
@@ -95,6 +98,8 @@ export function TerminplanAnsicht({ api, status, datenstand }: AnsichtProps) {
           nurLesen={nurLesen}
           befehl={befehl}
           onEinstellungen={() => setDialog({ art: 'plan' })}
+          onStaende={() => setDialog({ art: 'staende' })}
+          onExport={() => setDialog({ art: 'export' })}
         />
         {!nurLesen && (
           <div className="tp-gruppe">
@@ -340,6 +345,24 @@ export function TerminplanAnsicht({ api, status, datenstand }: AnsichtProps) {
           befehl={befehl}
           fehler={fehler}
           onSchliessen={dialogSchliessen}
+        />
+      )}
+      {dialog?.art === 'staende' && (
+        <StaendeDialog
+          api={api}
+          datenstand={datenstand}
+          nurLesen={nurLesen}
+          onSchliessen={() => setDialog(null)}
+        />
+      )}
+      {dialog?.art === 'export' && (
+        <ExportDialog
+          api={api}
+          daten={daten}
+          projektname={status.projektname}
+          zugeklappt={z.zugeklappt[daten.plan.id] ?? []}
+          darstellung="balkenplan"
+          onSchliessen={() => setDialog(null)}
         />
       )}
     </div>

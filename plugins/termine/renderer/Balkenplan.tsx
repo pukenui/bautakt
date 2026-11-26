@@ -108,7 +108,7 @@ export function Balkenplan(p: BalkenplanProps) {
             <g key={`o${a.x}`}>
               <line x1={a.x} x2={a.x} y1={0} y2={KOPF / 2} className="tp-kopflinie" />
               <text x={a.x + 4} y={16} className="tp-kopftext">
-                {a.breite > 40 ? a.text : ''}
+                {a.breite > a.text.length * 6.5 + 6 ? a.text : ''}
               </text>
             </g>
           ))}

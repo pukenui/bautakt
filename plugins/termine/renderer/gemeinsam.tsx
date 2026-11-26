@@ -12,6 +12,8 @@ export function PlanLeiste(props: {
   nurLesen: boolean;
   befehl: Befehl;
   onEinstellungen: () => void;
+  onStaende: () => void;
+  onExport: () => void;
 }) {
   return (
     <div className="tp-gruppe">
@@ -34,6 +36,15 @@ export function PlanLeiste(props: {
         title="Projektstart, Soll-Ende, Rückwärtsrechnung, Kalender und Ruhezeiten"
       >
         Planeinstellungen …
+      </button>
+      <button
+        onClick={props.onStaende}
+        title="Soll-Stände speichern, vergleichen und zurückspringen"
+      >
+        Stände …
+      </button>
+      <button onClick={props.onExport} title="PDF (A3 quer) oder PNG mit Plankopf und Legende">
+        Export …
       </button>
       {!props.nurLesen && (
         <button

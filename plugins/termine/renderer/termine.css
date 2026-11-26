@@ -617,3 +617,13 @@ input.kurz {
 .tabelle tr.aktiv td:first-child {
   font-weight: 600;
 }
+
+.stand-neu {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.stand-art {
+  font-size: 12px;
+}

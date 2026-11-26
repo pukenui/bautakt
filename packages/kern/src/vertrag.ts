@@ -19,6 +19,27 @@ export interface ProjektStatus {
   undo: UndoStatusDaten;
 }
 
+/** Exportauftrag an den Main-Prozess (Architektur 6). */
+export interface ExportAuftragDaten {
+  format: 'pdf' | 'png';
+  /** ID der Druckansicht, z. B. "termine.balkenplan" */
+  ansicht: string;
+  parameter: Record<string, unknown>;
+  /** PNG: Auflösungsfaktor 1–4 (Standard 2) */
+  aufloesung?: number;
+  /** Vorschlag für den Dateinamen ohne Endung */
+  dateiname?: string;
+}
+
+/** Benannter Stand (Soll/Baseline oder automatische Sicherung), Abfrage `kern:staende`. */
+export interface StandZeile {
+  id: string;
+  name: string;
+  zeit: string; // UTC
+  art: 'soll' | 'sicherung';
+  notiz: string | null;
+}
+
 /** Ergebnis jedes Aufrufs: Fehler werden als Daten übertragen, nicht geworfen. */
 export type Antwort<T> = { ok: true; wert: T } | { ok: false; fehler: string; code?: string };
 
@@ -72,6 +93,10 @@ export interface BautaktApi {
     ): Promise<Antwort<BefehlAntwort>>;
     rueckgaengig(): Promise<Antwort<boolean>>;
     wiederholen(): Promise<Antwort<boolean>>;
+  };
+  export: {
+    /** Öffnet den Speichern-Dialog und erzeugt PDF/PNG aus einer Druckansicht. null = abgebrochen. */
+    starten(auftrag: ExportAuftragDaten): Promise<Antwort<string | null>>;
   };
   abfrage<T = unknown>(plugin: string, name: string, argumente?: unknown): Promise<Antwort<T>>;
   /** Abonniert eine Push-Nachricht; Rückgabe beendet das Abo. */

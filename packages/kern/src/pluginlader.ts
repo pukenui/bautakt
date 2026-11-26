@@ -17,7 +17,10 @@ export function pluginsOrdnen(plugins: readonly BautaktPlugin[]): BautaktPlugin[
       throw new BautaktFehler('PLUGIN', `Ungültige Plugin-ID „${p.id}“.`);
     }
     if (nachId.has(p.id)) throw new BautaktFehler('PLUGIN', `Plugin „${p.id}“ ist doppelt.`);
-    if (!PRAEFIX.test(p.tabellenPraefix)) {
+    if (
+      !PRAEFIX.test(p.tabellenPraefix) ||
+      RESERVIERT.some((r) => p.tabellenPraefix.startsWith(r))
+    ) {
       throw new BautaktFehler(
         'PLUGIN',
         `Ungültiges Tabellenpräfix „${p.tabellenPraefix}“ in „${p.id}“.`,

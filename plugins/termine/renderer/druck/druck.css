@@ -1,0 +1,173 @@
+/* Druckansichten (Export PDF A3 quer / PNG) */
+@page {
+  size: A3 landscape;
+  margin: 0;
+}
+
+body.druckmodus {
+  background: #fff;
+  height: auto;
+  overflow: visible;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+body.druckmodus #app {
+  height: auto;
+}
+
+.druck {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 11px;
+  color: #1d1d1b;
+}
+.druck-seite {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  overflow: hidden;
+}
+.druck-seite.pdf {
+  break-after: page;
+}
+.druck-seite.pdf:last-child {
+  break-after: auto;
+}
+
+.druck-kopf {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 2px solid #1d1d1b;
+  margin-bottom: 6px;
+  box-sizing: border-box;
+}
+.druck-titel {
+  font-size: 18px;
+  font-weight: 700;
+}
+.druck-untertitel {
+  font-size: 12px;
+  margin-top: 4px;
+  color: #444;
+}
+.druck-kopf-rechts {
+  border-collapse: collapse;
+  font-size: 11px;
+}
+.druck-kopf-rechts th {
+  text-align: left;
+  font-weight: 600;
+  padding: 1px 8px 1px 0;
+  color: #555;
+}
+
+.druck-plan {
+  display: flex;
+  align-items: flex-start;
+  flex: 1;
+}
+.druck-tabelle {
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 10.5px;
+}
+.druck-tabelle th {
+  text-align: left;
+  vertical-align: bottom;
+  padding: 0 4px 5px;
+  border-bottom: 1px solid #888;
+  font-weight: 600;
+  color: #444;
+}
+.druck-tabelle td {
+  padding: 0 4px;
+  border-bottom: 1px solid #e2e2de;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.druck-tabelle td.rechts {
+  text-align: right;
+}
+.druck-tabelle tr.kritisch td:nth-child(2) {
+  color: #b02a27;
+}
+.druck-tabelle tr.sammel td {
+  font-weight: 600;
+}
+.druck-tabelle .schnittstelle {
+  color: #e07b00;
+}
+.druck-risiko {
+  display: inline-block;
+  min-width: 13px;
+  height: 13px;
+  line-height: 13px;
+  margin-left: 4px;
+  border-radius: 7px;
+  background: #fff3cd;
+  border: 1px solid #d9a400;
+  font-size: 9px;
+  font-weight: 600;
+  text-align: center;
+}
+.druck-gantt {
+  display: block;
+  border-left: 1px solid #888;
+}
+.druck-raster {
+  stroke: #d8d8d2;
+  stroke-width: 0.7;
+}
+.druck-raster.grob {
+  stroke: #9a9a94;
+}
+.druck-zeilenlinie {
+  stroke: #ececea;
+  stroke-width: 0.6;
+}
+.druck-balkentext {
+  font-size: 9.5px;
+  fill: #333;
+}
+.tp-meilenstein-symbol {
+  fill: #333;
+}
+.tp-meilenstein-symbol.schnittstelle {
+  fill: #e07b00;
+}
+.tp-sammel-symbol {
+  fill: #333;
+}
+
+.druck-fuss {
+  border-top: 1px solid #888;
+  margin-top: auto;
+  padding-top: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.druck-legende {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+}
+.druck-symbol {
+  vertical-align: middle;
+  margin-left: 8px;
+}
+.druck-risiken {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+}
+.druck-hinweis {
+  color: #666;
+  font-size: 10px;
+}
+.druck-netz {
+  display: block;
+}

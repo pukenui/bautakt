@@ -1,5 +1,6 @@
 import type { Antwort, MenueAktion, Meldungen, ProjektStatus } from '@bautakt/kern/vertrag';
-import { LeereAnsicht, zeitAnzeigen } from '@bautakt/ui';
+import { LeereAnsicht, Markdown, zeitAnzeigen } from '@bautakt/ui';
+import hilfeAllgemein from '../../../../../hilfe/allgemein.md?raw';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { RENDERER_PLUGINS } from './plugins';
 
@@ -189,10 +190,17 @@ export function App() {
             >
               ×
             </button>
-            {/* Markdown-Darstellung folgt mit M3 (E-29); bis dahin als Text */}
-            <pre>
-              {ansicht?.hilfe ?? 'Öffnen Sie ein Projekt, um die Hilfe zur Ansicht zu sehen.'}
-            </pre>
+            {status && ansicht ? (
+              <Markdown text={ansicht.hilfe} />
+            ) : (
+              <p>
+                Legen Sie ein neues Projekt an (Strg+N) oder öffnen Sie eine .bautakt-Datei
+                (Strg+O).
+              </p>
+            )}
+            <hr />
+            <Markdown text={hilfeAllgemein} />
+            <p className="leise">Bautakt {__APP_VERSION__}</p>
           </aside>
         )}
       </div>

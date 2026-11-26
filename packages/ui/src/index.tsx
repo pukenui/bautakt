@@ -70,10 +70,29 @@ export interface Ansicht {
   hilfe: string;
 }
 
+/** Props einer Druckansicht (Export PDF/PNG, Architektur 6). */
+export interface DruckProps {
+  api: BautaktApi;
+  /** Vom Export-Dialog übergebene Einstellungen (z. B. planId, ersteller). */
+  parameter: Record<string, unknown>;
+  format: 'pdf' | 'png';
+  projektname: string;
+  /** Aufrufen, sobald alles gezeichnet ist – dann erzeugt der Main-Prozess die Datei. */
+  fertig: () => void;
+  fehler: (meldung: string) => void;
+}
+
+export interface Druckansicht {
+  id: string; // z. B. "termine.balkenplan"
+  titel: string;
+  komponente: ComponentType<DruckProps>;
+}
+
 /** Renderer-Teil eines Plugins (Architektur 3.5, „RendererModul“). */
 export interface RendererPlugin {
   id: string; // muss zur ID des Main-Teils passen
   ansichten: Ansicht[];
+  druckansichten?: Druckansicht[];
 }
 
 /** Leere Ansicht: sagt, was als Nächstes zu tun ist (E-29). */
@@ -110,3 +129,5 @@ export function zeitAnzeigen(utc: string): string {
   const d = new Date(utc);
   return Number.isNaN(d.getTime()) ? '' : zeitFormat.format(d);
 }
+
+export { Markdown, zerlegen } from './markdown';

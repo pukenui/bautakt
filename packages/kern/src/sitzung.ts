@@ -1,7 +1,16 @@
 import fs from 'node:fs';
-import { Befehlsverwaltung, nurLesend, type BefehlAufruf, type BefehlErgebnis } from './befehle.js';
+import { z } from 'zod';
+import {
+  Befehlsverwaltung,
+  nurLesend,
+  transaktionFuerPraefix,
+  type BefehlAufruf,
+  type BefehlErgebnis,
+  type Transaktion,
+} from './befehle.js';
 import { Ereignisbus } from './ereignisse.js';
 import { BautaktFehler } from './fehler.js';
+import { jetztUtc, neueId } from './id.js';
 import type {
   AbfrageDefinition,
   BautaktPlugin,
@@ -9,13 +18,14 @@ import type {
   ImportFunktion,
   MainKontext,
   PluginDb,
+  StandHandler,
 } from './plugin.js';
 import { pluginsOrdnen } from './pluginlader.js';
 import { Projektdatei } from './projektdatei.js';
 import { sicherungAnlegen } from './sicherung.js';
 import { sperreErwerben, type Sperre, type SperrInfo } from './sperre.js';
 import type { Wert } from './sql.js';
-import type { ProjektStatus } from './vertrag.js';
+import type { ProjektStatus, StandZeile } from './vertrag.js';
 
 export const AUTOSAVE_MS = 2 * 60 * 1000;
 
@@ -32,7 +42,7 @@ interface Erweiterungen {
   dienste: Map<string, unknown>;
   exporte: Map<string, ExportFunktion>;
   importe: Map<string, ImportFunktion>;
-  staende: { plugin: string; speichern: (id: string) => void; laden: (id: string) => void }[];
+  staende: { plugin: string; praefix: string; handler: StandHandler }[];
 }
 
 /** Ein geöffnetes Projekt: Datei, Sperre, Befehle, Ereignisse und aktivierte Plugins. */
@@ -113,6 +123,7 @@ export class ProjektSitzung {
 
   private starten(plugins: readonly BautaktPlugin[]): this {
     for (const p of plugins) this.datei.migrieren(p.id, p.migrationen);
+    this.kernAktivieren();
     for (const p of plugins) p.aktivieren(this.kontext(p));
     const ms = this.optionen.autosaveMs ?? AUTOSAVE_MS;
     if (ms > 0 && !this.datei.schreibgeschuetzt) {
@@ -163,10 +174,78 @@ export class ProjektSitzung {
       exporte: { registrieren: (format, fn) => void erw.exporte.set(`${p.id}:${format}`, fn) },
       importe: { registrieren: (format, fn) => void erw.importe.set(`${p.id}:${format}`, fn) },
       stand: {
-        registrieren: (speichern, laden) =>
-          void erw.staende.push({ plugin: p.id, speichern, laden }),
+        registrieren: (handler) =>
+          void erw.staende.push({ plugin: p.id, praefix: p.tabellenPraefix, handler }),
       },
     };
+  }
+
+  /** Befehle und Abfragen des Kerns: Stände (Soll/Sicherung, Architektur 3.3, E-22). */
+  private kernAktivieren(): void {
+    const staende = this.erw.staende;
+    const fuerAlle = (tx: Transaktion, fn: (h: StandHandler, ptx: Transaktion) => void) => {
+      for (const s of staende) fn(s.handler, transaktionFuerPraefix(tx, s.praefix));
+    };
+    const standLesen = (tx: Transaktion, id: string) => {
+      const s = tx.eins<StandZeile>('SELECT * FROM stand WHERE id = ?', id);
+      if (!s) throw new BautaktFehler('NICHT_GEFUNDEN', 'Der Stand existiert nicht (mehr).');
+      return s;
+    };
+    const anlegen = (tx: Transaktion, name: string, art: 'soll' | 'sicherung', notiz: string) => {
+      const id = neueId();
+      tx.einfuegen('stand', { id, name, zeit: jetztUtc(), art, notiz });
+      fuerAlle(tx, (h, ptx) => h.speichern(ptx, id));
+      return id;
+    };
+    const name = z.string().trim().min(1, 'Der Stand braucht einen Namen').max(200);
+    this.befehle.registrieren('kern', 'stand', {
+      name: 'stand.speichern',
+      titel: 'Stand speichern',
+      schema: z.object({
+        name,
+        notiz: z.string().max(4000).default(''),
+        art: z.enum(['soll', 'sicherung']).default('soll'),
+      }),
+      ausfuehren: (tx, d) => void anlegen(tx, d.name, d.art, d.notiz),
+    });
+    this.befehle.registrieren('kern', 'stand', {
+      name: 'stand.laden',
+      titel: 'Auf Stand zurückspringen',
+      schema: z.object({ id: z.string().min(1) }),
+      ausfuehren: (tx, d) => {
+        const ziel = standLesen(tx, d.id);
+        // Aktuellen Stand vorher sichern, damit der Rücksprung auch später noch umkehrbar ist
+        anlegen(tx, `Vor Rücksprung auf „${ziel.name}“`, 'sicherung', '');
+        fuerAlle(tx, (h, ptx) => h.laden(ptx, ziel.id));
+      },
+    });
+    this.befehle.registrieren('kern', 'stand', {
+      name: 'stand.umbenennen',
+      titel: 'Stand umbenennen',
+      schema: z.object({ id: z.string().min(1), name, notiz: z.string().max(4000).optional() }),
+      ausfuehren: (tx, d) => {
+        standLesen(tx, d.id);
+        tx.aendern('stand', d.id, {
+          name: d.name,
+          ...(d.notiz !== undefined ? { notiz: d.notiz } : {}),
+        });
+      },
+    });
+    this.befehle.registrieren('kern', 'stand', {
+      name: 'stand.loeschen',
+      titel: 'Stand löschen',
+      schema: z.object({ id: z.string().min(1) }),
+      ausfuehren: (tx, d) => {
+        standLesen(tx, d.id);
+        fuerAlle(tx, (h, ptx) => h.loeschen(ptx, d.id));
+        tx.loeschen('stand', d.id);
+      },
+    });
+    this.erw.abfragen.set('kern:staende', {
+      name: 'staende',
+      schema: z.undefined(),
+      ausfuehren: (db) => db.lesen<StandZeile>('SELECT * FROM stand ORDER BY zeit DESC, id DESC'),
+    });
   }
 
   private lesezugriff(): PluginDb {

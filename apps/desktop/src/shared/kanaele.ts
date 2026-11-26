@@ -13,6 +13,7 @@ export const AUFRUFE = [
   'befehl:ausfuehren',
   'befehl:rueckgaengig',
   'befehl:wiederholen',
+  'export:starten',
   'abfrage',
 ] as const;
 
