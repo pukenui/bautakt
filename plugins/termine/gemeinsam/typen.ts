@@ -52,6 +52,9 @@ export interface VorgangZeile {
   dauer_herleitung: string;
   /** Verweis auf die Herleitung in t_aufwand (eingefrorene Bibliothekskopie, E-54). */
   aufwand_ref: string | null;
+  /** Ortsbereich (E-31, E-67): IDs aus t_ort, null = ohne Ort */
+  ort_von: string | null;
+  ort_bis: string | null;
   bedingung_typ: BedingungTyp;
   bedingung_datum: string | null;
   schnittstelle: number; // 0/1
@@ -187,6 +190,8 @@ export interface AufwandHinweis {
   neuereVersion: number | null;
 }
 
+export type { OrtZeile } from './orte.js';
+
 export interface PlanDaten {
   plan: PlanZeile;
   kalender: KalenderDaten;
@@ -200,6 +205,8 @@ export interface PlanDaten {
   vergleich: Vergleich | null;
   /** Herleitungen mit dem Aufwandswert-Rechner je Vorgang (E-54). */
   aufwand: Record<string, AufwandHinweis>;
+  /** Ortsstruktur des Projekts (E-67) */
+  orte: import('./orte.js').OrtZeile[];
 }
 
 /** Felder, die der Befehl `vorgang.aendern` setzen darf. */
@@ -218,6 +225,8 @@ export const AENDERBARE_FELDER = [
   'bedingung_typ',
   'bedingung_datum',
   'schnittstelle',
+  'ort_von',
+  'ort_bis',
 ] as const;
 
 export type VorgangFelder = Partial<Pick<VorgangZeile, (typeof AENDERBARE_FELDER)[number]>>;

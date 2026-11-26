@@ -1,3 +1,4 @@
+import type { OrtZeile } from '../gemeinsam/orte.js';
 import { aufwandHinweise } from './aufwand.js';
 import { BautaktFehler, type PluginDb } from '@bautakt/kern';
 import { Arbeitskalender } from '@bautakt/rechnen-kalender';
@@ -153,6 +154,7 @@ export function planDatenLaden(
     ? vergleichLesen(db, plan, kalender, ruhezeiten, sollStandId, berechnung)
     : null;
   const aufwand = aufwandHinweise(db, planId, aktuelleVersion);
+  const orte = db.lesen<OrtZeile>('SELECT * FROM t_ort ORDER BY reihenfolge');
   return {
     plan,
     kalender,
@@ -163,6 +165,7 @@ export function planDatenLaden(
     ist,
     vergleich,
     aufwand,
+    orte,
   };
 }
 

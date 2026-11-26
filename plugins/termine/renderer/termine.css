@@ -854,3 +854,105 @@ input.kurz {
 .tp-aw.warnung {
   color: #a15c00;
 }
+
+/* --- Liniendiagramm (E-68) und Taktzug (E-69) --- */
+.ld-rahmen {
+  flex: 1;
+  min-height: 200px;
+  overflow: auto;
+  border: 1px solid var(--linie);
+  background: #fff;
+}
+.ld-svg {
+  display: block;
+}
+.ld-band {
+  fill: #fff;
+}
+.ld-band.ungerade {
+  fill: #f7f7f4;
+}
+.ld-ort {
+  font-size: 12px;
+  fill: #333;
+}
+.ld-gruppe {
+  stroke: #7a7a74;
+  stroke-width: 1.2;
+}
+.ld-raster {
+  stroke: #ececea;
+}
+.ld-linie line {
+  stroke-width: 1.5;
+}
+.ld-linie text {
+  font-size: 10px;
+}
+.ld-linie.heute line {
+  stroke: #1f5fa8;
+}
+.ld-linie.heute text {
+  fill: #1f5fa8;
+}
+.ld-linie.stichtag line {
+  stroke: #e07b00;
+  stroke-dasharray: 6 4;
+}
+.ld-linie.stichtag text {
+  fill: #a15c00;
+}
+.ld-vorgang {
+  cursor: default;
+}
+.ld-strich {
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+.ld-treffer {
+  stroke: transparent;
+  stroke-width: 14;
+}
+.ld-vorgang.gewaehlt .ld-treffer {
+  stroke: rgba(31, 95, 168, 0.25);
+}
+.ld-nr {
+  font-size: 10px;
+  fill: #333;
+}
+.ld-farbe {
+  display: inline-block;
+  width: 18px;
+  height: 4px;
+  border-radius: 2px;
+}
+.orte-tabelle .fett,
+.fett {
+  font-weight: 600;
+}
+.takt-raster {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 200px;
+  gap: 14px;
+}
+.takt-raster .tabelle {
+  min-width: 0;
+  width: 100%;
+}
+.takt-raster h4 {
+  margin: 0 0 6px;
+}
+.takt-orte {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 280px;
+  overflow: auto;
+}
+.takt-dauer {
+  width: 64px;
+  text-align: right;
+}
+.takt-breit {
+  grid-column: 1 / -1;
+}

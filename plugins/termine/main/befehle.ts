@@ -38,13 +38,17 @@ const typ = z.enum(['vorgang', 'sammel', 'meilenstein']);
 const fehler = (meldung: string) => new BautaktFehler('BEFEHL_DATEN', meldung);
 
 // --- Hilfen ------------------------------------------------------------------------------
-function vorgangLesen(tx: Transaktion, vid: string): VorgangZeile {
+export function vorgangLesen(tx: Transaktion, vid: string): VorgangZeile {
   const v = tx.eins<VorgangZeile>('SELECT * FROM t_vorgang WHERE id = ?', vid);
   if (!v) throw new BautaktFehler('NICHT_GEFUNDEN', 'Der Vorgang existiert nicht (mehr).');
   return v;
 }
 
-function geschwister(tx: Transaktion, planId: string, parent: string | null): VorgangZeile[] {
+export function geschwister(
+  tx: Transaktion,
+  planId: string,
+  parent: string | null,
+): VorgangZeile[] {
   return tx.lesen<VorgangZeile>(
     parent === null
       ? 'SELECT * FROM t_vorgang WHERE plan_id = ? AND parent_id IS NULL ORDER BY sortierung'
@@ -63,7 +67,7 @@ function naechsteNr(tx: Transaktion, planId: string): string {
   return String(max + 1);
 }
 
-function pruefeNrFrei(tx: Transaktion, planId: string, nr: string, ausser?: string): void {
+export function pruefeNrFrei(tx: Transaktion, planId: string, nr: string, ausser?: string): void {
   const da = tx.eins<{ id: string }>(
     'SELECT id FROM t_vorgang WHERE plan_id = ? AND lower(nr) = lower(?)',
     planId,
@@ -114,7 +118,7 @@ function pruefeBeziehung(
 }
 
 /** Ist-Meldungen und Herleitung (Aufwandswert) eines Vorgangs löschen. */
-function zugehoerigeLoeschen(tx: Transaktion, vid: string): void {
+export function zugehoerigeLoeschen(tx: Transaktion, vid: string): void {
   for (const i of tx.lesen<{ id: string }>('SELECT id FROM t_ist WHERE vorgang_id = ?', vid)) {
     tx.loeschen('t_ist', i.id);
   }
@@ -345,6 +349,8 @@ export const BEFEHLE: Def[] = [
           info_liefert: text(),
           bedingung_typ: z.enum(['keine', 'nicht_frueher_als', 'muss_enden_am']),
           bedingung_datum: datum.nullable(),
+          ort_von: id.nullable(),
+          ort_bis: id.nullable(),
           schnittstelle: z
             .union([z.boolean(), z.literal(0), z.literal(1)])
             .transform((b) => (b ? 1 : 0)),
@@ -373,6 +379,9 @@ export const BEFEHLE: Def[] = [
       const bedTyp = d.felder.bedingung_typ ?? v.bedingung_typ;
       const bedDatum = 'bedingung_datum' in f ? f['bedingung_datum'] : v.bedingung_datum;
       if (bedTyp !== 'keine' && !bedDatum) throw fehler('Für die Bedingung fehlt das Datum.');
+      for (const o of [d.felder.ort_von, d.felder.ort_bis])
+        if (o && !tx.eins('SELECT 1 FROM t_ort WHERE id = ?', o))
+          throw fehler('Den Ort gibt es in der Ortsstruktur nicht (mehr).');
       tx.aendern('t_vorgang', v.id, f);
     },
   }),

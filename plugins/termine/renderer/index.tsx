@@ -1,6 +1,7 @@
 import { LeereAnsicht, type AnsichtProps, type RendererPlugin } from '@bautakt/ui';
 import { useEffect, useState, type FormEvent } from 'react';
 import type { PlanZeile } from '../gemeinsam/typen.js';
+import hilfeLinien from '../hilfe/liniendiagramm.md?raw';
 import hilfeMeilensteine from '../hilfe/meilensteinplan.md?raw';
 import hilfeNetzplan from '../hilfe/netzplan.md?raw';
 import hilfeTerminliste from '../hilfe/terminliste.md?raw';
@@ -11,6 +12,7 @@ import { DruckBalkenplan } from './druck/DruckBalkenplan.js';
 import { DruckMeilensteinplan } from './druck/DruckMeilensteinplan.js';
 import { DruckNetzplan } from './druck/DruckNetzplan.js';
 import { DruckTerminliste } from './druck/DruckTerminliste.js';
+import { LinienAnsicht } from './LinienAnsicht.js';
 import { MeilensteinAnsicht } from './MeilensteinAnsicht.js';
 import { NetzplanAnsicht } from './NetzplanAnsicht.js';
 import { TerminlisteAnsicht } from './TerminlisteAnsicht.js';
@@ -156,6 +158,12 @@ export const termineRenderer: RendererPlugin = {
       titel: 'Meilensteinplan',
       komponente: MeilensteinAnsicht,
       hilfe: hilfeMeilensteine,
+    },
+    {
+      id: 'termine.linien',
+      titel: 'Liniendiagramm',
+      komponente: LinienAnsicht,
+      hilfe: hilfeLinien,
     },
     { id: 'termine.plaene', titel: 'Pläne', komponente: Plaene, hilfe: hilfePlaene },
   ],

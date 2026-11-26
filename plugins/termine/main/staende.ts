@@ -9,6 +9,7 @@ const TABELLEN = [
   't_vorgang',
   't_beziehung',
   't_aufwand',
+  't_ort',
 ] as const;
 
 /** Spalten einer Tabelle (ohne Berechnung, nur Lesen über PRAGMA). */

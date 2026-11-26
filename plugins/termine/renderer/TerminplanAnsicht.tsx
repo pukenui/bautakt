@@ -184,6 +184,21 @@ export function TerminplanAnsicht({ api, status, datenstand }: AnsichtProps) {
           >
             Aufwandswert …
           </button>
+          <button
+            onClick={() => setDialog({ art: 'orte' })}
+            title="Ortsstruktur des Projekts (Bauabschnitte, Geschosse …)"
+          >
+            Orte …
+          </button>
+          {!nurLesen && (
+            <button
+              disabled={!gewaehlt || gewaehlt.typ !== 'vorgang'}
+              onClick={() => gewaehlt && setDialog({ art: 'takt', id: gewaehlt.id })}
+              title="Gewählten Vorgang (und folgende) über mehrere Orte vervielfältigen (Taktzug)"
+            >
+              Über Takte …
+            </button>
+          )}
         </div>
         <SollIstLeiste
           daten={daten}

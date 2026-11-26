@@ -179,4 +179,21 @@ export const MIGRATIONEN: readonly Migration[] = [
       CREATE INDEX t_aufwand_stand_s ON t_aufwand_stand (stand_id);
     `,
   },
+  {
+    version: 6,
+    name: 'Ortsstruktur je Projekt (E-31, E-67)',
+    sql: `
+      CREATE TABLE t_ort (
+        id TEXT PRIMARY KEY,
+        parent_id TEXT,
+        name TEXT NOT NULL,
+        reihenfolge REAL NOT NULL
+      );
+      CREATE TABLE t_ort_stand (
+        id TEXT PRIMARY KEY, stand_id TEXT NOT NULL, orig_id TEXT NOT NULL,
+        parent_id TEXT, name TEXT, reihenfolge REAL
+      );
+      CREATE INDEX t_ort_stand_s ON t_ort_stand (stand_id);
+    `,
+  },
 ];

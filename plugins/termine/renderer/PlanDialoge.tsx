@@ -4,12 +4,13 @@ import { AufwandDialog } from './AufwandDialog.js';
 import { BeziehungDialog, PlanDialog, VorgangDialog } from './Dialoge.js';
 import { ExportDialog, type Darstellung } from './ExportDialog.js';
 import { IstDialog } from './IstDialog.js';
+import { OrteDialog, TaktDialog } from './OrteDialoge.js';
 import { StaendeDialog } from './StaendeDialog.js';
 import { useZustand } from './zustand.js';
 
 export type DialogZustand =
-  | { art: 'vorgang' | 'beziehung' | 'ist' | 'aufwand'; id: string }
-  | { art: 'plan' | 'staende' | 'export' }
+  | { art: 'vorgang' | 'beziehung' | 'ist' | 'aufwand' | 'takt'; id: string }
+  | { art: 'plan' | 'staende' | 'export' | 'orte' }
   | null;
 
 type Befehl = (name: string, daten: unknown) => Promise<string[] | null>;
@@ -54,6 +55,26 @@ export function PlanDialoge(props: {
           vorgangId={dialog.id}
           datenstand={props.datenstand}
           nurLesen={nurLesen}
+          befehl={befehl}
+          fehler={fehler}
+          onSchliessen={props.onSchliessen}
+        />
+      );
+    case 'orte':
+      return (
+        <OrteDialog
+          daten={daten}
+          nurLesen={nurLesen}
+          befehl={befehl}
+          fehler={fehler}
+          onSchliessen={props.onSchliessen}
+        />
+      );
+    case 'takt':
+      return (
+        <TaktDialog
+          daten={daten}
+          vorgangId={dialog.id}
           befehl={befehl}
           fehler={fehler}
           onSchliessen={props.onSchliessen}

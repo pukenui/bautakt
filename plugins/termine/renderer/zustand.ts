@@ -17,6 +17,8 @@ export interface Zustand {
   vergleich: Record<string, string | null>;
   /** Filter und Gruppierung der Terminliste (E-47). */
   listeFilter: ListenFilter;
+  /** Liniendiagramm (E-68): Zeit waagerecht (Standard) oder Orte waagerecht */
+  linienAusrichtung: 'zeit-x' | 'ort-x';
 }
 
 const SPEICHER = 'bautakt.termine.anzeige';
@@ -32,6 +34,7 @@ function laden(): Zustand {
     auswahl: null,
     vergleich: {},
     listeFilter: OHNE_FILTER,
+    linienAusrichtung: 'zeit-x',
   };
   try {
     const gespeichert = JSON.parse(localStorage.getItem(SPEICHER) ?? '{}') as Partial<Zustand>;

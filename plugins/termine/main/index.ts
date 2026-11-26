@@ -4,6 +4,7 @@ import type { AufwandZeile, IstZeile, PlanZeile } from '../gemeinsam/typen.js';
 import { MIGRATIONEN } from '../migrations/index.js';
 import { aufwandBefehle, type BibliothekZugriff } from './aufwand.js';
 import { BEFEHLE } from './befehle.js';
+import { ORTE_BEFEHLE } from './orte.js';
 import { vorgangslisteExcel } from './excel.js';
 import { planDatenLaden } from './daten.js';
 import { termineStaende } from './staende.js';
@@ -17,12 +18,13 @@ export type { PlanZeile } from '../gemeinsam/typen.js';
 export const terminePlugin: BautaktPlugin = {
   id: 'termine',
   name: 'Terminplanung',
-  version: '0.5.0',
+  version: '0.6.0',
   tabellenPraefix: 't_',
   migrationen: MIGRATIONEN,
 
   aktivieren(ctx) {
     for (const b of BEFEHLE) ctx.befehle.registrieren(b);
+    for (const b of ORTE_BEFEHLE) ctx.befehle.registrieren(b);
 
     // Bibliothek (global, E-23) ist optional: ohne sie nur eigene Aufwandswerte
     const bibliothek = (): BibliothekZugriff | null => {

@@ -3,6 +3,7 @@ import type { Art, Einheit } from '@bautakt/rechnen-termine';
 import { Dialog } from '@bautakt/ui';
 import { useState, type ReactNode } from 'react';
 import type { BedingungTyp, PlanDaten, VorgangFelder, VorgangTyp } from '../gemeinsam/typen.js';
+import { ortsBaum } from '../gemeinsam/orte.js';
 import { ART_TEXT, datumKurz } from './daten.js';
 
 type Befehl = (name: string, daten: unknown) => Promise<string[] | null>;
@@ -48,6 +49,8 @@ export function VorgangDialog(props: {
     bedingung_typ: (v?.bedingung_typ ?? 'keine') as BedingungTyp,
     bedingung_datum: v?.bedingung_datum ?? '',
     schnittstelle: !!v?.schnittstelle,
+    ort_von: v?.ort_von ?? '',
+    ort_bis: v?.ort_bis ?? '',
   }));
   if (!v) return null;
   const t = props.daten.berechnung.ok ? props.daten.berechnung.termine[v.id] : undefined;
@@ -74,6 +77,8 @@ export function VorgangDialog(props: {
     const datum = f.bedingung_typ === 'keine' ? null : f.bedingung_datum || null;
     if (datum !== v.bedingung_datum) felder.bedingung_datum = datum;
     if (Number(f.schnittstelle) !== v.schnittstelle) felder.schnittstelle = f.schnittstelle ? 1 : 0;
+    if ((f.ort_von || null) !== v.ort_von) felder.ort_von = f.ort_von || null;
+    if ((f.ort_bis || null) !== v.ort_bis) felder.ort_bis = f.ort_bis || null;
     if (Object.keys(felder).length === 0) return props.onSchliessen();
     if (await props.befehl('vorgang.aendern', { id: v.id, felder })) props.onSchliessen();
   };
@@ -176,6 +181,32 @@ export function VorgangDialog(props: {
             onChange={(e) => setze('anmerkung', e.target.value)}
           />
         </Feld>
+        {props.daten.orte.length > 0 && (
+          <>
+            <Feld label="Ort von" hinweis="für das Liniendiagramm (E-31)">
+              <select value={f.ort_von} onChange={(e) => setze('ort_von', e.target.value)}>
+                <option value="">– kein Ort –</option>
+                {ortsBaum(props.daten.orte).map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {' '.repeat(o.ebene)}
+                    {o.name}
+                  </option>
+                ))}
+              </select>
+            </Feld>
+            <Feld label="Ort bis" hinweis="leer = wie „Ort von“">
+              <select value={f.ort_bis} onChange={(e) => setze('ort_bis', e.target.value)}>
+                <option value="">– wie „Ort von“ –</option>
+                {ortsBaum(props.daten.orte).map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {' '.repeat(o.ebene)}
+                    {o.name}
+                  </option>
+                ))}
+              </select>
+            </Feld>
+          </>
+        )}
         <Feld label="Gewerk">
           <input value={f.gewerk} onChange={(e) => setze('gewerk', e.target.value)} />
         </Feld>
