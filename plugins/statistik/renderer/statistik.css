@@ -1,0 +1,81 @@
+/* Plugin Statistik (E-34) */
+.st-ansicht {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+}
+.st-karte {
+  background: var(--flaeche);
+  border: 1px solid var(--linie);
+  border-radius: 6px;
+  padding: 10px 14px;
+}
+.st-karte h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+.st-ansicht .st-merkmale {
+  grid-template-columns: auto minmax(160px, 1fr) minmax(160px, 1fr) auto;
+  align-items: end;
+}
+.st-werkzeuge {
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.st-ansicht .werkzeugleiste.st-werkzeuge input.st-zahl {
+  width: 90px;
+}
+.st-vorschlag {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin: 6px 0;
+  padding: 6px 10px;
+  background: #fff3cd;
+  border: 1px solid #e3c46a;
+  border-radius: 4px;
+}
+.st-diagramm {
+  display: block;
+  margin: 6px 0 10px;
+}
+.st-raster {
+  stroke: #e6e6e2;
+}
+.st-eins {
+  stroke: #1d1d1b;
+  stroke-width: 1.5;
+}
+.st-achse {
+  font-size: 10px;
+  fill: #555;
+}
+.st-name {
+  font-size: 12px;
+  fill: #333;
+}
+.st-spanne {
+  stroke: #8a8a84;
+  stroke-width: 2;
+}
+.st-median {
+  stroke: #1d1d1b;
+  stroke-width: 2;
+}
+.st-mittel {
+  fill: #1f5fa8;
+}
+.st-mittel.abweichend {
+  fill: #e07b00;
+}
+.st-tabelle {
+  width: auto;
+}
+.tabelle .zahl {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}

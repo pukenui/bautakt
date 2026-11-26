@@ -4,6 +4,7 @@ import type { AufwandZeile, IstZeile, PlanZeile } from '../gemeinsam/typen.js';
 import { MIGRATIONEN } from '../migrations/index.js';
 import { aufwandBefehle, type BibliothekZugriff } from './aufwand.js';
 import { BEFEHLE } from './befehle.js';
+import { dauerBeobachtungen } from './erfahrung.js';
 import { MTA_BEFEHLE, mtaLaden } from './mta.js';
 import { ORTE_BEFEHLE } from './orte.js';
 import { vorgangslisteExcel } from './excel.js';
@@ -89,6 +90,8 @@ export const terminePlugin: BautaktPlugin = {
         beschreibung: 'Excel-Arbeitsmappe',
       },
     );
+    // Erfahrungsdatenbank (E-74): Beobachtungen fertiger Vorgänge
+    ctx.dienste.bereitstellen('termine.erfahrung', () => dauerBeobachtungen(ctx.db));
     ctx.dienste.bereitstellen('termine.plaene', plaene);
     ctx.dienste.bereitstellen('termine.plan', (planId: string) => planDatenLaden(ctx.db, planId));
   },

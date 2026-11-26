@@ -45,7 +45,7 @@ Ziel: Ab ca. **13.12.** sollen damit F.1 (Rollen-Netzplan) und F.2 (Projekttermi
 - [x] **M9** Excel-Export (Vorgangsliste, Kostentabelle im Dynexite-Aufbau) (E-25)
 - [x] **M10** Ortsstruktur, Liniendiagramm, Taktplanung „über Takte vervielfältigen“ (E-30, E-31)
 - [x] **M11** Meilenstein-Trendanalyse (E-30)
-- [ ] **M12** Statistik-Plugin: Erfahrungsdatenbank, Auswertung ab n ≥ 3, Vorschläge, Schalter „zählt in Statistik“ (E-34)
+- [x] **M12** Statistik-Plugin: Erfahrungsdatenbank, Auswertung ab n ≥ 3, Vorschläge, Schalter „zählt in Statistik“ (E-34)
 - [ ] **M13** MS-Project-XML Im-/Export (E-25)
 - [ ] **M14** Hilfe komplett: Glossar mit Hover, leere Ansichten, Erststart-Tour (E-29)
 
@@ -80,3 +80,4 @@ Ziel: Ab ca. **13.12.** sollen damit F.1 (Rollen-Netzplan) und F.2 (Projekttermi
 - 26.11.2026 – **M9 fertig.** Excel-Export über exceljs: Vorgangsliste aller Vorgänge mit Gliederung, Zeitpunkten, Puffern (GP als Formel), Terminen und Eigenschaften; Kosten-Arbeitsmappe mit Kostentabelle im vereinbarten Aufbau, Flächen, Soll-Ist, Aufträgen und Rechnungen, Beträge als nachrechenbare Formeln mit Ergebnis. Kern: Datei-Exporte der Plugins. Gepacktes Programm enthält exceljs (geprüft). Neue Entscheidungen E-64–E-66. 485 Tests grün.
 - 26.11.2026 – **M10 fertig.** Ortsstruktur je Projekt (beliebig tief, Reihenfolge), Ort von–bis am Vorgang, Liniendiagramm/Weg-Zeit-Diagramm mit umschaltbarer Ausrichtung, Farbe je Gewerk und kritischem Weg, Taktplanung „Über Takte vervielfältigen“ als Taktzug (Kopien je Ort, automatische Verkettung, Originale als Sammelvorgänge). Neue Entscheidungen E-67–E-70. 489 Tests grün; Bedienung in der gebauten App geprüft.
 - 26.11.2026 – **M11 fertig.** Meilenstein-Trendanalyse: Berichtsstände je Stichtag festhalten (mit Notiz, gleicher Tag ersetzt, einzeln löschbar), Diagramm Berichtsdatum × Termin mit Diagonale, aktueller Stand gestrichelt, Meilensteine auswählbar, Tabelle mit Verschiebung in Kalendertagen, Export PDF/PNG. Neue Entscheidungen E-71–E-73. 491 Tests grün; Bedienung und Export in der gebauten App geprüft.
+- 26.11.2026 – **M12 fertig.** Statistik-Plugin mit Erfahrungsdatenbank im App-Datenordner: Projekte übertragen (Dauern fertiger Vorgänge, Kosten je KG, Kostenkennwerte), Merkmale Gebäudeart/Bauweise/BGF, Schalter „zählt in Statistik“, Auswertung je Schlüssel ab n ≥ 3 mit Diagramm und Filtern, Vorschläge zur Bibliothek ab 5 % Abweichung (nur auf Klick). Rechenbibliothek `rechnen-statistik`. Neue Entscheidungen E-74–E-78. 498 Tests grün; Bedienung in der gebauten App geprüft.

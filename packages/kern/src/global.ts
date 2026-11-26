@@ -19,6 +19,8 @@ export interface GlobalSchreibzugriff extends PluginDb {
   einfuegen(tabelle: string, zeile: Zeile): void;
   /** Ändert Zeilen, deren Spalten den Schlüsselwerten entsprechen; liefert die Anzahl. */
   aendern(tabelle: string, schluessel: Zeile, felder: Zeile): number;
+  /** Löscht Zeilen, deren Spalten den Schlüsselwerten entsprechen; liefert die Anzahl. */
+  loeschen(tabelle: string, schluessel: Zeile): number;
 }
 
 export interface AktionDefinition<T = unknown, R = unknown> {
@@ -72,6 +74,15 @@ function schreibzugriff(db: Database.Database): GlobalSchreibzugriff {
         )
         .run(...setzen.map((s) => felder[s] ?? null), ...wo.map((s) => schluessel[s] ?? null))
         .changes;
+    },
+    loeschen(tabelle, schluessel) {
+      const wo = Object.keys(schluessel).map(pruefeBezeichner);
+      if (!wo.length) return 0; // nie ohne Bedingung alles löschen
+      return db
+        .prepare(
+          `DELETE FROM ${pruefeBezeichner(tabelle)} WHERE ${wo.map((s) => `${s} = ?`).join(' AND ')}`,
+        )
+        .run(...wo.map((s) => schluessel[s] ?? null)).changes;
     },
   };
 }

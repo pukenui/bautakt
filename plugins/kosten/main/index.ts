@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { MIGRATIONEN } from '../migrations/index.js';
 import { kostenBefehle } from './befehle.js';
 import { kostenDatenLaden } from './daten.js';
+import { kostenBeobachtungen } from './erfahrung.js';
 import { kostenExcel } from './excel.js';
 import { sollIstLaden } from './sollist.js';
 import { SOLLIST_BEFEHLE } from './sollistBefehle.js';
@@ -65,6 +66,8 @@ export const kostenPlugin: BautaktPlugin = {
       schema: z.undefined(),
       ausfuehren: (db) => kostenDatenLaden(db, kennwertVersion),
     });
+    // Erfahrungsdatenbank (E-75)
+    ctx.dienste.bereitstellen('kosten.erfahrung', () => kostenBeobachtungen(ctx.db));
     ctx.dienste.bereitstellen('kosten.daten', () => kostenDatenLaden(ctx.db, kennwertVersion));
   },
 };

@@ -361,3 +361,12 @@ Präzisierungen der Rechenregeln aus Abschnitt 5, wie sie in `packages/rechnen-*
 - **Reine Logik `gemeinsam/mta.ts`:** `mtaPunkte` (aktueller Stand nur, wenn sein Datum nach dem letzten Bericht liegt), `mtaZeitraum` (gemeinsamer Bereich beider Achsen), `mtaVerschiebung` (Kalendertage gegenüber dem ersten Bericht).
 - **Oberfläche:** Reiter „MTA“ mit SVG-Diagramm (`MtaDiagramm`, quadratisch, gleicher Maßstab, Diagonale, Beschriftungen rechts ohne Überlappung) und Tabelle (`MtaTabelle`); beide werden auch in der Druckansicht `termine.mta` verwendet. Ausgeblendete Meilensteine und „aktuellen Stand zeigen“ im Anzeigezustand; der Export übernimmt sie.
 
+## 21. Umsetzungsnotizen (M12)
+
+- **Rechenbibliothek `packages/rechnen-statistik`:** `kennzahlen` (n, Mittel, Median, Stichproben-Standardabweichung, Min, Max), `faktor` (Ist ÷ Soll, wahlweise Prognose), `gruppieren` (Kennzahlen erst ab `MINDEST_N = 3`), `vorschlagNoetig` (Schwelle 5 %), `vorschlagText`.
+- **Beobachtungen aus den Fachplugins über Dienste:** `termine.erfahrung` (fertige Vorgänge; Soll aus `t_vorgang_stand` des jüngsten Soll-Stands, Ist = FEZ − FAZ der Prognose, Aufwandswert aus `t_aufwand`, Ursache der jüngsten Ist-Meldung) und `kosten.erfahrung` (Soll-Ist je KG aus `sollIstLaden`, KKW nur für maßgebende Zeilen mit Bibliothekskennwert, BGF). Das Statistik-Plugin liest keine fremden Tabellen.
+- **Plugin `statistik`:** Projektdatei `s_projekt` (zählt, Gebäudeart, Bauweise, abgeschlossen, übertragen) mit Befehlen `merkmale.aendern`, `uebertragung.vermerken`; Abfrage `erhebung` bündelt Merkmale (Projekt-ID und -name aus `meta`) und Beobachtungen. Global `erfahrung.sqlite`: `projekt`, `beobachtung` (je Beobachtung alle Schlüssel als Spalten, gruppiert wird erst bei der Abfrage). Aktionen `uebertragen` (ersetzt die Beobachtungen des Projekts), `projekt.zaehlt`, `projekt.entfernen`; Abfragen `projekte`, `merkmale`, `auswertung` (Filter Gebäudeart/Bauweise/BGF, Vorschläge für Aufwandswerte und Kennwerte).
+- **Ablauf „Übertragen“ in der Oberfläche:** Abfrage `erhebung` → globale Aktion `uebertragen` → Projektbefehl `uebertragung.vermerken` (undo-fähig, die globale Übertragung selbst nicht – sie wird durch erneutes Übertragen ersetzt).
+- **Kern:** `GlobalSchreibzugriff.loeschen(tabelle, schluessel)` (nur mit Bedingung).
+- **Vorschläge:** Der neue Wert (bisher × mittlerer Faktor, bei Kennwerten Von/Mittel/Bis) wird im Dialog vorgeschlagen und erst auf Klick als neue Bibliotheksversion gespeichert; die Anmerkung vermerkt den Faktor.
+

@@ -1,0 +1,29 @@
+{
+  "name": "@bautakt/plugin-statistik",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Plugin Statistik: Erfahrungsdatenbank, Auswertung, Vorschläge (E-34)",
+  "type": "module",
+  "exports": {
+    "./main": "./main/index.ts",
+    "./renderer": "./renderer/index.tsx"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@bautakt/kern": "workspace:*",
+    "@bautakt/ui": "workspace:*",
+    "@bautakt/rechnen-statistik": "workspace:*",
+    "@bautakt/plugin-bibliothek": "workspace:*",
+    "react": "^19.2.0",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.2.0",
+    "@bautakt/plugin-termine": "workspace:*",
+    "@bautakt/plugin-kosten": "workspace:*",
+    "@bautakt/rechnen-kalender": "workspace:*"
+  }
+}
