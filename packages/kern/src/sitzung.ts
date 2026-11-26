@@ -17,6 +17,7 @@ import type {
   ExportFunktion,
   ExportInfo,
   ImportFunktion,
+  ImportInfo,
   MainKontext,
   PluginDb,
   StandHandler,
@@ -44,7 +45,7 @@ interface Erweiterungen {
   abfragen: Map<string, AbfrageDefinition>;
   dienste: Map<string, unknown>;
   exporte: Map<string, { fn: ExportFunktion; info: ExportInfo }>;
-  importe: Map<string, ImportFunktion>;
+  importe: Map<string, { fn: ImportFunktion; info: ImportInfo }>;
   staende: { plugin: string; praefix: string; handler: StandHandler }[];
   anhaenge: ((db: PluginDb) => string[])[];
 }
@@ -185,7 +186,13 @@ export class ProjektSitzung {
           erw.exporte.set(k, { fn, info });
         },
       },
-      importe: { registrieren: (format, fn) => void erw.importe.set(`${p.id}:${format}`, fn) },
+      importe: {
+        registrieren: (format, fn, info) => {
+          const k = `${p.id}:${format}`;
+          if (erw.importe.has(k)) throw new BautaktFehler('PLUGIN', `Import „${k}“ doppelt.`);
+          erw.importe.set(k, { fn, info });
+        },
+      },
       stand: {
         registrieren: (handler) =>
           void erw.staende.push({ plugin: p.id, praefix: p.tabellenPraefix, handler }),
@@ -329,6 +336,33 @@ export class ProjektSitzung {
     if (!e)
       throw new BautaktFehler('ABFRAGE_UNBEKANNT', `Unbekannter Export „${plugin}:${format}“.`);
     return { daten: await e.fn(this.lesezugriff(), parameter), info: e.info };
+  }
+
+  /** Angaben zu einem Datei-Import (Dateiendungen für den Öffnen-Dialog). */
+  importInfo(plugin: string, format: string): ImportInfo {
+    const e = this.erw.importe.get(`${plugin}:${format}`);
+    if (!e)
+      throw new BautaktFehler('ABFRAGE_UNBEKANNT', `Unbekannter Import „${plugin}:${format}“.`);
+    return e.info;
+  }
+
+  /** Datei-Import: Datei lesen, dann den gelieferten Befehl ausführen (ein Undo-Schritt). */
+  dateiImport(
+    plugin: string,
+    format: string,
+    inhalt: Uint8Array,
+    parameter: Record<string, unknown>,
+  ): { bericht: string[]; ergebnis: BefehlErgebnis } {
+    const e = this.erw.importe.get(`${plugin}:${format}`);
+    if (!e)
+      throw new BautaktFehler('ABFRAGE_UNBEKANNT', `Unbekannter Import „${plugin}:${format}“.`);
+    const auftrag = e.fn(inhalt, parameter, this.lesezugriff());
+    const ergebnis = this.befehle.ausfuehren({
+      plugin,
+      name: auftrag.befehl,
+      daten: auftrag.daten,
+    });
+    return { bericht: auftrag.bericht, ergebnis };
   }
 
   /** Verweist das Projekt auf diese Datei (Anhang)? Groß-/Kleinschreibung egal (Windows). */

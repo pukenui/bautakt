@@ -19,6 +19,7 @@
     "@bautakt/rechnen-termine": "workspace:*",
     "@bautakt/ui": "workspace:*",
     "exceljs": "^4.4.0",
+    "fast-xml-parser": "^5.12.1",
     "react": "^19.2.0",
     "zod": "^4.1.0"
   },

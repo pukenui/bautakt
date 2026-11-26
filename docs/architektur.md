@@ -370,3 +370,10 @@ Präzisierungen der Rechenregeln aus Abschnitt 5, wie sie in `packages/rechnen-*
 - **Kern:** `GlobalSchreibzugriff.loeschen(tabelle, schluessel)` (nur mit Bedingung).
 - **Vorschläge:** Der neue Wert (bisher × mittlerer Faktor, bei Kennwerten Von/Mittel/Bis) wird im Dialog vorgeschlagen und erst auf Klick als neue Bibliotheksversion gespeichert; die Anmerkung vermerkt den Faktor.
 
+## 22. Umsetzungsnotizen (M13)
+
+- **Kern: Datei-Importe der Plugins.** `MainKontext.importe.registrieren(format, fn, { endungen, beschreibung })`; `fn(inhalt, parameter, db)` liest nur und liefert `{ befehl, daten, bericht }`. `ProjektSitzung.dateiImport` führt den gelieferten Befehl aus – der Import ist damit ein Undo-Schritt und läuft wie jede Änderung über das Protokoll. IPC `import:starten` (Öffnen-Dialog im Main-Prozess; in Entwicklungs-Builds über `BAUTAKT_TEST_IMPORT_DATEI` ohne Dialog). Datei-Exporte kennen jetzt auch `xml`.
+- **MSPDI (`plugins/termine/main/msproject.ts`):** Export schreibt XML als Text (1 AT = 8 h = 480 min, Beginn 08:00, Ende 17:00; Abstände in Zehntelminuten, `LagFormat` 7 = AT, 8 = KT; Bedingungen als `ConstraintType` 4/3; Feiertage und Ruhezeiten als `Exceptions`; Quelle/Annahme, Gewerk, Verantwortlich, Herleitung, Anmerkung in `Notes`; Ist als `ActualStart/ActualFinish/PercentComplete` mit `StatusDate`; Soll-Vergleichsstand als `Baseline` 0). Import liest mit fast-xml-parser, rechnet Dauern über `MinutesPerDay` in AT (aufrunden), Abstände in AT/KT (runden), Wochentage und Ausnahmen in Arbeitstage und Ruhezeiten (ohne automatischen Feiertagskalender), Notizen aus einem Bautakt-Export zurück in die Felder, und erstellt einen Bericht.
+- **Befehl `plan.importieren`:** neuer Plan (eigener Kalender) oder Ersatz eines Plans (Vorgänge samt Ist, Herleitung und MTA-Werten, Beziehungen und Ruhezeiten werden ersetzt). Abschließend wird das Netz gerechnet; ist es nicht rechenbar, wird der Import verworfen.
+- **Grenzen:** Die XML-Dateien sind gegen das MSPDI-Schema geschrieben und mit dem eigenen Import im Kreis getestet (gleiche Termine); ein Test mit MS Project selbst stand nicht zur Verfügung.
+

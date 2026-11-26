@@ -154,6 +154,43 @@ const handler: Record<Aufruf, (args: unknown[]) => unknown> = {
       const a = abfrageSchema.parse(daten);
       return aktiveSitzung().abfrage(a.plugin, a.name, a.argumente);
     }),
+  'import:starten': ([daten]) =>
+    antwort(async () => {
+      const a = z
+        .object({
+          plugin: z.string().min(1),
+          format: z.string().min(1),
+          parameter: z.record(z.string(), z.unknown()),
+        })
+        .parse(daten);
+      const sitzung = aktiveSitzung();
+      const info = sitzung.importInfo(a.plugin, a.format);
+      // Nur für automatische Tests in nicht gepackten Builds: Datei ohne Dialog
+      const testDatei = app.isPackaged ? undefined : process.env['BAUTAKT_TEST_IMPORT_DATEI'];
+      const r = testDatei
+        ? { canceled: false, filePaths: [testDatei] }
+        : fenster
+          ? await dialog.showOpenDialog(fenster, {
+              title: `${info.beschreibung} importieren`,
+              properties: ['openFile'],
+              filters: [{ name: info.beschreibung, extensions: info.endungen }],
+            })
+          : { canceled: true, filePaths: [] };
+      const datei = r.canceled ? undefined : r.filePaths[0];
+      if (!datei) return null;
+      const inhalt = fs.readFileSync(datei);
+      const e = sitzung.dateiImport(a.plugin, a.format, new Uint8Array(inhalt), {
+        ...a.parameter,
+        dateiname: path.basename(datei),
+      });
+      return {
+        datei,
+        bericht: e.bericht,
+        eingefuegt: e.ergebnis.aenderungen
+          .filter((x) => x.art === 'einfuegen')
+          .map((x) => ({ tabelle: x.tabelle, id: x.id })),
+      };
+    }),
   'anhang:waehlen': () =>
     antwort(async () => {
       aktiveSitzung();

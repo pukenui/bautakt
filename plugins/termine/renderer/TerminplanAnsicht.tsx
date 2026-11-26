@@ -96,6 +96,7 @@ export function TerminplanAnsicht({ api, status, datenstand }: AnsichtProps) {
           onEinstellungen={() => setDialog({ art: 'plan' })}
           onStaende={() => setDialog({ art: 'staende' })}
           onExport={() => setDialog({ art: 'export' })}
+          onImport={() => setDialog({ art: 'import' })}
         />
         {!nurLesen && (
           <div className="tp-gruppe">

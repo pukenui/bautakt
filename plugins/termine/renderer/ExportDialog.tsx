@@ -32,7 +32,7 @@ export function ExportDialog(props: {
 }) {
   const [f, setF] = useState({
     darstellung: props.darstellung,
-    format: 'pdf' as 'pdf' | 'png' | 'xlsx',
+    format: 'pdf' as 'pdf' | 'png' | 'xlsx' | 'xml',
     aufloesung: 2,
     ersteller: localStorage.getItem(ERSTELLER) ?? '',
     gliederungUebernehmen: true,
@@ -51,11 +51,16 @@ export function ExportDialog(props: {
     setLaeuft(true);
     setMeldung(null);
     const excel = f.format === 'xlsx';
-    const titel = excel ? 'Vorgangsliste' : TITEL[f.darstellung];
+    const xml = f.format === 'xml';
+    const titel = excel ? 'Vorgangsliste' : xml ? 'MS Project' : TITEL[f.darstellung];
     const a = await props.api.export.starten({
       format: f.format,
       // Excel: Datei-Export des Plugins (E-66), sonst Druckansicht
-      ansicht: excel ? 'termine.vorgangsliste' : `termine.${f.darstellung}`,
+      ansicht: excel
+        ? 'termine.vorgangsliste'
+        : xml
+          ? 'termine.msproject'
+          : `termine.${f.darstellung}`,
       aufloesung: f.aufloesung,
       dateiname: `${props.projektname} – ${props.daten.plan.name} – ${titel}`,
       parameter: {
@@ -94,7 +99,7 @@ export function ExportDialog(props: {
           <span className="feld-label">Darstellung</span>
           <select
             value={f.darstellung}
-            disabled={f.format === 'xlsx'}
+            disabled={f.format === 'xlsx' || f.format === 'xml'}
             onChange={(e) => setF({ ...f, darstellung: e.target.value as typeof f.darstellung })}
           >
             <option value="balkenplan">Balkenplan (für die Bauherrschaft)</option>
@@ -108,13 +113,23 @@ export function ExportDialog(props: {
           <span className="feld-label">Format</span>
           <select
             value={f.format}
-            onChange={(e) => setF({ ...f, format: e.target.value as 'pdf' | 'png' | 'xlsx' })}
+            onChange={(e) =>
+              setF({ ...f, format: e.target.value as 'pdf' | 'png' | 'xlsx' | 'xml' })
+            }
           >
             <option value="pdf">PDF, A3 quer (mehrseitig)</option>
             <option value="png">PNG-Bild</option>
             <option value="xlsx">Excel – Vorgangsliste aller Vorgänge (.xlsx)</option>
+            <option value="xml">MS Project (.xml) – Plan mit Ist und Basisplan</option>
           </select>
         </label>
+        {f.format === 'xml' && (
+          <p className="dialog-erklaerung breit">
+            MS-Project-XML (MSPDI): Vorgänge mit Gliederung, Beziehungen, Kalender, Bedingungen, Ist
+            zum Stichtag und der Soll-Vergleichsstand als Basisplan. In MS Project über „Öffnen“
+            laden.
+          </p>
+        )}
         {f.format === 'xlsx' && (
           <p className="dialog-erklaerung breit">
             Excel enthält alle Vorgänge des Plans mit Gliederung, FAZ/FEZ/SAZ/SEZ, Puffern, Terminen

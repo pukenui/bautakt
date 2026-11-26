@@ -5,6 +5,8 @@ import { MIGRATIONEN } from '../migrations/index.js';
 import { aufwandBefehle, type BibliothekZugriff } from './aufwand.js';
 import { BEFEHLE } from './befehle.js';
 import { dauerBeobachtungen } from './erfahrung.js';
+import { IMPORT_BEFEHL } from './importBefehl.js';
+import { msProjectExport, msProjectLesen } from './msproject.js';
 import { MTA_BEFEHLE, mtaLaden } from './mta.js';
 import { ORTE_BEFEHLE } from './orte.js';
 import { vorgangslisteExcel } from './excel.js';
@@ -20,7 +22,7 @@ export type { PlanZeile } from '../gemeinsam/typen.js';
 export const terminePlugin: BautaktPlugin = {
   id: 'termine',
   name: 'Terminplanung',
-  version: '0.7.0',
+  version: '0.8.0',
   tabellenPraefix: 't_',
   migrationen: MIGRATIONEN,
 
@@ -28,6 +30,34 @@ export const terminePlugin: BautaktPlugin = {
     for (const b of BEFEHLE) ctx.befehle.registrieren(b);
     for (const b of ORTE_BEFEHLE) ctx.befehle.registrieren(b);
     for (const b of MTA_BEFEHLE) ctx.befehle.registrieren(b);
+    ctx.befehle.registrieren(IMPORT_BEFEHL);
+    // MS-Project-XML (E-79, E-80)
+    ctx.exporte.registrieren(
+      'msproject',
+      (db, p) =>
+        msProjectExport(
+          db,
+          String(p['planId'] ?? ''),
+          typeof p['sollStandId'] === 'string' ? p['sollStandId'] : null,
+          String(p['projektname'] ?? 'Projekt'),
+        ),
+      { endung: 'xml', beschreibung: 'MS-Project-XML' },
+    );
+    ctx.importe.registrieren(
+      'msproject',
+      (inhalt, p) => {
+        const { daten, bericht } = msProjectLesen(
+          new TextDecoder('utf-8').decode(inhalt),
+          String(p['dateiname'] ?? 'Datei'),
+        );
+        const ziel =
+          p['ziel'] === 'ersetzen' && typeof p['planId'] === 'string'
+            ? { art: 'ersetzen' as const, planId: p['planId'] }
+            : { art: 'neu' as const };
+        return { befehl: 'plan.importieren', daten: { ziel, ...daten }, bericht };
+      },
+      { endungen: ['xml'], beschreibung: 'MS-Project-XML' },
+    );
     ctx.abfragen.registrieren({
       name: 'mta',
       schema: z.object({ planId: z.string().min(1) }),

@@ -30,7 +30,22 @@ export interface ExportInfo {
   /** Bezeichnung für den Speichern-Dialog, z. B. "Excel-Arbeitsmappe" */
   beschreibung: string;
 }
-export type ImportFunktion = (inhalt: Uint8Array) => void;
+/**
+ * Datei-Import eines Plugins (z. B. MS-Project-XML, E-79): liest die Datei (nur lesender
+ * Datenzugriff) und liefert den Befehl, der die Daten übernimmt – so bleibt der Import
+ * rückgängig machbar. `bericht` listet, was gerundet oder weggelassen wurde.
+ */
+export type ImportFunktion = (
+  inhalt: Uint8Array,
+  parameter: Record<string, unknown>,
+  db: PluginDb,
+) => { befehl: string; daten: unknown; bericht: string[] };
+
+export interface ImportInfo {
+  /** Dateiendungen ohne Punkt, z. B. ["xml"] */
+  endungen: string[];
+  beschreibung: string;
+}
 
 /**
  * Stände (Soll/Baseline, Architektur 3.3): Jedes Plugin kopiert seine Daten in eigene
@@ -64,7 +79,7 @@ export interface MainKontext {
     holen<T>(name: string): T;
   };
   exporte: { registrieren(format: string, fn: ExportFunktion, info: ExportInfo): void };
-  importe: { registrieren(format: string, fn: ImportFunktion): void };
+  importe: { registrieren(format: string, fn: ImportFunktion, info: ImportInfo): void };
   stand: { registrieren(handler: StandHandler): void };
   /**
    * Dateien, auf die das Projekt verweist (z. B. Rechnungs-PDF, E-62). Nur solche Pfade darf die

@@ -15,7 +15,8 @@
   },
   "dependencies": {
     "better-sqlite3": "^12.11.1",
-    "exceljs": "^4.4.0"
+    "exceljs": "^4.4.0",
+    "fast-xml-parser": "^5.12.1"
   },
   "devDependencies": {
     "@bautakt/kern": "workspace:*",

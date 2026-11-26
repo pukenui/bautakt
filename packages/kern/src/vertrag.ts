@@ -22,7 +22,7 @@ export interface ProjektStatus {
 /** Exportauftrag an den Main-Prozess (Architektur 6). */
 export interface ExportAuftragDaten {
   /** pdf/png: Druckansicht; xlsx: Datei-Export eines Plugins (ansicht = "plugin.format") */
-  format: 'pdf' | 'png' | 'xlsx';
+  format: 'pdf' | 'png' | 'xlsx' | 'xml';
   /** ID der Druckansicht, z. B. "termine.balkenplan", bzw. des Datei-Exports, z. B. "kosten.excel" */
   ansicht: string;
   parameter: Record<string, unknown>;
@@ -102,6 +102,20 @@ export interface BautaktApi {
     starten(auftrag: ExportAuftragDaten): Promise<Antwort<string | null>>;
   };
   abfrage<T = unknown>(plugin: string, name: string, argumente?: unknown): Promise<Antwort<T>>;
+  /** Datei-Import eines Plugins (E-79): Öffnen-Dialog, Lesen, Befehl; null = abgebrochen. */
+  import: {
+    starten(auftrag: {
+      plugin: string;
+      format: string;
+      parameter: Record<string, unknown>;
+    }): Promise<
+      Antwort<{
+        datei: string;
+        bericht: string[];
+        eingefuegt: { tabelle: string; id: string }[];
+      } | null>
+    >;
+  };
   /** Anhänge als Verweis auf Dateien (E-62). */
   anhang: {
     /** Datei-Dialog; liefert den gewählten Pfad oder null. */

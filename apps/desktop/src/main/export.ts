@@ -6,7 +6,7 @@ import { z } from 'zod';
 
 /** Auftrag aus dem Renderer (Export-Dialog). */
 export const exportSchema = z.object({
-  format: z.enum(['pdf', 'png', 'xlsx']),
+  format: z.enum(['pdf', 'png', 'xlsx', 'xml']),
   ansicht: z.string().regex(/^[a-z0-9-]+\.[a-z0-9.-]+$/),
   parameter: z.record(z.string(), z.unknown()),
   /** PNG: Auflösungsfaktor (1 = 96 dpi). */
@@ -74,7 +74,7 @@ export async function exportieren(
   dateiExport: DateiExport,
 ): Promise<string | null> {
   // Datei-Export eines Plugins (Excel, E-25): erst erzeugen, dann speichern
-  if (auftrag.format === 'xlsx') {
+  if (auftrag.format === 'xlsx' || auftrag.format === 'xml') {
     const [plugin = '', format = ''] = auftrag.ansicht.split('.');
     const { daten, info } = await dateiExport(plugin, format, auftrag.parameter);
     const ziel = await zielWaehlen(

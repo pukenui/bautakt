@@ -3,6 +3,7 @@ import type { PlanDaten } from '../gemeinsam/typen.js';
 import { AufwandDialog } from './AufwandDialog.js';
 import { BeziehungDialog, PlanDialog, VorgangDialog } from './Dialoge.js';
 import { ExportDialog, type Darstellung } from './ExportDialog.js';
+import { ImportDialog } from './ImportDialog.js';
 import { IstDialog } from './IstDialog.js';
 import { OrteDialog, TaktDialog } from './OrteDialoge.js';
 import { StaendeDialog } from './StaendeDialog.js';
@@ -10,7 +11,7 @@ import { useZustand } from './zustand.js';
 
 export type DialogZustand =
   | { art: 'vorgang' | 'beziehung' | 'ist' | 'aufwand' | 'takt'; id: string }
-  | { art: 'plan' | 'staende' | 'export' | 'orte' }
+  | { art: 'plan' | 'staende' | 'export' | 'orte' | 'import' }
   | null;
 
 type Befehl = (name: string, daten: unknown) => Promise<string[] | null>;
@@ -60,6 +61,8 @@ export function PlanDialoge(props: {
           onSchliessen={props.onSchliessen}
         />
       );
+    case 'import':
+      return <ImportDialog api={props.api} daten={daten} onSchliessen={props.onSchliessen} />;
     case 'orte':
       return (
         <OrteDialog

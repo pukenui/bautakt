@@ -14,6 +14,8 @@ export function PlanLeiste(props: {
   onEinstellungen: () => void;
   onStaende: () => void;
   onExport: () => void;
+  /** MS-Project-Import (E-79) */
+  onImport?: () => void;
 }) {
   return (
     <div className="tp-gruppe">
@@ -43,9 +45,17 @@ export function PlanLeiste(props: {
       >
         Stände …
       </button>
-      <button onClick={props.onExport} title="PDF (A3 quer) oder PNG mit Plankopf und Legende">
+      <button onClick={props.onExport} title="PDF, PNG, Excel oder MS Project">
         Export …
       </button>
+      {props.onImport && !props.nurLesen && (
+        <button
+          onClick={props.onImport}
+          title="MS-Project-XML als neuen Plan oder in diesen Plan importieren"
+        >
+          Import …
+        </button>
+      )}
       {!props.nurLesen && (
         <button
           onClick={async () => {

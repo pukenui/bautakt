@@ -65,4 +65,14 @@ Dauer wurde danach von Hand geändert oder es gibt eine neuere Version in der Bi
 **Export …** (in Terminplan, Netzplan, Terminliste und Meilensteinplan): Balkenplan, Netzplan,
 Terminliste oder Meilensteinplan als PDF (A3 quer) bzw. PNG. Format **Excel** liefert die
 Vorgangsliste aller Vorgänge mit Gliederung, FAZ/FEZ/SAZ/SEZ, GP (als Formel SAZ − FAZ), FP,
-Terminen, Gewerk, Verantwortlichem, Quelle/Annahme und Herleitung.
+Terminen, Gewerk, Verantwortlichem, Quelle/Annahme und Herleitung. Format **MS Project (.xml)**
+schreibt den Plan mit Gliederung, Beziehungen, Kalender, Bedingungen, Ist zum Stichtag und dem
+Soll-Vergleichsstand als Basisplan; in MS Project mit „Öffnen“ laden.
+
+## Import aus MS Project
+
+**Import …** liest eine MS-Project-XML-Datei (in MS Project „Speichern unter → XML“) – wahlweise
+als **neuer Plan** oder als **Ersatz des gewählten Plans**. Dauern werden auf ganze Arbeitstage
+aufgerundet, Abstände gerundet; Ressourcen, nicht abbildbare Einschränkungen, Beziehungen an
+Sammelvorgängen und Basispläne entfallen. Ein Bericht listet alles, was gerundet oder weggelassen
+wurde. Rückgängig nimmt den ganzen Import zurück.
