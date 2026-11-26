@@ -1,7 +1,7 @@
 import type { BautaktApi } from '@bautakt/kern/vertrag';
 import { zahlLesen } from '@bautakt/rechnen-aufwand';
 import { KG_KATALOG, kostengruppe } from '@bautakt/rechnen-kosten';
-import { Dialog, LeereAnsicht, zeitAnzeigen } from '@bautakt/ui';
+import { Begriff, Dialog, LeereAnsicht, zeitAnzeigen } from '@bautakt/ui';
 import { useEffect, useMemo, useState } from 'react';
 import type { KennwertZeile } from '../gemeinsam/typen.js';
 
@@ -242,7 +242,9 @@ export function KennwerteTeil(props: { api: BautaktApi; datenstand: number }) {
         <table className="tabelle bib-tabelle">
           <thead>
             <tr>
-              <th>KG</th>
+              <th>
+                <Begriff k="KG" />
+              </th>
               <th>Bezeichnung</th>
               <th>Einheit</th>
               <th className="zahl">Von</th>

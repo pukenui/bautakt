@@ -8,7 +8,7 @@ import {
   type KostenUrsache,
   type Stufe,
 } from '@bautakt/rechnen-kosten';
-import { Dialog, LeereAnsicht, zeitAnzeigen } from '@bautakt/ui';
+import { Begriff, Dialog, LeereAnsicht, zeitAnzeigen } from '@bautakt/ui';
 import { useEffect, useState } from 'react';
 import type { SollIstDaten, SollIstZeile } from '../gemeinsam/typen.js';
 import { betrag } from './format.js';
@@ -222,7 +222,9 @@ export function SollIstTeil(props: {
           <table className="tabelle kk-tabelle kk-sollist" aria-label="Soll-Ist nach DIN 276">
             <thead>
               <tr>
-                <th>KG</th>
+                <th>
+                  <Begriff k="KG" />
+                </th>
                 <th>Bezeichnung</th>
                 {STUFEN.map((s) => (
                   <th key={s} className={`zahl${s === bezug ? ' kk-bezug' : ''}`}>

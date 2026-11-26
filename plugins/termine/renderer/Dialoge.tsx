@@ -1,6 +1,6 @@
 import { datumVonTag, tagVonDatum, WOCHENTAG_KURZ } from '@bautakt/rechnen-kalender';
 import type { Art, Einheit } from '@bautakt/rechnen-termine';
-import { Dialog } from '@bautakt/ui';
+import { Begriff, Dialog } from '@bautakt/ui';
 import { useState, type ReactNode } from 'react';
 import type { BedingungTyp, PlanDaten, VorgangFelder, VorgangTyp } from '../gemeinsam/typen.js';
 import { ortsBaum } from '../gemeinsam/orte.js';
@@ -257,9 +257,13 @@ export function VorgangDialog(props: {
         <table className="termintabelle">
           <tbody>
             <tr>
-              <th>FAZ</th>
+              <th>
+                <Begriff k="FAZ" />
+              </th>
               <td>{t.faz}</td>
-              <th>FEZ</th>
+              <th>
+                <Begriff k="FEZ" />
+              </th>
               <td>{t.fez}</td>
               <th>Anfang</th>
               <td>{datumKurz(t.anfang)}</td>
@@ -267,13 +271,21 @@ export function VorgangDialog(props: {
               <td>{datumKurz(t.ende)}</td>
             </tr>
             <tr>
-              <th>SAZ</th>
+              <th>
+                <Begriff k="SAZ" />
+              </th>
               <td>{t.saz}</td>
-              <th>SEZ</th>
+              <th>
+                <Begriff k="SEZ" />
+              </th>
               <td>{t.sez}</td>
-              <th>GP</th>
+              <th>
+                <Begriff k="GP" />
+              </th>
               <td className={t.gp < 0 ? 'negativ' : ''}>{t.gp}</td>
-              <th>FP</th>
+              <th>
+                <Begriff k="FP" />
+              </th>
               <td>{t.fp ?? '–'}</td>
             </tr>
           </tbody>

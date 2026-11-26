@@ -5,7 +5,7 @@ import {
   kgEltern,
   type FlaecheEingabe,
 } from '@bautakt/rechnen-kosten';
-import { LeereAnsicht, type AnsichtProps } from '@bautakt/ui';
+import { Begriff, LeereAnsicht, type AnsichtProps } from '@bautakt/ui';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { KnotenDaten, KostenDaten, ZeileBerechnet } from '../gemeinsam/typen.js';
 import { EinstellungenDialog, KgDialog, ZeileDialog } from './Dialoge.js';
@@ -30,7 +30,9 @@ function Flaechen(props: {
   const f = props.daten.flaechen;
   const eingabe = (k: FlaecheEingabe) => (
     <tr key={k}>
-      <td title={FLAECHE_TEXT[k]}>{FLAECHE_TEXT[k]}</td>
+      <td>
+        <Begriff k={k.replace(/\d/, '')}>{FLAECHE_TEXT[k]}</Begriff>
+      </td>
       <td className="zahl">
         <ZahlZelle
           wert={f[k]}
@@ -45,7 +47,9 @@ function Flaechen(props: {
   );
   const summe = (k: 'NUF' | 'NRF' | 'BGF', formel: string) => (
     <tr key={k} className="kk-summe">
-      <td title={formel}>{FLAECHE_TEXT[k]}</td>
+      <td title={formel}>
+        <Begriff k={k}>{FLAECHE_TEXT[k]}</Begriff>
+      </td>
       <td className="zahl">{menge(f[k])}</td>
     </tr>
   );
@@ -254,18 +258,24 @@ function PlanungTeil({ api, status, datenstand }: AnsichtProps) {
           <table className="tabelle kk-tabelle" aria-label="Kostentabelle DIN 276">
             <thead>
               <tr>
-                <th>KG</th>
+                <th>
+                  <Begriff k="KG" />
+                </th>
                 <th>Bezeichnung</th>
                 <th className="zahl">Menge</th>
                 <th>Einheit</th>
                 <th className="zahl">Von</th>
                 <th className="zahl">Mittel</th>
                 <th className="zahl">Bis</th>
-                <th className="zahl">KKW gewählt</th>
+                <th className="zahl">
+                  <Begriff k="KKW" /> gewählt
+                </th>
                 <th className="zahl" title="Index- × Regionalfaktor">
                   Faktor
                 </th>
-                <th className="zahl">KKW wirksam</th>
+                <th className="zahl">
+                  <Begriff k="KKW" /> wirksam
+                </th>
                 <th className="zahl">Kosten netto [€]</th>
                 <th className="zahl">Anteil</th>
                 <th>Kommentar</th>

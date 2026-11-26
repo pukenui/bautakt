@@ -1,11 +1,14 @@
 import type { ReactNode } from 'react';
+import { Begriff } from './begriff';
+import { begriffeFinden } from './glossar';
 
 /**
  * Kleiner Markdown-Renderer für die Hilfetexte (E-29): Überschriften, Absätze, Listen,
  * Tabellen, Codeblöcke, **fett**, *kursiv* und `Code`. Erzeugt React-Elemente, kein HTML.
+ * Fachbegriffe aus dem Glossar erhalten beim ersten Vorkommen eine Hover-Erklärung (E-83).
  */
 export function Markdown({ text }: { text: string }) {
-  return <div className="markdown">{bloecke(text)}</div>;
+  return <div className="markdown">{bloecke(text, new Set())}</div>;
 }
 
 type Block =
@@ -85,7 +88,7 @@ export function zerlegen(text: string): Block[] {
   return bloecke;
 }
 
-function bloecke(text: string): ReactNode[] {
+function bloecke(text: string, gesehen: Set<string>): ReactNode[] {
   return zerlegen(text).map((b, k) => {
     switch (b.art) {
       case 'ueberschrift': {
@@ -93,13 +96,13 @@ function bloecke(text: string): ReactNode[] {
         return <Tag key={k}>{inline(b.text)}</Tag>;
       }
       case 'absatz':
-        return <p key={k}>{inline(b.text)}</p>;
+        return <p key={k}>{inline(b.text, gesehen)}</p>;
       case 'liste': {
         const Tag = b.geordnet ? 'ol' : 'ul';
         return (
           <Tag key={k}>
             {b.punkte.map((p, j) => (
-              <li key={j}>{inline(p)}</li>
+              <li key={j}>{inline(p, gesehen)}</li>
             ))}
           </Tag>
         );
@@ -118,7 +121,7 @@ function bloecke(text: string): ReactNode[] {
               {b.zeilen.map((z, j) => (
                 <tr key={j}>
                   {z.map((c, n) => (
-                    <td key={n}>{inline(c)}</td>
+                    <td key={n}>{inline(c, gesehen)}</td>
                   ))}
                 </tr>
               ))}
@@ -135,19 +138,43 @@ function bloecke(text: string): ReactNode[] {
   });
 }
 
-/** Inline-Auszeichnung: `Code`, **fett**, *kursiv*. */
-export function inline(text: string): ReactNode[] {
+/**
+ * Inline-Auszeichnung: `Code`, **fett**, *kursiv*. Mit `gesehen` werden Glossarbegriffe
+ * (außer in Code) beim ersten Vorkommen je Text verlinkt.
+ */
+export function inline(text: string, gesehen?: Set<string>): ReactNode[] {
   const teile: ReactNode[] = [];
   const muster = /`([^`]+)`|\*\*([^*]+)\*\*|\*([^*]+)\*/g;
   let pos = 0;
   let m: RegExpExecArray | null;
   let k = 0;
   while ((m = muster.exec(text))) {
-    if (m.index > pos) teile.push(text.slice(pos, m.index));
+    if (m.index > pos) teile.push(...begriffe(text.slice(pos, m.index), gesehen, `t${k++}`));
     if (m[1] !== undefined) teile.push(<code key={k++}>{m[1]}</code>);
-    else if (m[2] !== undefined) teile.push(<strong key={k++}>{m[2]}</strong>);
+    else if (m[2] !== undefined)
+      teile.push(<strong key={k++}>{begriffe(m[2], gesehen, `s${k}`)}</strong>);
     else teile.push(<em key={k++}>{m[3]}</em>);
     pos = m.index + m[0].length;
+  }
+  if (pos < text.length) teile.push(...begriffe(text.slice(pos), gesehen, `t${k}`));
+  return teile;
+}
+
+/** Glossarbegriffe im Klartext beim ersten Vorkommen mit Erklärung versehen. */
+function begriffe(text: string, gesehen: Set<string> | undefined, schluessel: string): ReactNode[] {
+  if (!gesehen) return [text];
+  const teile: ReactNode[] = [];
+  let pos = 0;
+  for (const t of begriffeFinden(text)) {
+    if (gesehen.has(t.eintrag.begriff)) continue;
+    gesehen.add(t.eintrag.begriff);
+    if (t.start > pos) teile.push(text.slice(pos, t.start));
+    teile.push(
+      <Begriff key={`${schluessel}-${t.start}`} k={t.eintrag.begriff}>
+        {text.slice(t.start, t.ende)}
+      </Begriff>,
+    );
+    pos = t.ende;
   }
   if (pos < text.length) teile.push(text.slice(pos));
   return teile;

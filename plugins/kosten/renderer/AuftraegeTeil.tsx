@@ -1,6 +1,6 @@
 import type { BautaktApi } from '@bautakt/kern/vertrag';
 import { KG_KATALOG, kostengruppe } from '@bautakt/rechnen-kosten';
-import { Dialog } from '@bautakt/ui';
+import { Begriff, Dialog } from '@bautakt/ui';
 import { useEffect, useState } from 'react';
 import type { AuftragBerechnet, RechnungBerechnet, SollIstDaten } from '../gemeinsam/typen.js';
 import { betrag, eingabeZahl } from './format.js';
@@ -304,7 +304,9 @@ export function AuftraegeTeil(props: {
           <table className="tabelle kk-tabelle" aria-label="Aufträge">
             <thead>
               <tr>
-                <th>KG</th>
+                <th>
+                  <Begriff k="KG" />
+                </th>
                 <th>Leistung</th>
                 <th>Auftragnehmer</th>
                 <th>Datum</th>
@@ -344,7 +346,8 @@ export function AuftraegeTeil(props: {
               {daten.auftraege.length === 0 && (
                 <tr>
                   <td colSpan={9} className="leise">
-                    Noch keine Aufträge.
+                    Noch keine Aufträge. Mit <strong>+ Auftrag</strong> erfassen Sie vergebene
+                    Leistungen je Kostengruppe – ihre Summe ergibt den Kostenanschlag.
                   </td>
                 </tr>
               )}
@@ -364,7 +367,9 @@ export function AuftraegeTeil(props: {
           <table className="tabelle kk-tabelle" aria-label="Rechnungen">
             <thead>
               <tr>
-                <th>KG</th>
+                <th>
+                  <Begriff k="KG" />
+                </th>
                 <th>Auftrag</th>
                 <th>Rechnungssteller</th>
                 <th>Datum</th>
@@ -402,7 +407,8 @@ export function AuftraegeTeil(props: {
               {daten.rechnungen.length === 0 && (
                 <tr>
                   <td colSpan={7} className="leise">
-                    Noch keine Rechnungen.
+                    Noch keine Rechnungen. Erfassen Sie sie mit <strong>+ Rechnung</strong> (auch
+                    direkt am Auftrag) – ihre Summe ergibt die Kostenfeststellung.
                   </td>
                 </tr>
               )}

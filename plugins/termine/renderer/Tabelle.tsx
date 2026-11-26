@@ -1,4 +1,4 @@
-import { zahlAnzeigen } from '@bautakt/ui';
+import { Begriff, glossarEintrag, zahlAnzeigen } from '@bautakt/ui';
 import {
   useEffect,
   useLayoutEffect,
@@ -325,10 +325,10 @@ export function Tabelle(p: TabelleProps) {
               key={s.key}
               className={`tp-kopfzelle${s.rechts ? ' rechts' : ''}${i === spalte ? ' aktiv' : ''}${i < 2 ? ' fest' : ''}`}
               style={i < 2 ? { left: i === 0 ? 0 : spalten[0]?.breite } : undefined}
-              title={s.hinweis}
+              title={glossarEintrag(s.titel) ? undefined : s.hinweis}
               role="columnheader"
             >
-              {s.titel}
+              <Begriff k={s.titel} />
             </div>
           ))}
         </div>

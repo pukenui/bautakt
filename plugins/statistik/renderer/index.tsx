@@ -1,7 +1,13 @@
 import type { BautaktApi, ProjektStatus } from '@bautakt/kern/vertrag';
 import type { AufwandswertZeile, KennwertZeile } from '@bautakt/plugin-bibliothek/typen';
 import { MINDEST_N, type Gruppe, type IstBasis } from '@bautakt/rechnen-statistik';
-import { Dialog, zeitAnzeigen, type GlobaleAnsichtProps, type RendererPlugin } from '@bautakt/ui';
+import {
+  Begriff,
+  Dialog,
+  type GlobaleAnsichtProps,
+  type RendererPlugin,
+  zeitAnzeigen,
+} from '@bautakt/ui';
 import { useCallback, useEffect, useState } from 'react';
 import {
   SCHLUESSEL_JE_ART,
@@ -502,8 +508,12 @@ function StatistikAnsicht({ api, datenstand }: GlobaleAnsichtProps) {
                       <th className="zahl">n</th>
                       <th className="zahl">Projekte</th>
                       <th className="zahl">Mittel</th>
-                      <th className="zahl">Median</th>
-                      <th className="zahl">Streuung</th>
+                      <th className="zahl">
+                        <Begriff k="Median" />
+                      </th>
+                      <th className="zahl">
+                        <Begriff k="Streuung" />
+                      </th>
                       <th className="zahl">Min</th>
                       <th className="zahl">Max</th>
                       <th className="zahl">Soll Ø</th>

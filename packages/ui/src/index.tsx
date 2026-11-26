@@ -147,3 +147,5 @@ export function zeitAnzeigen(utc: string): string {
 }
 
 export { Markdown, zerlegen } from './markdown';
+export { Begriff, BegriffErklaerung, Glossar } from './begriff';
+export { GLOSSAR, glossarEintrag, begriffeFinden, type GlossarEintrag } from './glossar';

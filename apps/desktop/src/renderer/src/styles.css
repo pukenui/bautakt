@@ -248,3 +248,117 @@ input {
 .hinweis.fehler {
   color: var(--kritisch);
 }
+
+/* Fachbegriffe mit Erklärung (E-83) */
+.begriff {
+  text-decoration: underline dotted var(--text-leise);
+  text-underline-offset: 3px;
+  cursor: help;
+}
+.begriff:focus-visible {
+  outline-offset: 0;
+}
+.druck .begriff {
+  text-decoration: none;
+}
+.begriff-blase {
+  position: fixed;
+  z-index: 1000;
+  max-width: 340px;
+  padding: 8px 10px;
+  background: #2b2b28;
+  color: #f6f6f4;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: normal;
+  line-height: 1.45;
+  text-align: left;
+  white-space: normal;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 25%);
+  pointer-events: none;
+}
+.begriff-titel {
+  margin-bottom: 3px;
+}
+.begriff-beispiel {
+  margin-top: 4px;
+  opacity: 0.8;
+}
+
+/* Hilfe: Reiter Hilfe/Glossar */
+.hilfe-reiter {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 10px;
+}
+.hilfe-reiter button {
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+}
+.hilfe-reiter button.aktiv {
+  border-bottom-color: var(--akzent);
+  font-weight: 600;
+}
+.glossar input {
+  width: 100%;
+  margin-bottom: 8px;
+}
+.glossar dl {
+  margin: 0;
+}
+.glossar-eintrag {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--linie);
+}
+.glossar dd {
+  margin: 2px 0 0;
+  line-height: 1.45;
+}
+.glossar .begriff-beispiel {
+  color: var(--text-leise);
+}
+
+/* Erststart-Tour (E-84) */
+.tour {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+}
+.tour-abdunkeln {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 35%);
+}
+.tour-rahmen {
+  position: fixed;
+  border: 2px solid var(--akzent);
+  border-radius: 6px;
+  box-shadow: 0 0 0 9999px rgb(0 0 0 / 35%);
+  pointer-events: none;
+}
+.tour-karte {
+  background: var(--flaeche);
+  border-radius: 6px;
+  padding: 14px 16px;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 25%);
+}
+.tour-karte h2 {
+  font-size: 16px;
+  margin: 2px 0 6px;
+}
+.tour-karte p {
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+.tour-schritt {
+  font-size: 12px;
+  color: var(--text-leise);
+}
+.tour-knoepfe {
+  display: flex;
+  gap: 6px;
+}
+.tour-luecke {
+  flex: 1;
+}

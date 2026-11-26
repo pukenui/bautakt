@@ -1,3 +1,4 @@
+import { Begriff, glossarEintrag } from '@bautakt/ui';
 import {
   useEffect,
   useLayoutEffect,
@@ -213,9 +214,9 @@ export function ListenTabelle(props: {
               key={s.key}
               role="columnheader"
               className={`tp-kopfzelle${s.rechts ? ' rechts' : ''}${i === spalte ? ' aktiv' : ''}`}
-              title={s.hinweis}
+              title={glossarEintrag(s.titel) ? undefined : s.hinweis}
             >
-              {s.titel}
+              <Begriff k={s.titel} />
             </div>
           ))}
         </div>

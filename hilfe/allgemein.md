@@ -10,6 +10,10 @@
 - **Soll-Stände** (Schaltfläche „Stände …“) frieren alle Pläne ein, z. B. „Soll Vertrag“.
   Zurückspringen ist jederzeit möglich; der aktuelle Zustand wird vorher automatisch gesichert.
 - **Export …** erzeugt PDF (A3 quer, mit Plankopf, Legende und Risiko-Hinweisen) oder PNG.
+- **Fachbegriffe** sind gepunktet unterstrichen: Maus darüber oder mit der Tab-Taste
+  hinspringen zeigt eine kurze Erklärung. Alle Begriffe stehen im Reiter **Glossar** dieser
+  Hilfe.
+- Die **Einführungstour** vom ersten Start lässt sich unten mit „Tour starten“ wiederholen.
 
 ### Tastenkürzel (überall)
 

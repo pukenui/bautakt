@@ -377,3 +377,11 @@ Präzisierungen der Rechenregeln aus Abschnitt 5, wie sie in `packages/rechnen-*
 - **Befehl `plan.importieren`:** neuer Plan (eigener Kalender) oder Ersatz eines Plans (Vorgänge samt Ist, Herleitung und MTA-Werten, Beziehungen und Ruhezeiten werden ersetzt). Abschließend wird das Netz gerechnet; ist es nicht rechenbar, wird der Import verworfen.
 - **Grenzen:** Die XML-Dateien sind gegen das MSPDI-Schema geschrieben und mit dem eigenen Import im Kreis getestet (gleiche Termine); ein Test mit MS Project selbst stand nicht zur Verfügung.
 
+## 23. Umsetzungsnotizen (M14)
+
+- **Glossar (`packages/ui/src/glossar.ts`):** rund 55 Fachbegriffe (Netzplan, Ist/Prognose, Aufwandswerte, Kosten und Flächen, Statistik), jeweils mit Langform, eigener kurzer Erklärung und Mini-Beispiel aus der Fertigteilhalle – kein Normtext. `begriffeFinden` sucht Begriffe und Nebenformen als ganze Wörter (Abkürzungen nur in Großbuchstaben, längere Begriffe vor kürzeren).
+- **Hover (`packages/ui/src/begriff.tsx`):** `<Begriff k="GP" />` zeigt die Erklärung nach kurzer Verzögerung beim Überfahren und sofort bei Tastaturfokus. Eine einzige, fest positionierte Blase (`BegriffErklaerung`, einmal in der App-Shell) über einen kleinen Store mit `useSyncExternalStore` – sie wird so nicht von scrollenden Tabellen abgeschnitten und verschwindet beim Scrollen oder Klicken. Die Spaltenköpfe von Terminplan und Listen verknüpfen ihren Titel automatisch, wenn er im Glossar steht; dazu KG/KKW in Kosten, Soll-Ist, Aufträgen und Bibliothek, die Flächen nach DIN 277, die Termintabelle im Vorgangsdialog und Median/Streuung in der Statistik.
+- **Hilfetexte:** `Markdown` verknüpft Glossarbegriffe in Absätzen, Listen und Tabellen beim ersten Vorkommen je Text automatisch (nicht in Überschriften und Code). Die Hilfe-Seitenleiste hat die Reiter „Hilfe“ und „Glossar“ (durchsuchbar).
+- **Erststart-Tour (`apps/desktop/src/renderer/src/Tour.tsx`):** sechs Schritte mit hervorgehobenem Element (Selektor über `data-tour`); fehlt das Element (z. B. „Neues Projekt“ bei geöffnetem Projekt), erscheint der Schritt mittig. Merker `bautakt.tour.gesehen` im localStorage des Renderers; „Tour starten“ in der Hilfe startet sie erneut. Esc oder „Überspringen“ beendet.
+- **Leere Ansichten:** alle Ansichten geprüft; sie sagen, was als Nächstes zu tun ist (ergänzt: Aufträge und Rechnungen).
+

@@ -1,8 +1,9 @@
 import type { Antwort, MenueAktion, Meldungen, ProjektStatus } from '@bautakt/kern/vertrag';
-import { LeereAnsicht, Markdown, zeitAnzeigen } from '@bautakt/ui';
+import { BegriffErklaerung, Glossar, LeereAnsicht, Markdown, zeitAnzeigen } from '@bautakt/ui';
 import hilfeAllgemein from '../../../../../hilfe/allgemein.md?raw';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { RENDERER_PLUGINS } from './plugins';
+import { TOUR, TOUR_MERKER, Tour } from './Tour';
 
 const api = window.bautakt;
 const ansichten = RENDERER_PLUGINS.flatMap((p) => p.ansichten);
@@ -24,6 +25,13 @@ export function App() {
   const [aktiveAnsicht, setAktiveAnsicht] = useState(ansichten[0]?.id ?? '');
   const [hinweis, setHinweis] = useState<Hinweis | null>(null);
   const [hilfeOffen, setHilfeOffen] = useState(false);
+  const [hilfeTeil, setHilfeTeil] = useState<'ansicht' | 'glossar'>('ansicht');
+  // Erststart-Tour (E-84): einmal automatisch, danach über die Hilfe
+  const [tourOffen, setTourOffen] = useState(() => !localStorage.getItem(TOUR_MERKER));
+  const tourEnde = useCallback(() => {
+    localStorage.setItem(TOUR_MERKER, '1');
+    setTourOffen(false);
+  }, []);
 
   const zeigen = useCallback((h: Meldungen['hinweis']) => setHinweis({ ...h, nr: Date.now() }), []);
 
@@ -144,7 +152,7 @@ export function App() {
         </nav>
         {!status && (
           <div className="kopf-aktionen">
-            <button onClick={() => void ausfuehren('hilfe')} title="Hilfe (F1)">
+            <button data-tour="hilfe" onClick={() => void ausfuehren('hilfe')} title="Hilfe (F1)">
               ? Hilfe
             </button>
           </div>
@@ -153,6 +161,7 @@ export function App() {
           <>
             <div className="kopf-aktionen">
               <button
+                data-tour="rueckgaengig"
                 disabled={!status.undo.rueckgaengig || status.schreibgeschuetzt}
                 title={
                   status.undo.rueckgaengig
@@ -174,7 +183,7 @@ export function App() {
               >
                 ↷ Wiederholen
               </button>
-              <button onClick={() => void ausfuehren('hilfe')} title="Hilfe (F1)">
+              <button data-tour="hilfe" onClick={() => void ausfuehren('hilfe')} title="Hilfe (F1)">
                 ? Hilfe
               </button>
             </div>
@@ -197,7 +206,7 @@ export function App() {
             <LeereAnsicht titel="Kein Projekt geöffnet">
               <p>Legen Sie ein neues Projekt an oder öffnen Sie eine vorhandene .bautakt-Datei.</p>
               <div className="knoepfe">
-                <button className="primaer" onClick={() => void ausfuehren('neu')}>
+                <button data-tour="neu" className="primaer" onClick={() => void ausfuehren('neu')}>
                   Neues Projekt … (Strg+N)
                 </button>
                 <button onClick={() => void ausfuehren('oeffnen')}>
@@ -218,18 +227,45 @@ export function App() {
             >
               ×
             </button>
-            {globaleAnsicht ? (
-              <Markdown text={globaleAnsicht.hilfe} />
-            ) : status && ansicht ? (
-              <Markdown text={ansicht.hilfe} />
+            <div className="hilfe-reiter" role="tablist" aria-label="Hilfe">
+              <button
+                role="tab"
+                aria-selected={hilfeTeil === 'ansicht'}
+                className={hilfeTeil === 'ansicht' ? 'aktiv' : ''}
+                onClick={() => setHilfeTeil('ansicht')}
+              >
+                Hilfe
+              </button>
+              <button
+                role="tab"
+                aria-selected={hilfeTeil === 'glossar'}
+                className={hilfeTeil === 'glossar' ? 'aktiv' : ''}
+                onClick={() => setHilfeTeil('glossar')}
+              >
+                Glossar
+              </button>
+            </div>
+            {hilfeTeil === 'glossar' ? (
+              <Glossar />
             ) : (
-              <p>
-                Legen Sie ein neues Projekt an (Strg+N) oder öffnen Sie eine .bautakt-Datei
-                (Strg+O).
-              </p>
+              <>
+                {globaleAnsicht ? (
+                  <Markdown text={globaleAnsicht.hilfe} />
+                ) : status && ansicht ? (
+                  <Markdown text={ansicht.hilfe} />
+                ) : (
+                  <p>
+                    Legen Sie ein neues Projekt an (Strg+N) oder öffnen Sie eine .bautakt-Datei
+                    (Strg+O).
+                  </p>
+                )}
+                <hr />
+                <Markdown text={hilfeAllgemein} />
+                <p>
+                  <button onClick={() => setTourOffen(true)}>Tour starten</button>
+                </p>
+              </>
             )}
-            <hr />
-            <Markdown text={hilfeAllgemein} />
             <p className="leise">Bautakt {__APP_VERSION__}</p>
           </aside>
         )}
@@ -258,6 +294,8 @@ export function App() {
           </span>
         )}
       </footer>
+      <BegriffErklaerung />
+      {tourOffen && <Tour schritte={TOUR} onEnde={tourEnde} />}
     </div>
   );
 }
