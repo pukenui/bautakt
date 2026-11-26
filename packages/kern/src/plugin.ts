@@ -18,7 +18,18 @@ export interface AbfrageDefinition<A = unknown, R = unknown> {
   ausfuehren(db: PluginDb, argumente: A): R;
 }
 
-export type ExportFunktion = (db: PluginDb) => Uint8Array | string;
+/** Datei-Export eines Plugins (z. B. Excel, E-25); liefert den Dateiinhalt. */
+export type ExportFunktion = (
+  db: PluginDb,
+  parameter: Record<string, unknown>,
+) => Uint8Array | string | Promise<Uint8Array | string>;
+
+export interface ExportInfo {
+  /** Dateiendung ohne Punkt, z. B. "xlsx" */
+  endung: string;
+  /** Bezeichnung für den Speichern-Dialog, z. B. "Excel-Arbeitsmappe" */
+  beschreibung: string;
+}
 export type ImportFunktion = (inhalt: Uint8Array) => void;
 
 /**
@@ -52,7 +63,7 @@ export interface MainKontext {
     /** Dienst eines Projekt-Plugins oder eines globalen Plugin-Teils. */
     holen<T>(name: string): T;
   };
-  exporte: { registrieren(format: string, fn: ExportFunktion): void };
+  exporte: { registrieren(format: string, fn: ExportFunktion, info: ExportInfo): void };
   importe: { registrieren(format: string, fn: ImportFunktion): void };
   stand: { registrieren(handler: StandHandler): void };
   /**

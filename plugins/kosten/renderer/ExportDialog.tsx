@@ -14,7 +14,7 @@ export function ExportDialog(props: {
 }) {
   const [f, setF] = useState({
     darstellung: props.darstellung ?? ('kostentabelle' as 'kostentabelle' | 'sollist'),
-    format: 'pdf' as 'pdf' | 'png',
+    format: 'pdf' as 'pdf' | 'png' | 'xlsx',
     aufloesung: 2,
     ersteller: localStorage.getItem(ERSTELLER) ?? '',
     ebene: 3,
@@ -32,10 +32,16 @@ export function ExportDialog(props: {
     setMeldung(null);
     const a = await props.api.export.starten({
       format: f.format,
-      ansicht: `kosten.${f.darstellung}`,
+      // Excel: eine Arbeitsmappe mit allen Blättern (E-64)
+      ansicht: f.format === 'xlsx' ? 'kosten.excel' : `kosten.${f.darstellung}`,
       aufloesung: f.aufloesung,
-      dateiname: `${props.projektname} – ${f.darstellung === 'sollist' ? 'Kosten Soll-Ist' : 'Kostenplanung'}`,
-      parameter: { ersteller: f.ersteller.trim(), ebene: f.ebene, bezug: bezugLaden() },
+      dateiname: `${props.projektname} – ${f.format === 'xlsx' ? 'Kosten' : f.darstellung === 'sollist' ? 'Kosten Soll-Ist' : 'Kostenplanung'}`,
+      parameter: {
+        ersteller: f.ersteller.trim(),
+        ebene: f.ebene,
+        bezug: bezugLaden(),
+        projektname: props.projektname,
+      },
     });
     setLaeuft(false);
     if (!a.ok) setMeldung({ text: a.fehler, fehler: true });
@@ -62,6 +68,7 @@ export function ExportDialog(props: {
           <span className="feld-label">Darstellung</span>
           <select
             value={f.darstellung}
+            disabled={f.format === 'xlsx'}
             onChange={(e) =>
               setF({ ...f, darstellung: e.target.value as 'kostentabelle' | 'sollist' })
             }
@@ -74,15 +81,26 @@ export function ExportDialog(props: {
           <span className="feld-label">Format</span>
           <select
             value={f.format}
-            onChange={(e) => setF({ ...f, format: e.target.value as 'pdf' | 'png' })}
+            onChange={(e) => setF({ ...f, format: e.target.value as 'pdf' | 'png' | 'xlsx' })}
           >
             <option value="pdf">PDF, A3 quer (mehrseitig)</option>
             <option value="png">PNG-Bild</option>
+            <option value="xlsx">Excel-Arbeitsmappe (.xlsx)</option>
           </select>
         </label>
+        {f.format === 'xlsx' && (
+          <p className="dialog-erklaerung breit">
+            Eine Arbeitsmappe mit den Blättern Kostentabelle, Flächen DIN 277, Soll-Ist, Aufträge
+            und Rechnungen; Beträge mit Formeln (nachrechenbar).
+          </p>
+        )}
         <label className="feld">
           <span className="feld-label">Gliederung bis</span>
-          <select value={f.ebene} onChange={(e) => setF({ ...f, ebene: Number(e.target.value) })}>
+          <select
+            value={f.ebene}
+            disabled={f.format === 'xlsx'}
+            onChange={(e) => setF({ ...f, ebene: Number(e.target.value) })}
+          >
             <option value={1}>1. Ebene</option>
             <option value={2}>2. Ebene</option>
             <option value={3}>3. Ebene</option>

@@ -4,6 +4,7 @@ import type { AufwandZeile, IstZeile, PlanZeile } from '../gemeinsam/typen.js';
 import { MIGRATIONEN } from '../migrations/index.js';
 import { aufwandBefehle, type BibliothekZugriff } from './aufwand.js';
 import { BEFEHLE } from './befehle.js';
+import { vorgangslisteExcel } from './excel.js';
 import { planDatenLaden } from './daten.js';
 import { termineStaende } from './staende.js';
 
@@ -71,6 +72,14 @@ export const terminePlugin: BautaktPlugin = {
         };
       },
     });
+    ctx.exporte.registrieren(
+      'vorgangsliste',
+      (db, p) => vorgangslisteExcel(db, p, aktuelleVersion),
+      {
+        endung: 'xlsx',
+        beschreibung: 'Excel-Arbeitsmappe',
+      },
+    );
     ctx.dienste.bereitstellen('termine.plaene', plaene);
     ctx.dienste.bereitstellen('termine.plan', (planId: string) => planDatenLaden(ctx.db, planId));
   },

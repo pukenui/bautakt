@@ -59,3 +59,10 @@ Dauer wurde danach von Hand geändert oder es gibt eine neuere Version in der Bi
 | Entf               | Vorgang löschen          |
 | Alt+Umschalt+→ / ← | einrücken / ausrücken    |
 | Strg+Z / Strg+Y    | Rückgängig / Wiederholen |
+
+## Export
+
+**Export …** (in Terminplan, Netzplan, Terminliste und Meilensteinplan): Balkenplan, Netzplan,
+Terminliste oder Meilensteinplan als PDF (A3 quer) bzw. PNG. Format **Excel** liefert die
+Vorgangsliste aller Vorgänge mit Gliederung, FAZ/FEZ/SAZ/SEZ, GP (als Formel SAZ − FAZ), FP,
+Terminen, Gewerk, Verantwortlichem, Quelle/Annahme und Herleitung.

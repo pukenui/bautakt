@@ -6,7 +6,7 @@ import { z } from 'zod';
 
 /** Auftrag aus dem Renderer (Export-Dialog). */
 export const exportSchema = z.object({
-  format: z.enum(['pdf', 'png']),
+  format: z.enum(['pdf', 'png', 'xlsx']),
   ansicht: z.string().regex(/^[a-z0-9-]+\.[a-z0-9.-]+$/),
   parameter: z.record(z.string(), z.unknown()),
   /** PNG: Auflösungsfaktor (1 = 96 dpi). */
@@ -36,20 +36,24 @@ function sicherDateiname(name: string): string {
  * Export (Architektur 6): eigene Druckansicht in einem unsichtbaren Fenster rendern,
  * dann `printToPDF` (A3 quer, mehrseitig) bzw. Bildaufnahme als PNG.
  */
-export async function exportieren(
-  auftrag: ExportAuftrag,
+export type DateiExport = (
+  plugin: string,
+  format: string,
+  parameter: Record<string, unknown>,
+) => Promise<{ daten: Uint8Array | string; info: { endung: string; beschreibung: string } }>;
+
+/** Zielpfad wählen (Speichern-Dialog; in Tests fester Ordner). null = abgebrochen. */
+async function zielWaehlen(
   hauptfenster: BrowserWindow | null,
-  preload: string,
-  seiteLaden: (w: BrowserWindow, hash: string) => Promise<void>,
+  titel: string,
+  dateiname: string,
+  endung: string,
+  beschreibung: string,
 ): Promise<string | null> {
-  const endung = auftrag.format;
   const opts = {
-    title: auftrag.format === 'pdf' ? 'Als PDF exportieren (A3 quer)' : 'Als PNG exportieren',
-    defaultPath: path.join(
-      app.getPath('documents'),
-      `${sicherDateiname(auftrag.dateiname)}.${endung}`,
-    ),
-    filters: [{ name: endung.toUpperCase(), extensions: [endung] }],
+    title: titel,
+    defaultPath: path.join(app.getPath('documents'), `${sicherDateiname(dateiname)}.${endung}`),
+    filters: [{ name: beschreibung, extensions: [endung] }],
   };
   // Nur für automatische Tests in nicht gepackten Builds: Zielordner ohne Dialog
   const testOrdner = app.isPackaged ? undefined : process.env['BAUTAKT_TEST_EXPORT_ORDNER'];
@@ -59,9 +63,39 @@ export async function exportieren(
       ? await dialog.showSaveDialog(hauptfenster, opts)
       : await dialog.showSaveDialog(opts);
   if (r.canceled || !r.filePath) return null;
-  const ziel = r.filePath.toLowerCase().endsWith(`.${endung}`)
-    ? r.filePath
-    : `${r.filePath}.${endung}`;
+  return r.filePath.toLowerCase().endsWith(`.${endung}`) ? r.filePath : `${r.filePath}.${endung}`;
+}
+
+export async function exportieren(
+  auftrag: ExportAuftrag,
+  hauptfenster: BrowserWindow | null,
+  preload: string,
+  seiteLaden: (w: BrowserWindow, hash: string) => Promise<void>,
+  dateiExport: DateiExport,
+): Promise<string | null> {
+  // Datei-Export eines Plugins (Excel, E-25): erst erzeugen, dann speichern
+  if (auftrag.format === 'xlsx') {
+    const [plugin = '', format = ''] = auftrag.ansicht.split('.');
+    const { daten, info } = await dateiExport(plugin, format, auftrag.parameter);
+    const ziel = await zielWaehlen(
+      hauptfenster,
+      `Als ${info.beschreibung} exportieren`,
+      auftrag.dateiname,
+      info.endung,
+      info.beschreibung,
+    );
+    if (!ziel) return null;
+    fs.writeFileSync(ziel, daten);
+    return ziel;
+  }
+  const ziel = await zielWaehlen(
+    hauptfenster,
+    auftrag.format === 'pdf' ? 'Als PDF exportieren (A3 quer)' : 'Als PNG exportieren',
+    auftrag.dateiname,
+    auftrag.format,
+    auftrag.format.toUpperCase(),
+  );
+  if (!ziel) return null;
 
   const w = new BrowserWindow({
     show: false,

@@ -229,7 +229,7 @@ Beispiele: `1EA+10`, `3`, `4EA+30KT`, `3 Ende-Anfang +15 Tage`, `2AA-2`. Leerzei
 - **Netzplan** (E-20): eigene SVG-Komponente. Knotenraster 3 Zeilen (Nr./Name · FAZ\|D\|FEZ · SAZ\|GP\|FP\|SEZ). Auto-Layout: Spalte = Rang in topologischer Sortierung (gruppiert nach FAZ), Reihenfolge innerhalb der Spalte per Kreuzungsminimierung (Barycenter). Manuelle Positionen überschreiben das Auto-Layout und werden gespeichert. Pfeile orthogonal, Beschriftung „10EA“, kritischer Pfad rot und dick.
 - **Balkenplan** (E-21): eigene SVG-Komponente, virtualisierte Zeilen (große Pläne), Zoomstufen Tag/KW/Monat/Quartal.
 - **Export:** eigene Druckansicht (Plankopf, Legende, Risiko-Hinweise) → `webContents.printToPDF` (A3 quer, mehrseitig mit Wiederholung des Kopfs) und PNG (SVG → Canvas, wählbare Auflösung).
-- **Excel** (v1): exceljs.
+- **Excel** (v1): exceljs (umgesetzt in M9, siehe Abschnitt 18).
 
 ## 7. BIM (spätere Phase)
 
@@ -339,4 +339,11 @@ Präzisierungen der Rechenregeln aus Abschnitt 5, wie sie in `packages/rechnen-*
 - **Befehle:** `stufe.festschreiben` (ersetzt die Stufe durch die maßgebenden Zeilenkosten), `stufe.setzen` (Korrektur von Hand, leer = entfernen), `auftrag.*`, `rechnung.*` (Löschen eines Auftrags löst nur die Zuordnung seiner Rechnungen), `abweichung.setzen`. Abfrage `kosten:sollist` mit Bezugsstufe.
 - **Anhänge (E-62):** Kern-API `MainKontext.anhaenge.registrieren` und `ProjektSitzung.anhangBekannt(pfad)`. IPC `anhang:waehlen` (Datei-Dialog) und `anhang:oeffnen`: geöffnet wird mit `shell.openPath` nur, wenn der Pfad absolut ist, die Endung auf der Liste der Dokument-/Bildformate steht, das Projekt genau diesen Pfad als Anhang führt und die Datei existiert. So kann die Oberfläche keine Programme starten.
 - **Oberfläche:** Reiter „Kosten“ mit Unterreitern Kostenplanung, Soll-Ist, Aufträge & Rechnungen; Bezugsstufe und Unterreiter werden im localStorage gemerkt. Druckansicht `kosten.sollist`.
+
+## 18. Umsetzungsnotizen (M9)
+
+- **Datei-Exporte der Plugins:** `MainKontext.exporte.registrieren(format, fn, { endung, beschreibung })`; `fn(db, parameter)` darf asynchron sein und liefert den Dateiinhalt. `ProjektSitzung.dateiExport(plugin, format, parameter)`. Die Oberfläche nutzt denselben Aufruf `export.starten` mit `format: 'xlsx'` und `ansicht: 'plugin.format'`; der Main-Prozess erzeugt zuerst die Datei und zeigt dann den Speichern-Dialog.
+- **exceljs** (MIT) als `dependency` von `apps/desktop`: wird wie better-sqlite3 nicht gebündelt, sondern zur Laufzeit geladen und von electron-builder mit allen Unterpaketen ins Paket übernommen (geprüft mit `electron-builder --dir`). Lizenzprüfung der Unterpakete: MIT/ISC/Apache/BSD, dazu freizügige Einzelfälle (Unlicense: big-integer, BlueOak-1.0.0: graceful-fs, MIT AND Zlib: pako, MIT/X11: buffers, chainsaw; jszip „MIT OR GPL-3.0“ wird unter MIT genutzt) – keine GPL/AGPL-Pflicht.
+- **Kosten (`plugins/kosten/main/excel.ts`):** Blätter Kostentabelle (E-64), Flächen DIN 277, Soll-Ist, Aufträge, Rechnungen. Formeln mit Ergebnis (E-65): `ROUND(H*I,2)` für KKW wirksam, `ROUND(C*J,2)` für Kosten, Summen über die direkten Untergruppen, Anteil, MwSt. über die Einstellungszelle, Mengenverweise auf das Flächenblatt, Abweichungen im Soll-Ist. Faktor = Indexfaktor × Regionalfaktor als Wert. `fullCalcOnLoad` ist gesetzt, weil exceljs Ergebnisse 0 nicht schreibt.
+- **Termine (`plugins/termine/main/excel.ts`):** Vorgangsliste aller Vorgänge (E-66) mit Excel-Gliederung (outlineLevel = Ebene), fixierter Kopfzeile und Autofilter; GP als Formel SAZ − FAZ; Datumswerte als echte Excel-Daten (UTC).
 

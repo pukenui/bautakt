@@ -15,6 +15,7 @@ import type {
   AbfrageDefinition,
   BautaktPlugin,
   ExportFunktion,
+  ExportInfo,
   ImportFunktion,
   MainKontext,
   PluginDb,
@@ -42,7 +43,7 @@ export interface SitzungsOptionen {
 interface Erweiterungen {
   abfragen: Map<string, AbfrageDefinition>;
   dienste: Map<string, unknown>;
-  exporte: Map<string, ExportFunktion>;
+  exporte: Map<string, { fn: ExportFunktion; info: ExportInfo }>;
   importe: Map<string, ImportFunktion>;
   staende: { plugin: string; praefix: string; handler: StandHandler }[];
   anhaenge: ((db: PluginDb) => string[])[];
@@ -177,7 +178,13 @@ export class ProjektSitzung {
           return erw.dienste.get(name) as T;
         },
       },
-      exporte: { registrieren: (format, fn) => void erw.exporte.set(`${p.id}:${format}`, fn) },
+      exporte: {
+        registrieren: (format, fn, info) => {
+          const k = `${p.id}:${format}`;
+          if (erw.exporte.has(k)) throw new BautaktFehler('PLUGIN', `Export „${k}“ doppelt.`);
+          erw.exporte.set(k, { fn, info });
+        },
+      },
       importe: { registrieren: (format, fn) => void erw.importe.set(`${p.id}:${format}`, fn) },
       stand: {
         registrieren: (handler) =>
@@ -310,6 +317,18 @@ export class ProjektSitzung {
       throw new BautaktFehler('BEFEHL_DATEN', `Ungültige Argumente für „${plugin}:${name}“.`);
     }
     return def.ausfuehren(this.lesezugriff(), geprueft.data);
+  }
+
+  /** Datei-Export eines Plugins (z. B. Excel) – nur lesend, liefert Inhalt und Endung. */
+  async dateiExport(
+    plugin: string,
+    format: string,
+    parameter: Record<string, unknown>,
+  ): Promise<{ daten: Uint8Array | string; info: ExportInfo }> {
+    const e = this.erw.exporte.get(`${plugin}:${format}`);
+    if (!e)
+      throw new BautaktFehler('ABFRAGE_UNBEKANNT', `Unbekannter Export „${plugin}:${format}“.`);
+    return { daten: await e.fn(this.lesezugriff(), parameter), info: e.info };
   }
 
   /** Verweist das Projekt auf diese Datei (Anhang)? Groß-/Kleinschreibung egal (Windows). */

@@ -386,3 +386,103 @@ describe('Soll-Ist Kosten (E-33, E-60–E-63)', () => {
     u.schliessen();
   });
 });
+
+describe('Excel-Export der Kosten (E-25, E-64, E-65)', () => {
+  it('R-10 in der Arbeitsmappe: Formeln mit Ergebnis, Blätter, Flächenverweis', async () => {
+    const ExcelJS = (await import('exceljs')).default;
+    const u = aufbau();
+    const k = u.bib('kennwert.anlegen', kennwert);
+    u.befehl('einstellung.aendern', {
+      felder: { index_aktuell: 132, regionalfaktor: 1.05, vorsteuerabzug: true },
+    });
+    u.befehl('flaeche.setzen', { kategorie: 'NUF1', wert_m2: 1000 });
+    u.befehl('flaeche.setzen', { kategorie: 'KGF', wert_m2: 200 });
+    const id = u.anlegen(300);
+    u.befehl('zeile.kennwertUebernehmen', { id, kennwertId: k.id, version: 1 });
+    const z331 = u.anlegen(331);
+    u.befehl('zeile.aendern', {
+      id: z331,
+      felder: {
+        menge_quelle: 'manuell',
+        menge: 10,
+        kkw_gewaehlt: 100,
+        index_modus: 'ohne',
+        index_begruendung: 'x',
+      },
+    });
+    u.befehl('stufe.festschreiben', { stufe: 'berechnung' }, 'kosten');
+    u.befehl(
+      'auftrag.anlegen',
+      { kg: 331, betrag_netto: 1200, beleg_nr: 'A-1', datum: '2027-03-01' },
+      'kosten',
+    );
+
+    const datei = await u.s.dateiExport('kosten', 'excel', {
+      projektname: 'Test',
+      bezug: 'berechnung',
+    });
+    expect(datei.info).toEqual({ endung: 'xlsx', beschreibung: 'Excel-Arbeitsmappe' });
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(Buffer.from(datei.daten as Uint8Array) as unknown as ArrayBuffer);
+    expect(wb.worksheets.map((w) => w.name)).toEqual([
+      'Kostentabelle',
+      'Flächen DIN 277',
+      'Soll-Ist',
+      'Aufträge',
+      'Rechnungen',
+    ]);
+    const ws = wb.getWorksheet('Kostentabelle');
+    const zeile = (kg: number) => {
+      let n = 0;
+      ws?.eachRow((r, i) => {
+        if (r.getCell(1).value === kg) n = i;
+      });
+      return ws?.getRow(n);
+    };
+    const z300 = zeile(300);
+    // 300 hat die Untergruppe 330/331 → Summe aus den Unterzeilen
+    expect(z300?.getCell(11).value).toMatchObject({ formula: expect.stringMatching(/^K\d+$/) });
+    const z331r = zeile(331);
+    expect(z331r?.getCell(10).value).toMatchObject({
+      formula: expect.stringMatching(/^ROUND\(H\d+\*I\d+,2\)$/),
+      result: 105,
+    });
+    expect(z331r?.getCell(11).value).toMatchObject({
+      formula: expect.stringMatching(/^ROUND\(C\d+\*J\d+,2\)$/),
+      result: 1050,
+    });
+    // Gesamtsumme
+    let summe: import('exceljs').CellValue = null;
+    ws?.eachRow((r) => {
+      if (r.getCell(2).value === 'Summe KG 100–800 netto') summe = r.getCell(11).value;
+    });
+    expect(summe).toMatchObject({ result: 1050 });
+
+    // ohne Untergruppe: R-10 direkt an KG 300 mit Flächenverweis auf BGF (1.200 m²)
+    u.befehl('zeile.loeschen', { ids: [z331] });
+    const datei2 = await u.s.dateiExport('kosten', 'excel', { projektname: 'Test' });
+    const wb2 = new ExcelJS.Workbook();
+    await wb2.xlsx.load(Buffer.from(datei2.daten as Uint8Array) as unknown as ArrayBuffer);
+    const ws2 = wb2.getWorksheet('Kostentabelle');
+    let r300: import('exceljs').Row | undefined;
+    ws2?.eachRow((r) => {
+      if (r.getCell(1).value === 300) r300 = r;
+    });
+    expect(r300?.getCell(3).value).toMatchObject({
+      formula: expect.stringMatching(/^'Flächen DIN 277'!B\d+$/),
+      result: 1200,
+    });
+    expect(r300?.getCell(10).value).toMatchObject({ result: 2772 });
+    expect(r300?.getCell(11).value).toMatchObject({ result: 3326400 });
+    const fl = wb2.getWorksheet('Flächen DIN 277');
+    let bgf: import('exceljs').CellValue = null;
+    fl?.eachRow((r) => {
+      if (String(r.getCell(1).value).startsWith('BGF')) bgf = r.getCell(2).value;
+    });
+    expect(bgf).toMatchObject({ formula: expect.stringMatching(/\+/), result: 1200 });
+    const auf = wb2.getWorksheet('Aufträge');
+    expect(auf?.getRow(5).getCell(5).value).toBe('A-1');
+    expect(auf?.getRow(5).getCell(4).value).toEqual(new Date(Date.UTC(2027, 2, 1)));
+    u.schliessen();
+  });
+});

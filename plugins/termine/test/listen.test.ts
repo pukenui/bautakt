@@ -249,3 +249,55 @@ describe('Meilensteinplan (E-48)', () => {
     ).toEqual([0, 1, 0, 2, 0]);
   });
 });
+
+describe('Excel-Vorgangsliste (E-25, E-66)', () => {
+  it('alle Vorgänge mit Gliederung, Zeitpunkten und GP als Formel', async () => {
+    const ExcelJS = (await import('exceljs')).default;
+    const u = aufbau();
+    const d = u.plan();
+    const datei = await u.s.dateiExport('termine', 'vorgangsliste', {
+      planId: d.plan.id,
+      projektname: 'Test',
+    });
+    expect(datei.info.endung).toBe('xlsx');
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(Buffer.from(datei.daten as Uint8Array) as unknown as ArrayBuffer);
+    const ws = wb.getWorksheet('Vorgangsliste');
+    expect(ws?.getRow(4).values).toEqual(
+      expect.arrayContaining([
+        'Nr.',
+        'Vorgang',
+        'FAZ',
+        'FEZ',
+        'SAZ',
+        'SEZ',
+        'GP',
+        'FP',
+        'Herleitung',
+      ]),
+    );
+    const zeilen = new Map<string, import('exceljs').Row>();
+    ws?.eachRow((r, i) => {
+      if (i > 4) zeilen.set(String(r.getCell(1).value), r);
+    });
+    expect([...zeilen.keys()]).toEqual(['1', 'S', '2', '3', '4', '5', '6', 'ME', 'MM']);
+    // R-01: Vorgang 5 = FAZ 105, FEZ 185, kritisch; Vorgang 4: GP = SAZ − FAZ = 120 − 105 = 15
+    const v5 = zeilen.get('5');
+    expect([v5?.getCell(6).value, v5?.getCell(7).value, v5?.getCell(14).value]).toEqual([
+      105,
+      185,
+      'ja',
+    ]);
+    const v4 = zeilen.get('4');
+    expect(v4?.getCell(10).value).toMatchObject({
+      formula: expect.stringMatching(/^H\d+-F\d+$/),
+      result: 15,
+    });
+    expect(v4?.getCell(5).value).toBe('2EA; 3EA');
+    // Gliederung: Unterpunkte des Sammelvorgangs auf Ebene 1
+    expect(zeilen.get('2')?.outlineLevel).toBe(1);
+    expect(zeilen.get('S')?.getCell(3).value).toBe('Sammelvorgang');
+    expect(zeilen.get('1')?.getCell(12).value).toEqual(new Date(Date.UTC(2026, 11, 14)));
+    u.s.schliessen();
+  });
+});

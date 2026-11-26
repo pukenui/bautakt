@@ -13,13 +13,14 @@
   },
   "dependencies": {
     "@bautakt/kern": "workspace:*",
-    "@bautakt/ui": "workspace:*",
-    "react": "^19.2.0",
-    "zod": "^4.1.0",
+    "@bautakt/plugin-bibliothek": "workspace:*",
+    "@bautakt/rechnen-aufwand": "workspace:*",
     "@bautakt/rechnen-kalender": "workspace:*",
     "@bautakt/rechnen-termine": "workspace:*",
-    "@bautakt/rechnen-aufwand": "workspace:*",
-    "@bautakt/plugin-bibliothek": "workspace:*"
+    "@bautakt/ui": "workspace:*",
+    "exceljs": "^4.4.0",
+    "react": "^19.2.0",
+    "zod": "^4.1.0"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

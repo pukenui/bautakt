@@ -21,8 +21,9 @@ export interface ProjektStatus {
 
 /** Exportauftrag an den Main-Prozess (Architektur 6). */
 export interface ExportAuftragDaten {
-  format: 'pdf' | 'png';
-  /** ID der Druckansicht, z. B. "termine.balkenplan" */
+  /** pdf/png: Druckansicht; xlsx: Datei-Export eines Plugins (ansicht = "plugin.format") */
+  format: 'pdf' | 'png' | 'xlsx';
+  /** ID der Druckansicht, z. B. "termine.balkenplan", bzw. des Datei-Exports, z. B. "kosten.excel" */
   ansicht: string;
   parameter: Record<string, unknown>;
   /** PNG: Auflösungsfaktor 1–4 (Standard 2) */

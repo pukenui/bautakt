@@ -145,7 +145,9 @@ const handler: Record<Aufruf, (args: unknown[]) => unknown> = {
   'export:starten': ([daten]) =>
     antwort(async () => {
       aktiveSitzung();
-      return exportieren(exportSchema.parse(daten), fenster, PRELOAD, seiteLaden);
+      return exportieren(exportSchema.parse(daten), fenster, PRELOAD, seiteLaden, (p, f, par) =>
+        aktiveSitzung().dateiExport(p, f, par),
+      );
     }),
   abfrage: ([daten]) =>
     antwort(() => {

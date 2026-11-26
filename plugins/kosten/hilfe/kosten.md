@@ -59,3 +59,7 @@ Geöffnet werden nur Dokumente und Bilder, die im Projekt eingetragen sind.
 **Export …** → Kostentabelle (mit Flächen, Summen und Einstellungen) oder Soll-Ist (Stufen,
 Prognose, Abweichung, Ursachen) als PDF (A3 quer, mehrseitig) oder PNG; Gliederung wahlweise bis
 Ebene 1, 2 oder 3.
+
+**Excel**: Format „Excel-Arbeitsmappe“ erzeugt eine Datei mit den Blättern Kostentabelle,
+Flächen DIN 277, Soll-Ist, Aufträge und Rechnungen. KKW wirksam, Kosten, Summen, MwSt. und
+Abweichungen stehen als Formeln darin und lassen sich in Excel nachrechnen.

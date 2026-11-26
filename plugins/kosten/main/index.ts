@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { MIGRATIONEN } from '../migrations/index.js';
 import { kostenBefehle } from './befehle.js';
 import { kostenDatenLaden } from './daten.js';
+import { kostenExcel } from './excel.js';
 import { sollIstLaden } from './sollist.js';
 import { SOLLIST_BEFEHLE } from './sollistBefehle.js';
 import { kostenStaende } from './staende.js';
@@ -55,6 +56,10 @@ export const kostenPlugin: BautaktPlugin = {
         .map((a) => a.anhang),
     );
     ctx.stand.registrieren(kostenStaende);
+    ctx.exporte.registrieren('excel', (db, p) => kostenExcel(db, p, kennwertVersion), {
+      endung: 'xlsx',
+      beschreibung: 'Excel-Arbeitsmappe',
+    });
     ctx.abfragen.registrieren({
       name: 'kosten',
       schema: z.undefined(),
