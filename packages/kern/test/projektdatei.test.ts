@@ -26,10 +26,16 @@ describe('Projektdatei', () => {
     expect(meta.projektId[14]).toBe('7'); // UUID v7
     expect(meta.erstellt).toMatch(/Z$/); // UTC
     expect(d.tabellen()).toEqual(
-      expect.arrayContaining(['meta', 'plugin_schema', 'aenderungsprotokoll', 'stand']),
+      expect.arrayContaining([
+        'meta',
+        'plugin_schema',
+        'aenderungsprotokoll',
+        'stand',
+        'dateiablage',
+      ]),
     );
     expect(d.db.pragma('journal_mode', { simple: true })).toBe('wal');
-    expect(schemaVersion(d.db, 'kern')).toBe(1);
+    expect(schemaVersion(d.db, 'kern')).toBe(2);
     d.schliessen();
   });
 

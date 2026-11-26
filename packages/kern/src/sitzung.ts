@@ -48,6 +48,7 @@ interface Erweiterungen {
   importe: Map<string, { fn: ImportFunktion; info: ImportInfo }>;
   staende: { plugin: string; praefix: string; handler: StandHandler }[];
   anhaenge: ((db: PluginDb) => string[])[];
+  dateiVerweise: ((db: PluginDb) => string[])[];
 }
 
 /** Ein geöffnetes Projekt: Datei, Sperre, Befehle, Ereignisse und aktivierte Plugins. */
@@ -61,6 +62,7 @@ export class ProjektSitzung {
     importe: new Map(),
     staende: [],
     anhaenge: [],
+    dateiVerweise: [],
   };
   private timer: NodeJS.Timeout | undefined;
   private geschlossen = false;
@@ -112,7 +114,10 @@ export class ProjektSitzung {
     const s = sperreErwerben(pfad);
     const sperre = s.status === 'erworben' ? s.sperre : undefined;
     try {
-      const datei = Projektdatei.oeffnen(pfad, { schreibgeschuetzt: !sperre });
+      const datei = Projektdatei.oeffnen(pfad, {
+        schreibgeschuetzt: !sperre,
+        kernMigrieren: false,
+      });
       try {
         if (sperre) sicherungAnlegen(datei); // vor den Migrationen sichern
         const fremd = s.status === 'belegt' ? s.info : undefined;
@@ -128,9 +133,13 @@ export class ProjektSitzung {
   }
 
   private starten(plugins: readonly BautaktPlugin[]): this {
+    this.datei.kernMigrieren();
     for (const p of plugins) this.datei.migrieren(p.id, p.migrationen);
     this.kernAktivieren();
     for (const p of plugins) p.aktivieren(this.kontext(p));
+    // Abgelegte Dateien ohne Verweis entfernen (Undo-Verlauf ist beim Öffnen leer, E-86)
+    const db = this.lesezugriff();
+    this.datei.dateienAufraeumen(new Set(this.erw.dateiVerweise.flatMap((fn) => fn(db))));
     const ms = this.optionen.autosaveMs ?? AUTOSAVE_MS;
     if (ms > 0 && !this.datei.schreibgeschuetzt) {
       this.timer = setInterval(() => {
@@ -198,6 +207,11 @@ export class ProjektSitzung {
           void erw.staende.push({ plugin: p.id, praefix: p.tabellenPraefix, handler }),
       },
       anhaenge: { registrieren: (fn) => void erw.anhaenge.push(fn) },
+      dateien: {
+        ablegen: (inhalt) => this.datei.dateiAblegen(inhalt),
+        lesen: (hash) => this.datei.dateiLesen(hash),
+        verweise: (fn) => void erw.dateiVerweise.push(fn),
+      },
     };
   }
 
@@ -347,16 +361,16 @@ export class ProjektSitzung {
   }
 
   /** Datei-Import: Datei lesen, dann den gelieferten Befehl ausführen (ein Undo-Schritt). */
-  dateiImport(
+  async dateiImport(
     plugin: string,
     format: string,
     inhalt: Uint8Array,
     parameter: Record<string, unknown>,
-  ): { bericht: string[]; ergebnis: BefehlErgebnis } {
+  ): Promise<{ bericht: string[]; ergebnis: BefehlErgebnis }> {
     const e = this.erw.importe.get(`${plugin}:${format}`);
     if (!e)
       throw new BautaktFehler('ABFRAGE_UNBEKANNT', `Unbekannter Import „${plugin}:${format}“.`);
-    const auftrag = e.fn(inhalt, parameter, this.lesezugriff());
+    const auftrag = await e.fn(inhalt, parameter, this.lesezugriff());
     const ergebnis = this.befehle.ausfuehren({
       plugin,
       name: auftrag.befehl,

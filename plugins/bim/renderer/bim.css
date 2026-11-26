@@ -1,0 +1,188 @@
+/* Plugin BIM: IFC-Viewer (B1) */
+
+.bim-ansicht {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  gap: 6px;
+}
+.bim-werkzeuge button.aktiv {
+  background: var(--akzent);
+  border-color: var(--akzent);
+  color: #fff;
+}
+.bim-werkzeuge input[type='range'] {
+  width: 160px;
+}
+.bim-haupt {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  border: 1px solid var(--linie);
+  background: var(--flaeche);
+}
+
+/* Bauteilliste */
+.bim-liste {
+  width: 300px;
+  flex-shrink: 0;
+  overflow: auto;
+  border-right: 1px solid var(--linie);
+  font-size: 13px;
+  padding: 4px 0;
+}
+.bim-zeile {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 24px;
+  padding-right: 4px;
+  white-space: nowrap;
+}
+.bim-zeile:hover {
+  background: #f3f5f8;
+}
+.bim-zeile.gewaehlt {
+  background: #dde8f5;
+}
+.bim-zeile.modell .bim-titel {
+  font-weight: 600;
+}
+.bim-zeile input {
+  margin: 0 2px;
+}
+.bim-auf {
+  width: 16px;
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: var(--text-leise);
+}
+.bim-titel {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.bim-anzahl {
+  color: var(--text-leise);
+  font-size: 12px;
+}
+.bim-knoepfe {
+  display: none;
+  gap: 1px;
+}
+.bim-zeile:hover .bim-knoepfe,
+.bim-zeile:focus-within .bim-knoepfe {
+  display: inline-flex;
+}
+.bim-knoepfe button {
+  padding: 0 5px;
+  font-size: 12px;
+  line-height: 18px;
+}
+.bim-mehr {
+  border: none;
+  background: transparent;
+  color: var(--akzent);
+  padding: 2px 4px;
+  font-size: 12px;
+}
+
+/* 3D-Fläche */
+.bim-flaeche {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+.bim-flaeche canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  outline: none;
+}
+.bim-flaeche.messen canvas {
+  cursor: crosshair;
+}
+.bim-beschriftung {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.bim-masz {
+  position: absolute;
+  transform: translate(-50%, -130%);
+  background: #c62828;
+  color: #fff;
+  font-size: 12px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+.bim-status {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgb(255 255 255 / 92%);
+  border: 1px solid var(--linie);
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 13px;
+}
+.bim-status.unten {
+  top: auto;
+  bottom: 10px;
+}
+
+/* Eigenschaften */
+.bim-eigenschaften {
+  width: 320px;
+  flex-shrink: 0;
+  overflow: auto;
+  border-left: 1px solid var(--linie);
+  padding: 8px 10px;
+  font-size: 13px;
+}
+.bim-eigenschaften h3 {
+  margin: 0 0 2px;
+  font-size: 15px;
+  word-break: break-word;
+}
+.bim-eigenschaften details {
+  margin-top: 8px;
+}
+.bim-eigenschaften summary {
+  font-weight: 600;
+  cursor: pointer;
+}
+.bim-eigenschaften table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 2px;
+}
+.bim-eigenschaften th,
+.bim-eigenschaften td {
+  text-align: left;
+  vertical-align: top;
+  padding: 2px 4px;
+  border-bottom: 1px solid #eee;
+  word-break: break-word;
+}
+.bim-eigenschaften th {
+  width: 45%;
+  font-weight: normal;
+  color: var(--text-leise);
+}
+.bim-marke {
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: normal;
+  padding: 0 5px;
+  border-radius: 8px;
+  background: #e6f0e6;
+  color: #2e7d32;
+}

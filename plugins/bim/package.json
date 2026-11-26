@@ -1,0 +1,27 @@
+{
+  "name": "@bautakt/plugin-bim",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Plugin BIM: IFC-Viewer und Bauteile (E-37, E-86–E-89)",
+  "type": "module",
+  "exports": {
+    "./main": "./main/index.ts",
+    "./renderer": "./renderer/index.tsx"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@bautakt/kern": "workspace:*",
+    "@bautakt/ui": "workspace:*",
+    "react": "^19.2.0",
+    "three": "0.187.0",
+    "web-ifc": "0.0.81",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.2.0",
+    "@types/three": "^0.187.0"
+  }
+}

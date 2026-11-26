@@ -51,7 +51,7 @@ Ziel: Ab ca. **13.12.** sollen damit F.1 (Rollen-Netzplan) und F.2 (Projekttermi
 
 ## Phase B – BIM
 
-- [ ] **B1** IFC-Viewer (IFC2x3/IFC4), Bauteilliste, Testmodelle aus BIMCraft und FreeCAD (E-37, E-40)
+- [x] **B1** IFC-Viewer (IFC2x3/IFC4), Bauteilliste, Testmodelle aus BIMCraft und FreeCAD (E-37, E-40)
 - [ ] **B2** 5D: Mengen (Qto/Geometrie, Herkunft sichtbar), Regeltabelle IFC → KG, Übergabe an Kosten
 - [ ] **B3** DIN-277-Flächen aus IfcSpace, Reimport über GlobalId mit Änderungsbericht
 - [ ] **B4** 4D: Vorgänge ↔ Bauteile, Bauablauf-Simulation, Ort ↔ Geschoss/Zone
@@ -84,3 +84,4 @@ Ziel: Ab ca. **13.12.** sollen damit F.1 (Rollen-Netzplan) und F.2 (Projekttermi
 - 26.11.2026 – **M13 fertig.** MS-Project-XML (MSPDI): Export eines Plans mit Gliederung, Beziehungen, Kalender, Bedingungen, Ist zum Stichtag und Soll-Stand als Basisplan; Import als neuer Plan oder Ersatz des gewählten Plans mit Rundung und Bericht, Rückgängig in einem Schritt. Kern um Datei-Importe der Plugins erweitert. Neue Abhängigkeit fast-xml-parser (MIT). Neue Entscheidungen E-79–E-82. 503 Tests grün; Export → Import ergibt dieselben Termine, Bedienung in der gebauten App geprüft (MS Project selbst nicht verfügbar).
 - 26.11.2026 – **M14 fertig.** Glossar mit rund 55 Fachbegriffen (eigene Erklärungen mit Mini-Beispiel), Hover-Erklärung in Spaltenköpfen, Kennzahl- und Flächenbezeichnungen sowie automatisch in den Hilfetexten, durchsuchbares Glossar in der Hilfe, Erststart-Tour mit sechs Schritten (jederzeit neu startbar), leere Ansichten geprüft und ergänzt. Neue Entscheidungen E-83–E-85. 509 Tests grün; Tour, Hover (Maus und Tastatur), Glossarsuche und Hilfe-Verweise in der gebauten App geprüft.
 - 26.11.2026 – **Release v0.2.0** (Phase A komplett, Stand M14): Installer „Bautakt-Setup-0.2.0.exe“ gebaut, gepackte App geprüft (alle Plugins, Version, Abhängigkeiten im Paket), GitHub-Release (privat) veröffentlicht.
+- 26.11.2026 – **B1 fertig.** Plugin „bim“: IFC2x3/IFC4 einlesen und in die Projektdatei einbetten (neue Dateiablage im Kern, außerhalb von Undo/Protokoll), mehrere Fachmodelle deckungsgleich, Bauteilliste Modell → Geschoss → Klasse → Bauteil, Eigenschaften (Attribute, Typ, Psets, BaseQuantities in SI-Einheiten), Ein-/Ausblenden und Isolieren, Geschossschnitt und freie Schnittebene, Messen. Viewer mit web-ifc (MPL-2.0) und three.js (MIT) direkt; Geometrie im Worker. Testmodelle aus BIMCraft (Haus, Hochhaus mit 9.500 Bauteilen) und FreeCAD (Halle, Tragwerk). Neue Entscheidungen E-86–E-89. 520 Tests grün; Bedienung in der gebauten und der gepackten App geprüft.

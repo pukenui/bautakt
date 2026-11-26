@@ -330,6 +330,34 @@ export const GLOSSAR: readonly GlossarEintrag[] = [
     begriff: 'Bezugsstufe',
     erklaerung: 'Kostenstufe, gegen die Prognose und Abweichung gerechnet werden.',
   },
+  // --- BIM ------------------------------------------------------------------------------
+  {
+    begriff: 'IFC',
+    lang: 'Industry Foundation Classes',
+    erklaerung:
+      'Offenes Austauschformat für Gebäudemodelle. Bautakt liest IFC2x3 und IFC4 aus Autorenwerkzeugen wie BIMCraft, FreeCAD, Revit oder Archicad.',
+    beispiel: 'In FreeCAD „Exportieren → IFC“, dann in Bautakt „IFC einlesen …“.',
+  },
+  {
+    begriff: 'GlobalId',
+    erklaerung:
+      'Eindeutige, dauerhafte Kennung eines Bauteils im IFC-Modell (22 Zeichen). Daran erkennt Bautakt Bauteile beim erneuten Einlesen wieder.',
+    beispiel: '„31oHMCldf4j9RdEr4K510g“',
+  },
+  {
+    begriff: 'Pset',
+    lang: 'Eigenschaftssatz (Property Set)',
+    erklaerung: 'Benannte Gruppe von Eigenschaften eines Bauteils im IFC-Modell.',
+    beispiel: '„Pset_WallCommon“ mit LoadBearing = ja, IsExternal = ja.',
+    auch: ['Psets', 'Eigenschaftssatz', 'Eigenschaftssätze'],
+  },
+  {
+    begriff: 'BaseQuantities',
+    lang: 'Basismengen',
+    erklaerung:
+      'Mengen, die das Autorenwerkzeug ins IFC-Modell schreibt (Länge, Fläche, Volumen). Bautakt zeigt sie in m, m² und m³.',
+    beispiel: '„Qto_WallBaseQuantities“: Length 7 m, NetSideArea 19,5 m².',
+  },
   // --- Statistik -------------------------------------------------------------------------
   {
     begriff: 'Faktor',

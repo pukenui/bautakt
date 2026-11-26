@@ -35,4 +35,16 @@ export const KERN_MIGRATIONEN: readonly Migration[] = [
       );
     `,
   },
+  {
+    version: 2,
+    name: 'Dateiablage für eingebettete Dateien (E-86)',
+    sql: `
+      CREATE TABLE dateiablage (
+        hash TEXT PRIMARY KEY,
+        groesse INTEGER NOT NULL,
+        angelegt TEXT NOT NULL,
+        inhalt BLOB NOT NULL
+      );
+    `,
+  },
 ];

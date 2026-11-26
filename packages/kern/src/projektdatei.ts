@@ -1,4 +1,5 @@
 import Database from 'better-sqlite3';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import { BautaktFehler } from './fehler.js';
 import { jetztUtc, neueId } from './id.js';
@@ -57,7 +58,10 @@ export class Projektdatei {
   }
 
   /** Öffnet eine vorhandene Projektdatei. */
-  static oeffnen(pfad: string, optionen: { schreibgeschuetzt?: boolean } = {}): Projektdatei {
+  static oeffnen(
+    pfad: string,
+    optionen: { schreibgeschuetzt?: boolean; kernMigrieren?: boolean } = {},
+  ): Projektdatei {
     if (!fs.existsSync(pfad)) {
       throw new BautaktFehler('DATEI_FEHLT', `Die Datei wurde nicht gefunden: ${pfad}`);
     }
@@ -77,12 +81,57 @@ export class Projektdatei {
     try {
       datei.pruefeFormat();
       if (!schreibgeschuetzt) datei.grundeinstellungen();
-      datei.migrieren(KERN_ID, KERN_MIGRATIONEN);
+      // Die Sitzung migriert selbst – erst nach der Sicherungskopie (E-41)
+      if (optionen.kernMigrieren ?? true) datei.kernMigrieren();
     } catch (e) {
       db.close();
       throw e;
     }
     return datei;
+  }
+
+  /** Offene Migrationen des Kerns ausführen (schreibgeschützt: nur prüfen). */
+  kernMigrieren(): number {
+    return this.migrieren(KERN_ID, KERN_MIGRATIONEN);
+  }
+
+  /**
+   * Dateiablage (E-86): legt eine Datei einmal ab und liefert ihren SHA-256-Hash. Außerhalb von
+   * Undo und Protokoll – die Inhalte sind unveränderlich, Zeilen der Plugins verweisen auf den Hash.
+   */
+  dateiAblegen(inhalt: Uint8Array): string {
+    if (this.schreibgeschuetzt) {
+      throw new BautaktFehler('SCHREIBGESCHUETZT', 'Das Projekt ist schreibgeschützt geöffnet.');
+    }
+    const hash = createHash('sha256').update(inhalt).digest('hex');
+    this.db
+      .prepare(
+        'INSERT OR IGNORE INTO dateiablage (hash, groesse, angelegt, inhalt) VALUES (?, ?, ?, ?)',
+      )
+      .run(
+        hash,
+        inhalt.byteLength,
+        jetztUtc(),
+        Buffer.from(inhalt.buffer, inhalt.byteOffset, inhalt.byteLength),
+      );
+    return hash;
+  }
+
+  dateiLesen(hash: string): Uint8Array {
+    const z = this.db.prepare('SELECT inhalt FROM dateiablage WHERE hash = ?').get(hash) as
+      { inhalt: Buffer } | undefined;
+    if (!z) throw new BautaktFehler('NICHT_GEFUNDEN', 'Die eingebettete Datei fehlt im Projekt.');
+    return new Uint8Array(z.inhalt.buffer, z.inhalt.byteOffset, z.inhalt.byteLength);
+  }
+
+  /** Entfernt abgelegte Dateien, auf die nichts mehr verweist; liefert deren Anzahl. */
+  dateienAufraeumen(verwiesen: ReadonlySet<string>): number {
+    if (this.schreibgeschuetzt) return 0;
+    const alle = this.db.prepare('SELECT hash FROM dateiablage').all() as { hash: string }[];
+    const weg = alle.filter((z) => !verwiesen.has(z.hash));
+    const stmt = this.db.prepare('DELETE FROM dateiablage WHERE hash = ?');
+    this.db.transaction(() => weg.forEach((z) => stmt.run(z.hash)))();
+    return weg.length;
   }
 
   private grundeinstellungen(): void {
@@ -187,7 +236,9 @@ export class Projektdatei {
   alsJson(): { format: 'bautakt-json'; dateiformat: number; tabellen: Record<string, Zeile[]> } {
     const tabellen: Record<string, Zeile[]> = {};
     for (const name of this.tabellen()) {
-      const sql = 'SELECT * FROM "' + pruefeBezeichner(name) + '" ORDER BY rowid';
+      // eingebettete Dateien nur mit Hash und Größe (E-86)
+      const spalten = name === 'dateiablage' ? 'hash, groesse, angelegt' : '*';
+      const sql = `SELECT ${spalten} FROM "${pruefeBezeichner(name)}" ORDER BY rowid`;
       tabellen[name] = this.db.prepare(sql).all() as Zeile[];
     }
     return { format: 'bautakt-json', dateiformat: DATEIFORMAT_VERSION, tabellen };

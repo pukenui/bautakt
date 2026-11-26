@@ -39,7 +39,13 @@ export type ImportFunktion = (
   inhalt: Uint8Array,
   parameter: Record<string, unknown>,
   db: PluginDb,
-) => { befehl: string; daten: unknown; bericht: string[] };
+) => ImportAuftrag | Promise<ImportAuftrag>;
+
+export interface ImportAuftrag {
+  befehl: string;
+  daten: unknown;
+  bericht: string[];
+}
 
 export interface ImportInfo {
   /** Dateiendungen ohne Punkt, z. B. ["xml"] */
@@ -86,6 +92,16 @@ export interface MainKontext {
    * Oberfläche mit dem Standardprogramm öffnen.
    */
   anhaenge: { registrieren(fn: (db: PluginDb) => string[]): void };
+  /**
+   * Eingebettete Dateien (E-86): ablegen liefert den SHA-256-Hash (außerhalb von Undo).
+   * `verweise` meldet die Hashes, auf die das Plugin noch verweist (auch in Ständen) –
+   * alle übrigen entfernt der Kern beim Öffnen.
+   */
+  dateien: {
+    ablegen(inhalt: Uint8Array): string;
+    lesen(hash: string): Uint8Array;
+    verweise(fn: (db: PluginDb) => string[]): void;
+  };
 }
 
 /**

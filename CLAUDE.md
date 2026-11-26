@@ -6,7 +6,7 @@ die schrittweise zu einem BIM-Ökosystem (IFC-Viewer, 5D, 4D) ausgebaut wird.
 
 **Vor jeder Arbeit lesen:**
 
-1. `docs/lastenheft.md` – alle fachlichen Entscheidungen (E-01 … E-85). Verbindlich.
+1. `docs/lastenheft.md` – alle fachlichen Entscheidungen (E-01 … E-89). Verbindlich.
 2. `docs/architektur.md` – Kern, Plugins, Datenmodell, Rechenregeln.
 3. `docs/roadmap.md` – welcher Meilenstein gerade dran ist. Nur daran arbeiten.
 4. `docs/referenzbeispiele.md` – Testfälle mit Sollwerten.
@@ -17,7 +17,7 @@ die schrittweise zu einem BIM-Ökosystem (IFC-Viewer, 5D, 4D) ausgebaut wird.
 - pnpm-Workspaces (Monorepo), Vitest für Tests
 - SQLite über better-sqlite3, nur im Main-Prozess
 - Installer: electron-builder (NSIS), Auslieferung als GitHub Release (privates Repo)
-- Später BIM: @thatopen/components, web-ifc, three.js
+- BIM: web-ifc + three.js direkt (E-87)
 
 ## Arbeitsweise
 

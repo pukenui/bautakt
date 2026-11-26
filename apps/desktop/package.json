@@ -16,11 +16,13 @@
   "dependencies": {
     "better-sqlite3": "^12.11.1",
     "exceljs": "^4.4.0",
-    "fast-xml-parser": "^5.12.1"
+    "fast-xml-parser": "^5.12.1",
+    "web-ifc": "0.0.81"
   },
   "devDependencies": {
     "@bautakt/kern": "workspace:*",
     "@bautakt/plugin-bibliothek": "workspace:*",
+    "@bautakt/plugin-bim": "workspace:*",
     "@bautakt/plugin-kosten": "workspace:*",
     "@bautakt/plugin-statistik": "workspace:*",
     "@bautakt/plugin-termine": "workspace:*",

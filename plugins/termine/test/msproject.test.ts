@@ -93,9 +93,14 @@ describe('MS-Project-XML (E-79–E-81)', () => {
 
     const xmlDatei = path.join(u.o, 'export.xml');
     fs.writeFileSync(xmlDatei, xml);
-    const e = u.s.dateiImport('termine', 'msproject', new Uint8Array(fs.readFileSync(xmlDatei)), {
-      dateiname: 'export.xml',
-    });
+    const e = await u.s.dateiImport(
+      'termine',
+      'msproject',
+      new Uint8Array(fs.readFileSync(xmlDatei)),
+      {
+        dateiname: 'export.xml',
+      },
+    );
     expect(e.bericht).toEqual([]);
     const plaene = u.s.abfrage('termine', 'plaene', undefined) as PlanZeile[];
     expect(plaene).toHaveLength(2);
@@ -159,7 +164,7 @@ describe('MS-Project-XML (E-79–E-81)', () => {
 
     const vorher = u.plan();
     // in denselben Plan zurückspielen
-    const e = u.s.dateiImport('termine', 'msproject', new TextEncoder().encode(xml), {
+    const e = await u.s.dateiImport('termine', 'msproject', new TextEncoder().encode(xml), {
       dateiname: 'x.xml',
       ziel: 'ersetzen',
       planId: u.planId,

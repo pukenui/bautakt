@@ -179,7 +179,7 @@ const handler: Record<Aufruf, (args: unknown[]) => unknown> = {
       const datei = r.canceled ? undefined : r.filePaths[0];
       if (!datei) return null;
       const inhalt = fs.readFileSync(datei);
-      const e = sitzung.dateiImport(a.plugin, a.format, new Uint8Array(inhalt), {
+      const e = await sitzung.dateiImport(a.plugin, a.format, new Uint8Array(inhalt), {
         ...a.parameter,
         dateiname: path.basename(datei),
       });
