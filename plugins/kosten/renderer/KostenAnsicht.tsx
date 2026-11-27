@@ -22,12 +22,26 @@ type DialogZustand =
   | null;
 
 /** Flächen nach DIN 277 (E-15, R-11): Eingaben links, abgeleitete Summen fett. */
+/** Flächen, die aus den Räumen des Modells kommen können (E-95). */
+const MODELL_KATEGORIEN: readonly FlaecheEingabe[] = [
+  'NUF1',
+  'NUF2',
+  'NUF3',
+  'NUF4',
+  'NUF5',
+  'NUF6',
+  'NUF7',
+  'TF',
+  'VF',
+];
+
 function Flaechen(props: {
   daten: KostenDaten;
   nurLesen: boolean;
   befehl: (n: string, d: unknown) => Promise<string[] | null>;
 }) {
   const f = props.daten.flaechen;
+  const ausModell = (k: FlaecheEingabe) => props.daten.flaechenAusModell.includes(k);
   const eingabe = (k: FlaecheEingabe) => (
     <tr key={k}>
       <td>
@@ -38,10 +52,34 @@ function Flaechen(props: {
           wert={f[k]}
           anzeige={menge(f[k])}
           darf={!props.nurLesen}
+          titel={
+            ausModell(k)
+              ? 'aus den Räumen des Modells – Doppelklick: von Hand eintragen'
+              : undefined
+          }
           onSpeichern={async (w) =>
             (await props.befehl('flaeche.setzen', { kategorie: k, wert_m2: w })) !== null
           }
         />
+      </td>
+      <td className="kk-modell">
+        {MODELL_KATEGORIEN.includes(k) && (
+          <button
+            className={ausModell(k) ? 'aktiv' : ''}
+            aria-pressed={ausModell(k)}
+            disabled={props.nurLesen}
+            title={
+              ausModell(k)
+                ? 'aus dem Modell (live) – Klick: von Hand'
+                : 'aus den Räumen des Modells übernehmen (live)'
+            }
+            onClick={() =>
+              void props.befehl('flaeche.ausModell', { kategorie: k, aus_modell: !ausModell(k) })
+            }
+          >
+            ⬡
+          </button>
+        )}
       </td>
     </tr>
   );
@@ -51,6 +89,7 @@ function Flaechen(props: {
         <Begriff k={k}>{FLAECHE_TEXT[k]}</Begriff>
       </td>
       <td className="zahl">{menge(f[k])}</td>
+      <td />
     </tr>
   );
   return (
@@ -70,9 +109,14 @@ function Flaechen(props: {
         </tbody>
       </table>
       <p className="leise">
-        Doppelklick auf einen Wert zum Eintragen. Kostenzeilen, die an eine Fläche gekoppelt sind,
-        folgen automatisch.
+        Doppelklick auf einen Wert zum Eintragen. ⬡ übernimmt NUF 1–7, TF und VF live aus den Räumen
+        des IFC-Modells. Kostenzeilen, die an eine Fläche gekoppelt sind, folgen automatisch.
       </p>
+      {props.daten.flaechenHinweise.map((h) => (
+        <p key={h} className="tp-warnung">
+          {h}
+        </p>
+      ))}
     </aside>
   );
 }

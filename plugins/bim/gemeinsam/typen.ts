@@ -43,6 +43,10 @@ export interface BauteilZeile {
   tragend: number | null;
   /** Mengen mit Herkunft (E-92); null bei Modellen, die vor B2 eingelesen wurden */
   mengen: Mengen | null;
+  /** LongName (vor allem Räume) */
+  langname: string;
+  /** Räume: Textwerte der Eigenschaften (für Raumregeln, E-94) */
+  texte: string;
 }
 
 /** Regel IFC → KG (b_kg_regel, E-90). */
@@ -95,6 +99,24 @@ export interface ModellInhalt {
     aussen: number | null;
     tragend: number | null;
     mengen: Mengen;
+    langname: string;
+    texte: string;
   }[];
   bericht: string[];
+}
+
+/** Änderungsbericht beim Neu-Einlesen (E-96). */
+export interface Aenderungsbericht {
+  modellId: string;
+  modellName: string;
+  dateiname: string;
+  neu: { globalid: string; klasse: string; name: string }[];
+  entfernt: { globalid: string; klasse: string; name: string }[];
+  geaendert: { globalid: string; klasse: string; name: string; was: string[] }[];
+  /** Kostenzeilen mit Menge aus dem Modell */
+  kosten: { kg: number; einheit: string; alt: number | null; neu: number | null }[];
+  /** Flächen aus dem Modell (DIN 277) */
+  flaechen: { kategorie: string; alt: number | null; neu: number | null }[];
+  /** manuelle Zuordnungen, deren Bauteil nicht mehr im Modell ist */
+  zuordnungenOhneBauteil: number;
 }

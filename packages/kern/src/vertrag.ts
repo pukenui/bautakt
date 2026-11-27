@@ -113,6 +113,8 @@ export interface BautaktApi {
         datei: string;
         bericht: string[];
         eingefuegt: { tabelle: string; id: string }[];
+        /** Import mit Vorschau (E-96): noch nicht ausgeführt – Befehl nach Bestätigung senden */
+        vorschau: { befehl: string; daten: unknown; details: unknown } | null;
       } | null>
     >;
   };

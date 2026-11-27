@@ -265,3 +265,23 @@
 .bim-regeln select[aria-label='Mengenart'] {
   width: 116px;
 }
+
+/* Räume und Neu-Einlesen (B3) */
+.bim-raumsuche {
+  width: 520px !important;
+}
+.bim-vorschau-liste {
+  margin: 4px 0 8px;
+  padding-left: 20px;
+  max-height: 180px;
+  overflow: auto;
+  font-size: 13px;
+}
+.bim-vorschau-tabelle {
+  min-width: 0;
+  width: 100%;
+}
+.bim-anders {
+  font-weight: 600;
+  color: #a15c00;
+}

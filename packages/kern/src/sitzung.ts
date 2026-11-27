@@ -160,11 +160,14 @@ export class ProjektSitzung {
     return {
       pluginId: p.id,
       schreibgeschuetzt: this.datei.schreibgeschuetzt,
+      projekt: { id: this.datei.meta().projektId, name: () => this.datei.meta().projektname },
       db,
       befehle: {
         registrieren: (def) => this.befehle.registrieren(p.id, p.tabellenPraefix, def),
         ausfuehren: (name, daten, grund) =>
           this.befehle.ausfuehren({ plugin: p.id, name, daten, ...(grund ? { grund } : {}) }),
+        liste: () => this.befehle.liste(),
+        pruefen: (plugin, name, daten) => this.befehle.pruefen(plugin, name, daten),
       },
       abfragen: {
         registrieren(def) {
@@ -172,6 +175,7 @@ export class ProjektSitzung {
           if (erw.abfragen.has(k)) throw new BautaktFehler('PLUGIN', `Abfrage „${k}“ doppelt.`);
           erw.abfragen.set(k, def as AbfrageDefinition);
         },
+        ausfuehren: (plugin, name, argumente) => this.abfrage(plugin, name, argumente),
       },
       ereignisse: this.ereignisse,
       dienste: {
@@ -366,17 +370,31 @@ export class ProjektSitzung {
     format: string,
     inhalt: Uint8Array,
     parameter: Record<string, unknown>,
-  ): Promise<{ bericht: string[]; ergebnis: BefehlErgebnis }> {
+  ): Promise<{
+    bericht: string[];
+    ergebnis: BefehlErgebnis | null;
+    vorschau: { befehl: string; daten: unknown; details: unknown } | null;
+  }> {
     const e = this.erw.importe.get(`${plugin}:${format}`);
     if (!e)
       throw new BautaktFehler('ABFRAGE_UNBEKANNT', `Unbekannter Import „${plugin}:${format}“.`);
     const auftrag = await e.fn(inhalt, parameter, this.lesezugriff());
+    if (auftrag.vorschau)
+      return {
+        bericht: auftrag.bericht,
+        ergebnis: null,
+        vorschau: {
+          befehl: auftrag.befehl,
+          daten: auftrag.daten,
+          details: auftrag.details ?? null,
+        },
+      };
     const ergebnis = this.befehle.ausfuehren({
       plugin,
       name: auftrag.befehl,
       daten: auftrag.daten,
     });
-    return { bericht: auftrag.bericht, ergebnis };
+    return { bericht: auftrag.bericht, ergebnis, vorschau: null };
   }
 
   /** Verweist das Projekt auf diese Datei (Anhang)? Groß-/Kleinschreibung egal (Windows). */

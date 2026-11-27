@@ -109,6 +109,15 @@ export interface RendererPlugin {
   /** Ansichten auf globale Daten (E-23), immer erreichbar. */
   globaleAnsichten?: GlobaleAnsicht[];
   druckansichten?: Druckansicht[];
+  /** Seitenleiste rechts neben den Ansichten (z. B. der Claude-Assistent, E-97); nur mit Projekt */
+  seitenleiste?: Seitenleiste;
+}
+
+export interface Seitenleiste {
+  id: string;
+  /** Beschriftung des Knopfs im Kopf, z. B. „✦ Claude“ */
+  titel: string;
+  komponente: ComponentType<AnsichtProps & { onSchliessen: () => void }>;
 }
 
 /** Leere Ansicht: sagt, was als Nächstes zu tun ist (E-29). */

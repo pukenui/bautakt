@@ -236,12 +236,20 @@ export function modellAuslesen(a: W.IfcAPI, inhalt: Uint8Array): ModellInhalt {
           }
           return null;
         };
-        const qto = qtoMengen(a, m, defs.get(id) ?? [], einheiten);
+        const raum = klasse === 'IfcSpace';
+        const qto = qtoMengen(a, m, defs.get(id) ?? [], einheiten, raum);
         const geo = geometrie.get(id);
         const mengen: Mengen = {};
         for (const art of ['flaeche', 'volumen', 'laenge'] as const) {
           const q = qto[art];
-          const g = art === 'flaeche' ? geo?.flaeche : art === 'volumen' ? geo?.volumen : undefined;
+          const g =
+            art === 'flaeche'
+              ? raum
+                ? geo?.grundflaeche
+                : geo?.flaeche
+              : art === 'volumen'
+                ? geo?.volumen
+                : undefined;
           if (q) mengen[art] = q;
           else if (g !== undefined && g > 0) mengen[art] = { wert: g, herkunft: 'geometrie' };
         }
@@ -262,6 +270,14 @@ export function modellAuslesen(a: W.IfcAPI, inhalt: Uint8Array): ModellInhalt {
           aussen: merkmal('IsExternal'),
           tragend: merkmal('LoadBearing'),
           mengen,
+          langname: text(e['LongName']),
+          // Räume: alle Textwerte ihrer Eigenschaften, für „enthält“ in den Raumregeln (E-94)
+          texte: raum
+            ? [...new Set(d.flatMap((def) => [...psetWerte(def).values()]))]
+                .filter((v) => v && !/^[\d.,\s-]+$/.test(v) && v !== 'ja' && v !== 'nein')
+                .join(', ')
+                .slice(0, 500)
+            : '',
         });
       }
     }
@@ -280,7 +296,16 @@ export function modellAuslesen(a: W.IfcAPI, inhalt: Uint8Array): ModellInhalt {
 }
 
 /** BaseQuantities eines Elements in SI-Einheiten, je Mengenart die erste nach E-91. */
-function qtoMengen(a: W.IfcAPI, m: number, defs: readonly number[], e: Einheiten): Mengen {
+/** Grundfläche von Räumen aus BaseQuantities (E-94). */
+const RAUM_FLAECHE = ['NetFloorArea', 'GrossFloorArea'] as const;
+
+function qtoMengen(
+  a: W.IfcAPI,
+  m: number,
+  defs: readonly number[],
+  e: Einheiten,
+  raum = false,
+): Mengen {
   const gefunden = new Map<string, number>();
   for (const def of defs) {
     const d = a.GetLine(m, def, true) as Record<string, unknown>;
@@ -299,7 +324,7 @@ function qtoMengen(a: W.IfcAPI, m: number, defs: readonly number[], e: Einheiten
   }
   const r: Mengen = {};
   for (const art of ['flaeche', 'volumen', 'laenge'] as const)
-    for (const name of QTO_NAMEN[art]) {
+    for (const name of art === 'flaeche' && raum ? RAUM_FLAECHE : QTO_NAMEN[art]) {
       const v = gefunden.get(name);
       if (v !== undefined && v > 0) {
         r[art] = { wert: Math.round(v * 1000) / 1000, herkunft: 'qto', name };
@@ -316,7 +341,7 @@ function qtoMengen(a: W.IfcAPI, m: number, defs: readonly number[], e: Einheiten
 export function geometrieMengen(
   a: W.IfcAPI,
   m: number,
-): Map<number, { volumen: number; flaeche: number }> {
+): Map<number, { volumen: number; flaeche: number; grundflaeche: number }> {
   const dreiecke = new Map<number, number[]>(); // je Element: x1,y1,z1,x2,…
   a.StreamAllMeshes(m, (mesh) => {
     const liste = dreiecke.get(mesh.expressID) ?? [];
@@ -341,13 +366,17 @@ export function geometrieMengen(
     }
     dreiecke.set(mesh.expressID, liste);
   });
-  const ergebnis = new Map<number, { volumen: number; flaeche: number }>();
+  const ergebnis = new Map<number, { volumen: number; flaeche: number; grundflaeche: number }>();
   for (const [id, d] of dreiecke) ergebnis.set(id, netzMengen(d));
   return ergebnis;
 }
 
 /** Volumen und Hauptfläche eines Dreiecksnetzes (Koordinaten je Dreieck hintereinander). */
-export function netzMengen(d: readonly number[]): { volumen: number; flaeche: number } {
+export function netzMengen(d: readonly number[]): {
+  volumen: number;
+  flaeche: number;
+  grundflaeche: number;
+} {
   let vol = 0;
   const flaechen: { n: [number, number, number]; a: number }[] = [];
   for (let i = 0; i + 8 < d.length; i += 9) {
@@ -398,8 +427,11 @@ export function netzMengen(d: readonly number[]): { volumen: number; flaeche: nu
     }
     flaeche = Math.max(flaeche, s);
   }
+  // Grundfläche: Projektion von oben (web-ifc liefert y nach oben)
+  let grund = 0;
+  for (const f of flaechen) if (f.n[1] > 0) grund += f.a * f.n[1];
   const runden = (x: number) => Math.round(x * 1000) / 1000;
-  return { volumen: runden(Math.abs(vol)), flaeche: runden(flaeche) };
+  return { volumen: runden(Math.abs(vol)), flaeche: runden(flaeche), grundflaeche: runden(grund) };
 }
 
 /** Geöffnetes Modell mit Verweisen Element → Eigenschaftsdefinitionen (für die Eigenschaften-Leiste). */

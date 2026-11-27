@@ -2,6 +2,7 @@ import { KG_KATALOG, kgEbene, kostengruppe } from '@bautakt/rechnen-kosten';
 import { Dialog } from '@bautakt/ui';
 import { useMemo, useState } from 'react';
 import type { BauteilZeile, RegelZeile } from '../gemeinsam/typen.js';
+import { RaumRegelnTabelle, type RaumRegelZeile } from './Raeume.js';
 import {
   EINHEIT,
   MENGENARTEN,
@@ -198,7 +199,13 @@ export function RegelnDialog(props: {
   nurLesen: boolean;
   onSchliessen: () => void;
   befehl: (name: string, daten: unknown) => Promise<boolean>;
+  raumregeln: RaumRegelZeile[];
 }) {
+  const [reiter, setReiter] = useState<'kg' | 'raum'>('kg');
+  const raeume = useMemo(
+    () => props.bauteile.filter((b) => b.klasse === 'IfcSpace'),
+    [props.bauteile],
+  );
   // Treffer je Regel: erste passende Regel zählt (ohne Überschreibungen)
   const treffer = useMemo(() => {
     const n = new Map<string, number>();
@@ -217,12 +224,26 @@ export function RegelnDialog(props: {
   const aus = props.nurLesen;
   return (
     <Dialog
-      titel="Regeln IFC → Kostengruppe"
+      titel="Regeln"
       onSchliessen={props.onSchliessen}
       breite={1220}
       fuss={
         <>
-          {!aus && (
+          {!aus && reiter === 'raum' && (
+            <>
+              <button
+                onClick={() =>
+                  void props.befehl('raumregel.anlegen', { enthaelt: '', kategorie: 'NUF1' })
+                }
+              >
+                + Raumregel
+              </button>
+              <button onClick={() => void props.befehl('raumregeln.standard', {})}>
+                Standard-Raumregeln wiederherstellen
+              </button>
+            </>
+          )}
+          {!aus && reiter === 'kg' && (
             <>
               <button
                 onClick={() =>
@@ -247,132 +268,161 @@ export function RegelnDialog(props: {
         </>
       }
     >
-      <p className="dialog-erklaerung">
-        Je Bauteil gilt die erste passende Regel von oben. Leere Felder und „beliebig“ passen immer;
-        die Klasse umfasst Unterklassen (IfcWall auch IfcWallStandardCase). Manuelle Zuordnungen
-        einzelner Bauteile gehen vor. {treffer.ohne} Bauteil(e) ohne passende Regel.
-      </p>
-      <datalist id="bim-klassen">
-        {props.klassen.map((k) => (
-          <option key={k} value={k} />
-        ))}
-      </datalist>
-      <div className="bim-regeln">
-        <table className="tabelle">
-          <thead>
-            <tr>
-              <th>Nr.</th>
-              <th>IFC-Klasse</th>
-              <th>PredefinedType</th>
-              <th>außen</th>
-              <th>tragend</th>
-              <th>Name/Typ enthält</th>
-              <th>Kostengruppe</th>
-              <th>Mengenart</th>
-              <th className="zahl">Treffer</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {props.regeln.map((r, i) => (
-              <tr key={JSON.stringify(r)}>
-                <td>{i + 1}</td>
-                <td>
-                  <input
-                    list="bim-klassen"
-                    aria-label="IFC-Klasse"
-                    defaultValue={r.klasse}
-                    disabled={aus}
-                    onBlur={(e) =>
-                      e.target.value !== r.klasse && aendern(r, { klasse: e.target.value })
-                    }
-                  />
-                </td>
-                <td>
-                  <input
-                    aria-label="PredefinedType"
-                    defaultValue={r.predefined}
-                    placeholder="beliebig"
-                    disabled={aus}
-                    onBlur={(e) =>
-                      e.target.value !== r.predefined &&
-                      aendern(r, { predefined: e.target.value.toUpperCase() })
-                    }
-                  />
-                </td>
-                {(['aussen', 'tragend'] as const).map((f) => (
-                  <td key={f}>
-                    <select
-                      aria-label={f === 'aussen' ? 'außen' : 'tragend'}
-                      value={r[f] === null ? '' : String(r[f])}
-                      disabled={aus}
-                      onChange={(e) => aendern(r, { [f]: jaNein(e.target.value) })}
-                    >
-                      {JA_NEIN.map((o) => (
-                        <option key={o.wert} value={o.wert}>
-                          {o.text}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                ))}
-                <td>
-                  <input
-                    aria-label="Name/Typ enthält"
-                    defaultValue={r.enthaelt}
-                    placeholder="beliebig"
-                    disabled={aus}
-                    onBlur={(e) =>
-                      e.target.value !== r.enthaelt && aendern(r, { enthaelt: e.target.value })
-                    }
-                  />
-                </td>
-                <td>
-                  <KgAuswahl wert={r.kg} disabled={aus} onWahl={(kg) => aendern(r, { kg })} />
-                </td>
-                <td>
-                  <MengenartAuswahl
-                    wert={r.mengenart}
-                    disabled={aus}
-                    onWahl={(mengenart) => aendern(r, { mengenart })}
-                  />
-                </td>
-                <td className="zahl">{treffer.n.get(r.id) ?? 0}</td>
-                <td className="aktionen">
-                  {!aus && (
-                    <>
-                      <button
-                        title="nach oben"
-                        disabled={i === 0}
-                        onClick={() =>
-                          void props.befehl('regel.verschieben', { id: r.id, richtung: -1 })
-                        }
-                      >
-                        ↑
-                      </button>
-                      <button
-                        title="nach unten"
-                        disabled={i === props.regeln.length - 1}
-                        onClick={() =>
-                          void props.befehl('regel.verschieben', { id: r.id, richtung: 1 })
-                        }
-                      >
-                        ↓
-                      </button>
-                      <button
-                        title="Regel löschen"
-                        onClick={() => void props.befehl('regel.loeschen', { id: r.id })}
-                      >
-                        ×
-                      </button>
-                    </>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="hilfe-reiter" role="tablist" aria-label="Regeln">
+        <button
+          role="tab"
+          aria-selected={reiter === 'kg'}
+          className={reiter === 'kg' ? 'aktiv' : ''}
+          onClick={() => setReiter('kg')}
+        >
+          Bauteile → Kostengruppe
+        </button>
+        <button
+          role="tab"
+          aria-selected={reiter === 'raum'}
+          className={reiter === 'raum' ? 'aktiv' : ''}
+          onClick={() => setReiter('raum')}
+        >
+          Räume → DIN 277
+        </button>
       </div>
+      {reiter === 'raum' ? (
+        <RaumRegelnTabelle
+          regeln={props.raumregeln}
+          raeume={raeume}
+          nurLesen={aus}
+          befehl={props.befehl}
+        />
+      ) : (
+        <>
+          <p className="dialog-erklaerung">
+            Je Bauteil gilt die erste passende Regel von oben. Leere Felder und „beliebig“ passen
+            immer; die Klasse umfasst Unterklassen (IfcWall auch IfcWallStandardCase). Manuelle
+            Zuordnungen einzelner Bauteile gehen vor. {treffer.ohne} Bauteil(e) ohne passende Regel.
+          </p>
+          <datalist id="bim-klassen">
+            {props.klassen.map((k) => (
+              <option key={k} value={k} />
+            ))}
+          </datalist>
+          <div className="bim-regeln">
+            <table className="tabelle">
+              <thead>
+                <tr>
+                  <th>Nr.</th>
+                  <th>IFC-Klasse</th>
+                  <th>PredefinedType</th>
+                  <th>außen</th>
+                  <th>tragend</th>
+                  <th>Name/Typ enthält</th>
+                  <th>Kostengruppe</th>
+                  <th>Mengenart</th>
+                  <th className="zahl">Treffer</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {props.regeln.map((r, i) => (
+                  <tr key={JSON.stringify(r)}>
+                    <td>{i + 1}</td>
+                    <td>
+                      <input
+                        list="bim-klassen"
+                        aria-label="IFC-Klasse"
+                        defaultValue={r.klasse}
+                        disabled={aus}
+                        onBlur={(e) =>
+                          e.target.value !== r.klasse && aendern(r, { klasse: e.target.value })
+                        }
+                      />
+                    </td>
+                    <td>
+                      <input
+                        aria-label="PredefinedType"
+                        defaultValue={r.predefined}
+                        placeholder="beliebig"
+                        disabled={aus}
+                        onBlur={(e) =>
+                          e.target.value !== r.predefined &&
+                          aendern(r, { predefined: e.target.value.toUpperCase() })
+                        }
+                      />
+                    </td>
+                    {(['aussen', 'tragend'] as const).map((f) => (
+                      <td key={f}>
+                        <select
+                          aria-label={f === 'aussen' ? 'außen' : 'tragend'}
+                          value={r[f] === null ? '' : String(r[f])}
+                          disabled={aus}
+                          onChange={(e) => aendern(r, { [f]: jaNein(e.target.value) })}
+                        >
+                          {JA_NEIN.map((o) => (
+                            <option key={o.wert} value={o.wert}>
+                              {o.text}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                    ))}
+                    <td>
+                      <input
+                        aria-label="Name/Typ enthält"
+                        defaultValue={r.enthaelt}
+                        placeholder="beliebig"
+                        disabled={aus}
+                        onBlur={(e) =>
+                          e.target.value !== r.enthaelt && aendern(r, { enthaelt: e.target.value })
+                        }
+                      />
+                    </td>
+                    <td>
+                      <KgAuswahl wert={r.kg} disabled={aus} onWahl={(kg) => aendern(r, { kg })} />
+                    </td>
+                    <td>
+                      <MengenartAuswahl
+                        wert={r.mengenart}
+                        disabled={aus}
+                        onWahl={(mengenart) => aendern(r, { mengenart })}
+                      />
+                    </td>
+                    <td className="zahl">{treffer.n.get(r.id) ?? 0}</td>
+                    <td className="aktionen">
+                      {!aus && (
+                        <>
+                          <button
+                            title="nach oben"
+                            disabled={i === 0}
+                            onClick={() =>
+                              void props.befehl('regel.verschieben', { id: r.id, richtung: -1 })
+                            }
+                          >
+                            ↑
+                          </button>
+                          <button
+                            title="nach unten"
+                            disabled={i === props.regeln.length - 1}
+                            onClick={() =>
+                              void props.befehl('regel.verschieben', { id: r.id, richtung: 1 })
+                            }
+                          >
+                            ↓
+                          </button>
+                          <button
+                            title="Regel löschen"
+                            onClick={() => void props.befehl('regel.loeschen', { id: r.id })}
+                          >
+                            ×
+                          </button>
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
     </Dialog>
   );
 }

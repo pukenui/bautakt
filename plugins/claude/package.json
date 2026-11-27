@@ -1,0 +1,28 @@
+{
+  "name": "@bautakt/plugin-claude",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Plugin Claude: Assistent mit Lesezugriff und bestätigten Änderungsvorschlägen (E-97–E-100)",
+  "type": "module",
+  "exports": {
+    "./main": "./main/index.ts",
+    "./renderer": "./renderer/index.tsx"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "1.14.0",
+    "@bautakt/kern": "workspace:*",
+    "@bautakt/ui": "workspace:*",
+    "react": "^19.2.0",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.2.0",
+    "@bautakt/plugin-bim": "workspace:*",
+    "@bautakt/plugin-kosten": "workspace:*",
+    "@bautakt/plugin-termine": "workspace:*"
+  }
+}

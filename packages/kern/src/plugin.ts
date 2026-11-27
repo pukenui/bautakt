@@ -11,6 +11,15 @@ export interface PluginDb {
   eins<T = Zeile>(sql: string, ...parameter: Wert[]): T | undefined;
 }
 
+/** Beschreibung eines registrierten Befehls (für Assistenten, E-97). */
+export interface BefehlBeschreibung {
+  plugin: string;
+  name: string;
+  titel: string;
+  /** JSON-Schema der Daten (Eingabeform) */
+  schema: unknown;
+}
+
 /** Lesende Abfrage, die die Oberfläche (Renderer) über IPC aufrufen darf. */
 export interface AbfrageDefinition<A = unknown, R = unknown> {
   name: string;
@@ -45,6 +54,13 @@ export interface ImportAuftrag {
   befehl: string;
   daten: unknown;
   bericht: string[];
+  /**
+   * Vorschau (E-96): der Kern führt den Befehl nicht aus, sondern gibt Befehl, Daten und
+   * `details` an die Oberfläche; sie führt ihn erst nach Bestätigung aus.
+   */
+  vorschau?: boolean;
+  /** strukturierter Bericht für die Vorschau (z. B. Änderungsliste) */
+  details?: unknown;
 }
 
 export interface ImportInfo {
@@ -70,13 +86,25 @@ export interface StandHandler {
 export interface MainKontext {
   pluginId: string;
   schreibgeschuetzt: boolean;
+  /** das geöffnete Projekt (ID aus der Projektdatei, Name aktuell) */
+  projekt: { id: string; name(): string };
   db: PluginDb;
   befehle: {
     registrieren<T>(def: BefehlDefinition<T>): void;
     ausfuehren(name: string, daten: unknown, grund?: string): BefehlErgebnis;
+    /** Alle registrierten Befehle aller Plugins mit Titel und JSON-Schema der Daten (nur lesend). */
+    liste(): BefehlBeschreibung[];
+    /** Prüft Befehlsdaten gegen das Schema, ohne etwas auszuführen. */
+    pruefen(
+      plugin: string,
+      name: string,
+      daten: unknown,
+    ): { ok: true } | { ok: false; fehler: string };
   };
   abfragen: {
     registrieren<A, R>(def: AbfrageDefinition<A, R>): void;
+    /** Abfrage eines beliebigen Plugins ausführen (nur lesend, z. B. für Assistenten). */
+    ausfuehren(plugin: string, name: string, argumente?: unknown): unknown;
   };
   ereignisse: Ereignisbus;
   dienste: {

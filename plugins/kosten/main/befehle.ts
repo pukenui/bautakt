@@ -88,13 +88,37 @@ export function kostenBefehle(
           if (alt) tx.loeschen('k_flaeche', alt.id);
           return;
         }
-        if (alt) tx.aendern('k_flaeche', alt.id, { wert_m2: d.wert_m2, quelle });
+        // Eintragen von Hand beendet die Kopplung an das Modell (E-95)
+        if (alt) tx.aendern('k_flaeche', alt.id, { wert_m2: d.wert_m2, quelle, aus_modell: 0 });
         else
           tx.einfuegen('k_flaeche', {
             id: neueId(),
             kategorie: d.kategorie,
             wert_m2: d.wert_m2,
             quelle,
+          });
+      },
+    }),
+    def({
+      name: 'flaeche.ausModell',
+      titel: 'Flächenquelle wählen',
+      schema: z.object({
+        kategorie: z.enum(['NUF1', 'NUF2', 'NUF3', 'NUF4', 'NUF5', 'NUF6', 'NUF7', 'TF', 'VF']),
+        aus_modell: z.boolean(),
+      }),
+      ausfuehren(tx, d) {
+        const alt = tx.eins<{ id: string }>(
+          'SELECT id FROM k_flaeche WHERE kategorie = ?',
+          d.kategorie,
+        );
+        if (alt) tx.aendern('k_flaeche', alt.id, { aus_modell: d.aus_modell ? 1 : 0 });
+        else if (d.aus_modell)
+          tx.einfuegen('k_flaeche', {
+            id: neueId(),
+            kategorie: d.kategorie,
+            wert_m2: null,
+            quelle: '',
+            aus_modell: 1,
           });
       },
     }),

@@ -9,6 +9,8 @@ const api = window.bautakt;
 const ansichten = RENDERER_PLUGINS.flatMap((p) => p.ansichten);
 /** Ansichten auf globale Daten (Bibliothek, E-23): auch ohne Projekt erreichbar. */
 const globaleAnsichten = RENDERER_PLUGINS.flatMap((p) => p.globaleAnsichten ?? []);
+/** Seitenleisten der Plugins (z. B. Claude-Assistent, E-97), nur mit geöffnetem Projekt. */
+const seitenleisten = RENDERER_PLUGINS.flatMap((p) => (p.seitenleiste ? [p.seitenleiste] : []));
 
 type Hinweis = Meldungen['hinweis'] & { nr: number };
 
@@ -25,6 +27,8 @@ export function App() {
   const [aktiveAnsicht, setAktiveAnsicht] = useState(ansichten[0]?.id ?? '');
   const [hinweis, setHinweis] = useState<Hinweis | null>(null);
   const [hilfeOffen, setHilfeOffen] = useState(false);
+  // offene Plugin-Seitenleiste (immer nur eine; Hilfe und Seitenleiste schließen einander)
+  const [leiste, setLeiste] = useState<string | null>(null);
   const [hilfeTeil, setHilfeTeil] = useState<'ansicht' | 'glossar'>('ansicht');
   // Erststart-Tour (E-84): einmal automatisch, danach über die Hilfe
   const [tourOffen, setTourOffen] = useState(() => !localStorage.getItem(TOUR_MERKER));
@@ -66,6 +70,7 @@ export function App() {
         case 'wiederholen':
           return ergebnis(await api.befehl.wiederholen());
         case 'hilfe':
+          setLeiste(null);
           return setHilfeOffen((o) => !o);
       }
     },
@@ -183,6 +188,19 @@ export function App() {
               >
                 ↷ Wiederholen
               </button>
+              {seitenleisten.map((l) => (
+                <button
+                  key={l.id}
+                  className={leiste === l.id ? 'aktiv' : ''}
+                  aria-pressed={leiste === l.id}
+                  onClick={() => {
+                    setHilfeOffen(false);
+                    setLeiste((x) => (x === l.id ? null : l.id));
+                  }}
+                >
+                  {l.titel}
+                </button>
+              ))}
               <button data-tour="hilfe" onClick={() => void ausfuehren('hilfe')} title="Hilfe (F1)">
                 ? Hilfe
               </button>
@@ -218,6 +236,19 @@ export function App() {
             <ansicht.komponente api={api} status={status} datenstand={datenstand} />
           ) : null}
         </main>
+        {status &&
+          seitenleisten
+            .filter((l) => l.id === leiste)
+            .map((l) => (
+              <aside key={l.id} className="seitenleiste" aria-label={l.titel}>
+                <l.komponente
+                  api={api}
+                  status={status}
+                  datenstand={datenstand}
+                  onSchliessen={() => setLeiste(null)}
+                />
+              </aside>
+            ))}
         {hilfeOffen && (
           <aside className="hilfe" aria-label="Hilfe">
             <button

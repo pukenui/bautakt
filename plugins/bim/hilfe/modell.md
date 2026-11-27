@@ -66,3 +66,22 @@ oben. Fehlen im Modell IsExternal und LoadBearing, hilft „Name/Typ enthält“
 Die Bauteilliste lässt sich **nach Kostengruppe** gliedern; jede KG zeigt dann ihre Summe. In
 der Kostenplanung wählen Sie bei einer Zeile als Menge **aus dem Modell (IFC)** – die Menge folgt
 Modell, Regeln und Zuordnungen automatisch.
+
+### Räume nach DIN 277
+
+Räume (IfcSpace) bekommen eine Kategorie NUF 1–7, TF oder VF über die **Raumregeln** (Reiter
+„Räume → DIN 277“ unter **Regeln …**): Suchbegriffe, durch Komma getrennt, werden am Wortanfang
+in Name, Langname, Typ und Eigenschaftswerten gesucht; die erste passende Regel gilt, die letzte
+Regel ohne Begriff fängt alle übrigen Räume. Einen einzelnen Raum ordnen Sie in der
+Eigenschaften-Leiste mit **Ändern …** zu (auch „nicht zählen“). Die Grundfläche kommt aus
+NetFloorArea bzw. GrossFloorArea, sonst aus der Geometrie (Projektion von oben). Die Bauteilliste
+zeigt **Räume nach DIN 277** mit der Summe je Kategorie. In der Flächentabelle der Kosten
+übernimmt **⬡** eine Kategorie live aus den Räumen.
+
+### Neu einlesen
+
+Hat sich das Modell im Autorenwerkzeug geändert, wählen Sie in der Bauteilliste beim Modell
+**⟳** und die neue IFC-Datei. Bautakt gleicht die Bauteile über die GlobalId ab und zeigt vorab,
+was neu, geändert oder entfernt ist und wie sich Kostenzeilen und Flächen „aus dem Modell“
+ändern. Erst **Übernehmen** ersetzt das Modell; Zuordnungen von Hand bleiben erhalten,
+Rückgängig nimmt alles zurück.

@@ -53,9 +53,13 @@ Ziel: Ab ca. **13.12.** sollen damit F.1 (Rollen-Netzplan) und F.2 (Projekttermi
 
 - [x] **B1** IFC-Viewer (IFC2x3/IFC4), Bauteilliste, Testmodelle aus BIMCraft und FreeCAD (E-37, E-40)
 - [x] **B2** 5D: Mengen (Qto/Geometrie, Herkunft sichtbar), Regeltabelle IFC → KG, Übergabe an Kosten
-- [ ] **B3** DIN-277-Flächen aus IfcSpace, Reimport über GlobalId mit Änderungsbericht
+- [x] **B3** DIN-277-Flächen aus IfcSpace, Reimport über GlobalId mit Änderungsbericht
 - [ ] **B4** 4D: Vorgänge ↔ Bauteile, Bauablauf-Simulation, Ort ↔ Geschoss/Zone
 - [ ] **B5** Optionale Kopplungs-Plugins BIMCraft-CLI / FreeCAD; GAEB; IFC4.3
+
+## Zusätze
+
+- [x] **Claude-Plugin:** Assistent mit Lesezugriff auf das Projekt und bestätigten Änderungsvorschlägen (E-97–E-100)
 
 ## Später / offen
 
@@ -86,3 +90,5 @@ Ziel: Ab ca. **13.12.** sollen damit F.1 (Rollen-Netzplan) und F.2 (Projekttermi
 - 26.11.2026 – **Release v0.2.0** (Phase A komplett, Stand M14): Installer „Bautakt-Setup-0.2.0.exe“ gebaut, gepackte App geprüft (alle Plugins, Version, Abhängigkeiten im Paket), GitHub-Release (privat) veröffentlicht.
 - 26.11.2026 – **B1 fertig.** Plugin „bim“: IFC2x3/IFC4 einlesen und in die Projektdatei einbetten (neue Dateiablage im Kern, außerhalb von Undo/Protokoll), mehrere Fachmodelle deckungsgleich, Bauteilliste Modell → Geschoss → Klasse → Bauteil, Eigenschaften (Attribute, Typ, Psets, BaseQuantities in SI-Einheiten), Ein-/Ausblenden und Isolieren, Geschossschnitt und freie Schnittebene, Messen. Viewer mit web-ifc (MPL-2.0) und three.js (MIT) direkt; Geometrie im Worker. Testmodelle aus BIMCraft (Haus, Hochhaus mit 9.500 Bauteilen) und FreeCAD (Halle, Tragwerk). Neue Entscheidungen E-86–E-89. 520 Tests grün; Bedienung in der gebauten und der gepackten App geprüft.
 - 26.11.2026 – **B2 fertig.** 5D: Mengen je Bauteil beim Einlesen (BaseQuantities in SI-Einheiten, sonst Volumen und Hauptfläche aus der Geometrie; Herkunft sichtbar), Regeltabelle IFC → KG je Projekt mit 23 Standardregeln (Klasse, PredefinedType, außen, tragend, „Name/Typ enthält“ → KG und Mengenart), Überschreibung je Bauteil über die GlobalId, Bauteilliste nach Kostengruppe mit Summen, Kostenzeilen mit Mengenquelle „Modell (IFC)“ live gekoppelt (auch in Excel, Ständen und Stufen). Neue Entscheidungen E-90–E-93. 528 Tests grün; Bedienung in der gebauten App geprüft.
+- 27.11.2026 – **B3 fertig.** Räume nach DIN 277 über Raumregeln je Projekt (Suchbegriffe in Name, Langname, Typ und Eigenschaften, vorbelegt) mit Zuordnung von Hand, Grundfläche aus BaseQuantities oder Geometrie; Flächen NUF 1–7, TF, VF in den Kosten wahlweise live aus dem Modell. Neu einlesen mit Vorschau: Abgleich über die GlobalId, Bericht neu/geändert/entfernt und Auswirkungen auf Kostenzeilen und Flächen, Übernehmen als ein Undo-Schritt; Kern-Importe können dafür eine Vorschau liefern. Neue Entscheidungen E-94–E-96. 533 Tests grün; Bedienung in der gebauten App geprüft.
+- 27.11.2026 – **Claude-Plugin fertig.** Seitenleiste „✦ Claude“ (neue Plugin-Seitenleisten in der App): Fragen zum Projekt über lesende Werkzeuge (Terminpläne mit Terminen und Puffern, Kosten, Soll-Ist, Modelle), Änderungsvorschläge als geprüfte Befehle, die erst nach „Ausführen“ laufen (Undo, Protokoll mit Grund), Freitext-Entwürfe nur auf Wunsch mit „[KI-Entwurf]“. Anbindung über Claude Managed Agents (Beta, Claude Opus 5.5), eigener API-Schlüssel verschlüsselt im App-Datenordner, Zustimmung je Projekt. Kern: Abfragen und Befehlsbeschreibungen anderer Plugins lesend. Neue Abhängigkeit @anthropic-ai/sdk (Apache-2.0). Neue Entscheidungen E-97–E-100. 538 Tests grün; Ablauf mit simulierter Sitzung in der gebauten App geprüft, gepackte App mit echter Verschlüsselung geprüft; ein Lauf gegen Anthropic steht noch aus (braucht einen Schlüssel).

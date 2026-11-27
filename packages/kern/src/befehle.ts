@@ -1,5 +1,5 @@
 import type Database from 'better-sqlite3';
-import type { z } from 'zod';
+import { z } from 'zod';
 import type { Ereignisbus } from './ereignisse.js';
 import { BautaktFehler } from './fehler.js';
 import { jetztUtc, neueId } from './id.js';
@@ -101,6 +101,38 @@ export class Befehlsverwaltung {
       throw new BautaktFehler('PLUGIN', `Befehl „${k}“ ist bereits registriert.`);
     }
     this.befehle.set(k, { plugin, praefix, def: def as BefehlDefinition<unknown> });
+  }
+
+  /** Alle Befehle mit JSON-Schema der Eingabedaten (für Assistenten). */
+  liste(): { plugin: string; name: string; titel: string; schema: unknown }[] {
+    return [...this.befehle.values()].map((r) => {
+      let schema: unknown;
+      try {
+        schema = z.toJSONSchema(r.def.schema, { io: 'input', unrepresentable: 'any' });
+      } catch {
+        schema = { type: 'object' };
+      }
+      return { plugin: r.plugin, name: r.def.name, titel: r.def.titel, schema };
+    });
+  }
+
+  /** Prüft Daten gegen das Schema eines Befehls, ohne ihn auszuführen. */
+  pruefen(
+    plugin: string,
+    name: string,
+    daten: unknown,
+  ): { ok: true } | { ok: false; fehler: string } {
+    const reg = this.befehle.get(schluessel(plugin, name));
+    if (!reg) return { ok: false, fehler: `Unbekannter Befehl „${plugin}:${name}“.` };
+    const g = reg.def.schema.safeParse(daten);
+    return g.success
+      ? { ok: true }
+      : {
+          ok: false,
+          fehler: g.error.issues
+            .map((i) => `${i.path.join('.') || 'Daten'}: ${i.message}`)
+            .join('; '),
+        };
   }
 
   ausfuehren(aufruf: BefehlAufruf): BefehlErgebnis {

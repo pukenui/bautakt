@@ -29,6 +29,7 @@ export const kostenStaende = (umgebung: KostenUmgebung): StandHandler => ({
     const k = kostenDatenLaden(tx, umgebung).zeilen;
     const kosten = new Map(k.map((z) => [z.id, z.kosten]));
     const menge = new Map(k.map((z) => [z.id, z.mengeWirksam]));
+    const flaechen = kostenDatenLaden(tx, umgebung).flaechen;
     for (const tabelle of TABELLEN) {
       const erlaubt = spalten(tx, `${tabelle}_stand`);
       for (const zeile of tx.lesen<Zeile & { id: string }>(`SELECT * FROM ${tabelle}`)) {
@@ -39,6 +40,9 @@ export const kostenStaende = (umgebung: KostenUmgebung): StandHandler => ({
           kopie['kosten'] = kosten.get(id) ?? null;
           if (rest['menge_quelle'] === 'ifc') kopie['menge'] = menge.get(id) ?? null;
         }
+        // Flächen aus dem Modell mit dem Wert zum Zeitpunkt des Stands (E-95)
+        if (tabelle === 'k_flaeche' && rest['aus_modell'] === 1)
+          kopie['wert_m2'] = flaechen[rest['kategorie'] as keyof typeof flaechen] ?? null;
         tx.einfuegen(`${tabelle}_stand`, kopie);
       }
     }

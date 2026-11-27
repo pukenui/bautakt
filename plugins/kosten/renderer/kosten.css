@@ -165,3 +165,20 @@
 .kk-ist .kk-tabelle {
   width: 100%;
 }
+
+/* Flächen aus dem Modell (E-95) */
+.kk-modell {
+  width: 30px;
+  text-align: center;
+}
+.kk-modell button {
+  padding: 0 5px;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--text-leise);
+}
+.kk-modell button.aktiv {
+  background: var(--akzent);
+  border-color: var(--akzent);
+  color: #fff;
+}

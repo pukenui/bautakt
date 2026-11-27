@@ -23,6 +23,8 @@ export interface FlaecheZeile {
   kategorie: FlaecheEingabe;
   wert_m2: number | null;
   quelle: string;
+  /** 1 = live aus den Räumen des Modells (E-95) */
+  aus_modell: number;
 }
 
 /** Kostenzeile (k_zeile, E-15) – genau eine je KG (E-55). */
@@ -71,6 +73,12 @@ export interface ModellMenge {
   hinweise: string[];
 }
 
+/** Flächen je DIN-277-Kategorie aus den Räumen des Modells (Dienst „bim.flaechen“, E-95). */
+export interface ModellFlaechen {
+  werte: Partial<Record<string, number>>;
+  hinweise: string[];
+}
+
 /** Modellmengen je KG für einen Lesezugriff; null, wenn das Projekt kein Modell enthält. */
 export type ModellMengenQuelle = (kg: number, zeilenEinheit: string) => ModellMenge;
 
@@ -102,6 +110,10 @@ export interface KnotenDaten {
 export interface KostenDaten {
   einstellung: EinstellungZeile;
   flaechen: Record<Flaeche, number | null>;
+  /** Eingabeflächen mit Quelle „aus dem Modell“ (E-95) */
+  flaechenAusModell: Flaeche[];
+  /** Hinweise zu Flächen aus dem Modell */
+  flaechenHinweise: string[];
   flaechenQuelle: Partial<Record<FlaecheEingabe, string>>;
   zeilen: ZeileBerechnet[];
   /** alle Knoten (KG mit Zeile oder mit Zeilen darunter), aufsteigend nach KG */

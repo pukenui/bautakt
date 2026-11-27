@@ -2,7 +2,9 @@ import type { BautaktApi } from '@bautakt/kern/vertrag';
 import { Dialog, LeereAnsicht, type AnsichtProps } from '@bautakt/ui';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
+import { raumZuordnen, type RaumKategorie, type RaumZuordnung } from '../gemeinsam/raeume.js';
 import type {
+  Aenderungsbericht,
   BauteilZeile,
   EigenschaftsGruppe,
   ModellZeile,
@@ -12,6 +14,7 @@ import type {
 import { zuordnen, type Mengenart, type Zuordnung } from '../gemeinsam/zuordnung.js';
 import { Bauteilliste, type Struktur } from './Bauteilliste.js';
 import { KgDialog, RegelnDialog, ZuordnungBereich } from './Kostengruppen.js';
+import { RaumBereich, RaumDialog, VorschauDialog, type RaumRegelZeile } from './Raeume.js';
 import { geometrie } from './geometrie.js';
 import { Szene, type Ansicht } from './szene.js';
 import { lesen, schluessel, setzen, useAnsicht, type Schnitt } from './zustand.js';
@@ -52,7 +55,18 @@ export function ModellAnsicht({ api, status, datenstand }: AnsichtProps) {
   const [umbenennen, setUmbenennen] = useState<ModellZeile | null>(null);
   const [regeln, setRegeln] = useState<RegelZeile[]>([]);
   const [zuweisungen, setZuweisungen] = useState<ZuweisungZeile[]>([]);
-  const [dialog, setDialog] = useState<'regeln' | 'kg' | null>(null);
+  const [dialog, setDialog] = useState<'regeln' | 'kg' | 'raum' | null>(null);
+  const [raumregeln, setRaumregeln] = useState<RaumRegelZeile[]>([]);
+  const [raumzuweisungen, setRaumzuweisungen] = useState<
+    { modell_id: string; globalid: string; kategorie: RaumKategorie | null }[]
+  >([]);
+  const [vorschau, setVorschau] = useState<{
+    befehl: string;
+    daten: unknown;
+    details: Aenderungsbericht;
+    zeilen: string[];
+  } | null>(null);
+  const [uebernimmt, setUebernimmt] = useState(false);
   const [eigenschaften, setEigenschaften] = useState<{
     key: string;
     gruppen: EigenschaftsGruppe[];
@@ -82,11 +96,15 @@ export function ModellAnsicht({ api, status, datenstand }: AnsichtProps) {
         for (const x of m) s.set(x.id, await holen<Struktur>(api, 'struktur', { modellId: x.id }));
         const rg = await holen<RegelZeile[]>(api, 'regeln');
         const zw = await holen<ZuweisungZeile[]>(api, 'zuweisungen');
+        const rr = await holen<RaumRegelZeile[]>(api, 'raumregeln');
+        const rz = await holen<typeof raumzuweisungen>(api, 'raumzuweisungen');
         if (!aktiv) return;
         setModelle(m);
         setStruktur(s);
         setRegeln(rg);
         setZuweisungen(zw);
+        setRaumregeln(rr);
+        setRaumzuweisungen(rz);
       } catch (e) {
         if (aktiv) setFehler((e as Error).message);
       }
@@ -164,6 +182,25 @@ export function ModellAnsicht({ api, status, datenstand }: AnsichtProps) {
   const zuordnungVon = useCallback(
     (b: BauteilZeile) => zuordnungen.get(schluessel(b.modell_id, b.express_id)),
     [zuordnungen],
+  );
+  // DIN-277-Kategorie je Raum (E-94)
+  const raumZuordnungen = useMemo(() => {
+    const vonHand = new Map(
+      raumzuweisungen.map((x) => [`${x.modell_id}:${x.globalid}`, { kategorie: x.kategorie }]),
+    );
+    const m = new Map<string, RaumZuordnung>();
+    for (const st of struktur.values())
+      for (const b of st.bauteile)
+        if (b.klasse === 'IfcSpace')
+          m.set(
+            schluessel(b.modell_id, b.express_id),
+            raumZuordnen(b, raumregeln, vonHand.get(`${b.modell_id}:${b.globalid}`)),
+          );
+    return m;
+  }, [struktur, raumregeln, raumzuweisungen]);
+  const raumVon = useCallback(
+    (b: BauteilZeile) => raumZuordnungen.get(schluessel(b.modell_id, b.express_id)),
+    [raumZuordnungen],
   );
   const alleBauteile = useMemo(() => [...struktur.values()].flatMap((x) => x.bauteile), [struktur]);
 
@@ -252,6 +289,24 @@ export function ModellAnsicht({ api, status, datenstand }: AnsichtProps) {
     const a = await api.import.starten({ plugin: 'bim', format: 'ifc', parameter: {} });
     if (!a.ok) return setFehler(a.fehler);
     if (a.wert) setBericht({ datei: a.wert.datei, zeilen: a.wert.bericht });
+  };
+
+  // Neu einlesen mit Vorschau (E-96)
+  const neuEinlesen = async (m: ModellZeile) => {
+    setFehler(null);
+    const a = await api.import.starten({
+      plugin: 'bim',
+      format: 'ifc-neu',
+      parameter: { modellId: m.id },
+    });
+    if (!a.ok) return setFehler(a.fehler);
+    if (a.wert?.vorschau)
+      setVorschau({
+        befehl: a.wert.vorschau.befehl,
+        daten: a.wert.vorschau.daten,
+        details: a.wert.vorschau.details as Aenderungsbericht,
+        zeilen: a.wert.bericht,
+      });
   };
 
   const befehl = async (name: string, daten: unknown) => {
@@ -448,8 +503,10 @@ export function ModellAnsicht({ api, status, datenstand }: AnsichtProps) {
           onIsolieren={isolieren}
           onEinpassen={(b) => einpassen(b)}
           zuordnung={zuordnungVon}
+          raum={raumVon}
           onModellAktion={(aktion, m) => {
             if (aktion === 'umbenennen') return setUmbenennen(m);
+            if (aktion === 'neu') return void neuEinlesen(m);
             // rückgängig machbar (Strg+Z), daher ohne Rückfrage wie andere Löschbefehle
             void befehl('modell.loeschen', { id: m.id });
           }}
@@ -465,7 +522,15 @@ export function ModellAnsicht({ api, status, datenstand }: AnsichtProps) {
           {messung && <div className="bim-status unten">{messung}</div>}
         </div>
         <Eigenschaften bauteil={gewaehlt} gruppen={gruppen}>
-          {gewaehlt && (
+          {gewaehlt?.klasse === 'IfcSpace' && (
+            <RaumBereich
+              raum={gewaehlt}
+              zuordnung={raumVon(gewaehlt)}
+              nurLesen={nurLesen}
+              onAendern={() => setDialog('raum')}
+            />
+          )}
+          {gewaehlt && gewaehlt.klasse !== 'IfcSpace' && (
             <ZuordnungBereich
               bauteil={gewaehlt}
               zuordnung={zuordnungVon(gewaehlt)}
@@ -483,7 +548,44 @@ export function ModellAnsicht({ api, status, datenstand }: AnsichtProps) {
           klassen={[...new Set(alleBauteile.map((b) => b.klasse))].sort()}
           nurLesen={nurLesen}
           befehl={befehl}
+          raumregeln={raumregeln}
           onSchliessen={() => setDialog(null)}
+        />
+      )}
+      {dialog === 'raum' && gewaehlt && (
+        <RaumDialog
+          raum={gewaehlt}
+          zuordnung={raumVon(gewaehlt)}
+          onSchliessen={() => setDialog(null)}
+          onSetzen={async (kategorie) => {
+            const ok = await befehl('raumzuweisung.setzen', {
+              modellId: gewaehlt.modell_id,
+              globalid: gewaehlt.globalid,
+              kategorie,
+            });
+            if (ok) setDialog(null);
+          }}
+          onRegel={async () => {
+            const ok = await befehl('raumzuweisung.entfernen', {
+              modellId: gewaehlt.modell_id,
+              globalid: gewaehlt.globalid,
+            });
+            if (ok) setDialog(null);
+          }}
+        />
+      )}
+      {vorschau && (
+        <VorschauDialog
+          bericht={vorschau.details}
+          zeilen={vorschau.zeilen}
+          laeuft={uebernimmt}
+          onSchliessen={() => setVorschau(null)}
+          onUebernehmen={async () => {
+            setUebernimmt(true);
+            const ok = await befehl(vorschau.befehl, vorschau.daten);
+            setUebernimmt(false);
+            if (ok) setVorschau(null);
+          }}
         />
       )}
       {dialog === 'kg' && gewaehlt && (

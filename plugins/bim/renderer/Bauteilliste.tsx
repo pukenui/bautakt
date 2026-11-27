@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { BauteilZeile, GeschossZeile, ModellZeile } from '../gemeinsam/typen.js';
 import { EINHEIT, kgMenge, type Zuordnung } from '../gemeinsam/zuordnung.js';
+import { RAUM_KATEGORIE_TEXT, type RaumZuordnung } from '../gemeinsam/raeume.js';
 import { kgText } from './Kostengruppen.js';
 import { schluessel, setzen, useAnsicht, type AnsichtZustand } from './zustand.js';
 
@@ -26,9 +27,16 @@ const SEITE = 200;
 
 type Gliederung = AnsichtZustand['gliederung'];
 type ZuordnungVon = (b: BauteilZeile) => Zuordnung | undefined;
+type RaumVon = (b: BauteilZeile) => RaumZuordnung | undefined;
 
 /** Schlüssel der Gruppe (Geschoss oder KG) eines Bauteils im Baum. */
-export function gruppenSchluessel(b: BauteilZeile, g: Gliederung, zuordnung: ZuordnungVon): string {
+export function gruppenSchluessel(
+  b: BauteilZeile,
+  g: Gliederung,
+  zuordnung: ZuordnungVon,
+  raum?: RaumVon,
+): string {
+  if (g === 'din277') return `${b.modell_id}/din:${raum?.(b)?.kategorie ?? '-'}`;
   return g === 'kg'
     ? `${b.modell_id}/kg:${zuordnung(b)?.kg ?? '-'}`
     : `${b.modell_id}/${b.geschoss_id ?? '-'}`;
@@ -37,7 +45,13 @@ export function gruppenSchluessel(b: BauteilZeile, g: Gliederung, zuordnung: Zuo
 const zahl = (x: number) => x.toLocaleString('de-DE', { maximumFractionDigits: 2 });
 
 /** Baum Modell → Geschoss bzw. Kostengruppe → IFC-Klasse → Bauteil (E-89, E-90). */
-function baum(modell: ModellZeile, s: Struktur, g: Gliederung, zuordnung: ZuordnungVon): Knoten {
+function baum(
+  modell: ModellZeile,
+  s: Struktur,
+  g: Gliederung,
+  zuordnung: ZuordnungVon,
+  raum: RaumVon,
+): Knoten {
   const gruppen: { key: string; titel: string; zusatz?: string; bauteile: BauteilZeile[] }[] = [];
   if (g === 'geschoss') {
     for (const x of [...s.geschosse, { id: null, name: 'ohne Geschoss' }])
@@ -46,6 +60,21 @@ function baum(modell: ModellZeile, s: Struktur, g: Gliederung, zuordnung: Zuordn
         titel: x.name,
         bauteile: s.bauteile.filter((b) => b.geschoss_id === x.id),
       });
+  } else if (g === 'din277') {
+    // nur Räume, je Kategorie mit Summe der Grundflächen (E-94)
+    const raeume = s.bauteile.filter((b) => b.klasse === 'IfcSpace');
+    for (const k of [...Object.keys(RAUM_KATEGORIE_TEXT), null] as (
+      keyof typeof RAUM_KATEGORIE_TEXT | null
+    )[]) {
+      const bt = raeume.filter((b) => (raum(b)?.kategorie ?? null) === k);
+      const summe = bt.reduce((x, b) => x + (b.mengen?.flaeche?.wert ?? 0), 0);
+      gruppen.push({
+        key: `${modell.id}/din:${k ?? '-'}`,
+        titel: k ? RAUM_KATEGORIE_TEXT[k] : 'zählt nicht',
+        ...(k && bt.length ? { zusatz: `${zahl(summe)} m²` } : {}),
+        bauteile: bt,
+      });
+    }
   } else {
     const jeKg = new Map<number | null, BauteilZeile[]>();
     for (const b of s.bauteile) {
@@ -113,7 +142,7 @@ function baum(modell: ModellZeile, s: Struktur, g: Gliederung, zuordnung: Zuordn
     titel: modell.name,
     art: 'modell',
     modellId: modell.id,
-    bauteile: s.bauteile,
+    bauteile: g === 'din277' ? s.bauteile.filter((b) => b.klasse === 'IfcSpace') : s.bauteile,
     kinder,
   };
 }
@@ -122,19 +151,20 @@ export function Bauteilliste(props: {
   modelle: ModellZeile[];
   struktur: ReadonlyMap<string, Struktur>;
   nurLesen: boolean;
-  onModellAktion: (aktion: 'umbenennen' | 'entfernen', m: ModellZeile) => void;
+  onModellAktion: (aktion: 'umbenennen' | 'entfernen' | 'neu', m: ModellZeile) => void;
   onIsolieren: (bauteile: BauteilZeile[]) => void;
   onEinpassen: (bauteile: BauteilZeile[]) => void;
   zuordnung: ZuordnungVon;
+  raum: RaumVon;
 }) {
   const z = useAnsicht();
   const baeume = useMemo(
     () =>
       props.modelle.flatMap((m) => {
         const s = props.struktur.get(m.id);
-        return s ? [baum(m, s, z.gliederung, props.zuordnung)] : [];
+        return s ? [baum(m, s, z.gliederung, props.zuordnung, props.raum)] : [];
       }),
-    [props.modelle, props.struktur, z.gliederung, props.zuordnung],
+    [props.modelle, props.struktur, z.gliederung, props.zuordnung, props.raum],
   );
   const [mehr, setMehr] = useState<Record<string, number>>({});
   const auswahlKey = z.auswahl ? schluessel(z.auswahl.modellId, z.auswahl.expressId) : null;
@@ -146,7 +176,7 @@ export function Bauteilliste(props: {
     const { modellId, expressId } = z.auswahl;
     const b = props.struktur.get(modellId)?.bauteile.find((x) => x.express_id === expressId);
     if (!b) return;
-    const g = gruppenSchluessel(b, z.gliederung, props.zuordnung);
+    const g = gruppenSchluessel(b, z.gliederung, props.zuordnung, props.raum);
     const pfad = [modellId, g, `${g}/${b.klasse}`];
     const offen = new Set(z.offen);
     if (pfad.some((p) => !offen.has(p))) {
@@ -255,6 +285,15 @@ export function Bauteilliste(props: {
             {k.art === 'modell' && !props.nurLesen && (
               <>
                 <button
+                  title="Neu einlesen (geänderte IFC-Datei, mit Vorschau)"
+                  onClick={() => {
+                    const m = props.modelle.find((x) => x.id === k.modellId);
+                    if (m) props.onModellAktion('neu', m);
+                  }}
+                >
+                  ⟳
+                </button>
+                <button
                   title="Modell umbenennen"
                   onClick={() => {
                     const m = props.modelle.find((x) => x.id === k.modellId);
@@ -300,6 +339,7 @@ export function Bauteilliste(props: {
         >
           <option value="geschoss">nach Geschoss</option>
           <option value="kg">nach Kostengruppe</option>
+          <option value="din277">Räume nach DIN 277</option>
         </select>
       </div>
       <div className="bim-baum" role="tree" aria-label="Bauteilliste" ref={liste}>

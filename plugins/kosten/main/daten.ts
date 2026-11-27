@@ -13,6 +13,7 @@ import {
   type FlaecheEingabe,
 } from '@bautakt/rechnen-kosten';
 import type {
+  ModellFlaechen,
   ModellMengenQuelle,
   EinstellungZeile,
   FlaecheZeile,
@@ -28,6 +29,8 @@ export interface KostenUmgebung {
   kennwertVersion?: (id: string) => number | null;
   /** Modellmengen je KG (BIM-Plugin, E-93) für den angegebenen Lesezugriff */
   modell?: (db: PluginDb) => ModellMengenQuelle | null;
+  /** Flächen je DIN-277-Kategorie aus dem Modell (BIM-Plugin, E-95) */
+  flaechenModell?: (db: PluginDb) => ModellFlaechen | null;
 }
 
 export function einstellungLesen(db: PluginDb): EinstellungZeile {
@@ -47,10 +50,24 @@ export function kostenDatenLaden(db: PluginDb, umgebung: KostenUmgebung = {}): K
   const fl = db.lesen<FlaecheZeile>('SELECT * FROM k_flaeche');
   const eingaben: Partial<Record<FlaecheEingabe, number | null>> = {};
   const flaechenQuelle: Partial<Record<FlaecheEingabe, string>> = {};
+  const flaechenAusModell: FlaecheEingabe[] = [];
+  const flaechenHinweise: string[] = [];
+  const ausModell = fl.some((f) => f.aus_modell === 1)
+    ? (umgebung.flaechenModell?.(db) ?? null)
+    : null;
   for (const f of fl) {
     eingaben[f.kategorie] = f.wert_m2;
     flaechenQuelle[f.kategorie] = f.quelle;
+    if (f.aus_modell === 1) {
+      // live aus den Räumen des Modells (E-95)
+      flaechenAusModell.push(f.kategorie);
+      eingaben[f.kategorie] = ausModell ? (ausModell.werte[f.kategorie] ?? null) : null;
+      flaechenQuelle[f.kategorie] = 'aus dem Modell (Räume)';
+    }
   }
+  if (flaechenAusModell.length && !ausModell)
+    flaechenHinweise.push('Flächen „aus dem Modell“, aber das Projekt enthält kein IFC-Modell.');
+  if (ausModell) flaechenHinweise.push(...ausModell.hinweise);
   const flaechen = flaechenAbleiten(eingaben);
 
   const zeilen: ZeileBerechnet[] = db
@@ -137,6 +154,8 @@ export function kostenDatenLaden(db: PluginDb, umgebung: KostenUmgebung = {}): K
     einstellung,
     flaechen,
     flaechenQuelle,
+    flaechenAusModell,
+    flaechenHinweise,
     zeilen,
     baum,
     gesamt: steuer(gesamtNetto, einstellung.mwst_satz, vst),

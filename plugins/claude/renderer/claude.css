@@ -1,0 +1,140 @@
+/* Plugin Claude: Seitenleiste (E-97) */
+
+.cl-leiste {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  font-size: 13px;
+}
+.cl-kopf {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--linie);
+}
+.cl-kopf button {
+  padding: 1px 7px;
+}
+.cl-luecke {
+  flex: 1;
+}
+.cl-rand {
+  padding: 10px 12px;
+  line-height: 1.5;
+}
+.cl-rand h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+.cl-schluessel {
+  display: flex;
+  gap: 6px;
+  margin: 8px 0;
+}
+.cl-schluessel input {
+  flex: 1;
+}
+.cl-einstellungen {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+.cl-verlauf {
+  flex: 1;
+  overflow: auto;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cl-nutzer {
+  align-self: flex-end;
+  max-width: 85%;
+  background: #e6eef8;
+  border-radius: 8px 8px 2px 8px;
+  padding: 6px 9px;
+  white-space: pre-wrap;
+}
+.cl-claude {
+  max-width: 95%;
+}
+.cl-claude .markdown p:first-child {
+  margin-top: 0;
+}
+.cl-werkzeug {
+  color: var(--text-leise);
+  font-size: 12px;
+}
+.cl-arbeitet {
+  font-style: italic;
+}
+.cl-fehler {
+  color: var(--kritisch);
+  background: #fdeeee;
+  border: 1px solid #e3a3a3;
+  border-radius: 4px;
+  padding: 5px 8px;
+  margin: 6px 10px;
+}
+.cl-verlauf .cl-fehler {
+  margin: 0;
+}
+.cl-vorschlag {
+  border: 1px solid var(--akzent);
+  border-radius: 6px;
+  padding: 8px 10px;
+  background: #f5f9fd;
+}
+.cl-vorschlag.ausgefuehrt {
+  border-color: #2e7d32;
+  background: #f3f9f3;
+}
+.cl-vorschlag.verworfen {
+  border-color: var(--linie);
+  background: var(--flaeche);
+  opacity: 0.75;
+}
+.cl-vorschlag p {
+  margin: 4px 0;
+}
+.cl-vorschlag pre {
+  max-height: 180px;
+  overflow: auto;
+  font-size: 11px;
+  background: #f3f3f0;
+  padding: 6px;
+}
+.cl-vorschlag-kopf {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.cl-ki {
+  font-size: 11px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: #fff4d6;
+  color: #8a5a00;
+  border: 1px solid var(--warnung-linie);
+}
+.cl-knoepfe {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 6px;
+}
+.cl-eingabe {
+  border-top: 1px solid var(--linie);
+  padding: 8px 10px;
+}
+.cl-eingabe textarea {
+  width: 100%;
+  font: inherit;
+  resize: vertical;
+  padding: 5px 7px;
+  border: 1px solid var(--linie);
+  border-radius: 4px;
+}

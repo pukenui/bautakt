@@ -6,7 +6,7 @@ die schrittweise zu einem BIM-Ökosystem (IFC-Viewer, 5D, 4D) ausgebaut wird.
 
 **Vor jeder Arbeit lesen:**
 
-1. `docs/lastenheft.md` – alle fachlichen Entscheidungen (E-01 … E-93). Verbindlich.
+1. `docs/lastenheft.md` – alle fachlichen Entscheidungen (E-01 … E-100). Verbindlich.
 2. `docs/architektur.md` – Kern, Plugins, Datenmodell, Rechenregeln.
 3. `docs/roadmap.md` – welcher Meilenstein gerade dran ist. Nur daran arbeiten.
 4. `docs/referenzbeispiele.md` – Testfälle mit Sollwerten.
@@ -47,7 +47,8 @@ die schrittweise zu einem BIM-Ökosystem (IFC-Viewer, 5D, 4D) ausgebaut wird.
 - **Keine generierten Begründungstexte.** Die App erzeugt Rechenwege als Formelzeilen
   (z. B. `650 m² × 0,50 h/m² = 325 h ÷ (4 × 8 h) = 10,2 → 11 AT`), aber niemals
   Fließtext-Begründungen. Begründungen/Anmerkungen schreibt der Nutzer selbst in
-  eigene Felder.
+  eigene Felder. Einzige Ausnahme (E-98): Das Claude-Plugin darf auf ausdrücklichen Wunsch
+  Entwürfe vorschlagen; sie tragen „[KI-Entwurf] “ und werden erst nach Bestätigung übernommen.
 - Keine Normtexte (DIN-Wortlaut) und keine BKI-Daten im Repo. Kostengruppen-Nummern und
   Kurzbezeichnungen sind erlaubt; Kennwerte trägt der Nutzer selbst mit Quelle ein.
 

@@ -14,6 +14,13 @@
   hinspringen zeigt eine kurze Erklärung. Alle Begriffe stehen im Reiter **Glossar** dieser
   Hilfe.
 - Die **Einführungstour** vom ersten Start lässt sich unten mit „Tour starten“ wiederholen.
+- **✦ Claude** (oben rechts, mit geöffnetem Projekt) öffnet den Assistenten: Er beantwortet
+  Fragen zum Projekt und schlägt Änderungen vor, die Sie mit **Ausführen** übernehmen
+  (Rückgängig wie jede Änderung) oder verwerfen. Dafür brauchen Sie einen eigenen
+  Anthropic-API-Schlüssel; vor dem ersten Senden fragt Bautakt je Projekt, ob Projektdaten an
+  Anthropic übertragen werden dürfen. Texte für Freitextfelder schreibt Claude nur auf Wunsch,
+  gekennzeichnet als „[KI-Entwurf]“ – bitte prüfen und die Kennzeichnung danach selbst
+  entfernen.
 
 ### Tastenkürzel (überall)
 

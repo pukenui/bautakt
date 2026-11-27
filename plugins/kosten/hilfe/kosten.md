@@ -6,6 +6,7 @@ Baupreisindex, Regionalfaktor und MwSt.
 ## Typischer Ablauf
 
 1. Rechts die **Flächen** eintragen (Doppelklick auf den Wert): NUF 1–7, TF, VF, KGF, AF, GF.
+   Mit **⬡** kommen NUF 1–7, TF und VF live aus den Räumen des IFC-Modells (Reiter Modell).
    NUF, NRF und BGF rechnet Bautakt selbst (NRF = NUF + TF + VF, BGF = NRF + KGF).
 2. **+ Kostengruppe …** fügt eine Zeile hinzu (eine Zeile je KG). Übergeordnete Gruppen entstehen
    automatisch und summieren; gibt es Untergruppen, sind diese maßgebend.

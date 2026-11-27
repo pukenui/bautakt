@@ -139,4 +139,12 @@ export const MIGRATIONEN: readonly Migration[] = [
       CREATE INDEX k_abweichung_stand_s ON k_abweichung_stand (stand_id);
     `,
   },
+  {
+    version: 3,
+    name: 'Flächen aus dem Modell (E-95)',
+    sql: `
+      ALTER TABLE k_flaeche ADD COLUMN aus_modell INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE k_flaeche_stand ADD COLUMN aus_modell INTEGER;
+    `,
+  },
 ];

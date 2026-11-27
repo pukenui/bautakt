@@ -5,6 +5,7 @@ import {
   dialog,
   ipcMain,
   Menu,
+  safeStorage,
   session,
   shell,
   type IpcMainInvokeEvent,
@@ -17,6 +18,7 @@ import { druckFenster, exportieren, exportSchema } from './export';
 import { menueErstellen } from './menue';
 import { PLUGINS } from './plugins';
 import { antwort, ProjektVerwaltung } from './projekt';
+import { anthropicApi, claudeHostEinrichten, simulierteApi } from '@bautakt/plugin-claude/main';
 
 let fenster: BrowserWindow | null = null;
 
@@ -35,6 +37,36 @@ function globaleDatenOeffnen(): void {
   const testOrdner = app.isPackaged ? undefined : process.env['BAUTAKT_DATENORDNER'];
   globaleDaten = GlobaleDaten.oeffnen(testOrdner || app.getPath('userData'), PLUGINS);
   globaleDaten.onGeaendert((plugin) => senden('globalGeaendert', { plugin }));
+  claudeEinrichten(testOrdner || app.getPath('userData'));
+}
+
+/**
+ * Claude-Assistent (E-99, E-100): API-Schlüssel mit safeStorage (Windows-Datenschutz) verschlüsselt
+ * im App-Datenordner. Nur in Entwicklungs-Builds: BAUTAKT_TEST_CLAUDE=simulation spielt eine
+ * simulierte Sitzung ohne Anthropic (Rauchtests).
+ */
+function claudeEinrichten(ordner: string): void {
+  const simulation = !app.isPackaged && process.env['BAUTAKT_TEST_CLAUDE'] === 'simulation';
+  const verfuegbar = simulation || safeStorage.isEncryptionAvailable();
+  claudeHostEinrichten({
+    ordner,
+    verschluesselungVerfuegbar: verfuegbar,
+    verschluesseln: (t) =>
+      simulation
+        ? Buffer.from(t).toString('base64')
+        : safeStorage.encryptString(t).toString('base64'),
+    entschluesseln: (g) =>
+      simulation
+        ? Buffer.from(g, 'base64').toString()
+        : safeStorage.decryptString(Buffer.from(g, 'base64')),
+    api: simulation
+      ? (() => {
+          const sim = simulierteApi();
+          return () => sim;
+        })()
+      : anthropicApi,
+    simuliert: simulation,
+  });
 }
 
 function globale(): GlobaleDaten {
@@ -186,9 +218,10 @@ const handler: Record<Aufruf, (args: unknown[]) => unknown> = {
       return {
         datei,
         bericht: e.bericht,
-        eingefuegt: e.ergebnis.aenderungen
+        eingefuegt: (e.ergebnis?.aenderungen ?? [])
           .filter((x) => x.art === 'einfuegen')
           .map((x) => ({ tabelle: x.tabelle, id: x.id })),
+        vorschau: e.vorschau,
       };
     }),
   'anhang:waehlen': () =>

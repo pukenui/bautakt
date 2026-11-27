@@ -52,9 +52,11 @@ const bauteil = (b: Partial<BauteilMerkmale>): BauteilMerkmale => ({
 describe('Mengen aus der Geometrie (E-92)', () => {
   it('Volumen und Hauptfläche eines Quaders', () => {
     // Wand 6 m lang, 0,24 m dick, 3 m hoch: Seitenfläche 18 m², Volumen 4,32 m³
-    expect(netzMengen(quader(6, 0.24, 3))).toEqual({ volumen: 4.32, flaeche: 18 });
+    expect(netzMengen(quader(6, 0.24, 3))).toMatchObject({ volumen: 4.32, flaeche: 18 });
     // Decke 12 × 8 × 0,2: Oberseite 96 m²
-    expect(netzMengen(quader(12, 8, 0.2))).toEqual({ volumen: 19.2, flaeche: 96 });
+    expect(netzMengen(quader(12, 8, 0.2))).toMatchObject({ volumen: 19.2, flaeche: 96 });
+    // Raum 5 × 4 m, 2,5 m hoch (y nach oben wie bei web-ifc): Grundfläche 20 m²
+    expect(netzMengen(quader(5, 2.5, 4)).grundflaeche).toBe(20);
   });
 
   it('gedrehte Bauteile: Hauptfläche bleibt die Seitenfläche', () => {

@@ -3,7 +3,7 @@ import type { KennwertZeile } from '@bautakt/plugin-bibliothek/typen';
 import { z } from 'zod';
 import { MIGRATIONEN } from '../migrations/index.js';
 import { kostenBefehle } from './befehle.js';
-import type { ModellMengenQuelle } from '../gemeinsam/typen.js';
+import type { ModellFlaechen, ModellMengenQuelle } from '../gemeinsam/typen.js';
 import { kostenDatenLaden, type KostenUmgebung } from './daten.js';
 import { kostenBeobachtungen } from './erfahrung.js';
 import { kostenExcel } from './excel.js';
@@ -41,7 +41,11 @@ export const kostenPlugin: BautaktPlugin = {
     // BIM (optional): Modellmengen je KG für Zeilen mit Mengenquelle „Modell“ (E-93)
     const modell = (db: PluginDb): ModellMengenQuelle | null =>
       holen<{ jeKg(db: PluginDb): ModellMengenQuelle | null }>('bim.mengen')?.jeKg(db) ?? null;
-    const umgebung: KostenUmgebung = { kennwertVersion, modell };
+    const flaechenModell = (db: PluginDb): ModellFlaechen | null =>
+      holen<{ jeKategorie(db: PluginDb): ModellFlaechen | null }>('bim.flaechen')?.jeKategorie(
+        db,
+      ) ?? null;
+    const umgebung: KostenUmgebung = { kennwertVersion, modell, flaechenModell };
 
     for (const b of kostenBefehle(kennwert)) ctx.befehle.registrieren(b);
     for (const b of sollistBefehle(umgebung)) ctx.befehle.registrieren(b);

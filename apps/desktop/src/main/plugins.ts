@@ -1,5 +1,6 @@
 import type { BautaktPlugin } from '@bautakt/kern';
 import { bimPlugin } from '@bautakt/plugin-bim/main';
+import { claudePlugin } from '@bautakt/plugin-claude/main';
 import { bibliothekPlugin } from '@bautakt/plugin-bibliothek/main';
 import { kostenPlugin } from '@bautakt/plugin-kosten/main';
 import { statistikPlugin } from '@bautakt/plugin-statistik/main';
@@ -12,4 +13,5 @@ export const PLUGINS: readonly BautaktPlugin[] = [
   kostenPlugin,
   statistikPlugin,
   bimPlugin,
+  claudePlugin,
 ];

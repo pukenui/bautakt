@@ -362,3 +362,19 @@ input {
 .tour-luecke {
   flex: 1;
 }
+
+/* Seitenleisten der Plugins (z. B. Claude, E-97) */
+.seitenleiste {
+  width: 420px;
+  flex-shrink: 0;
+  border-left: 1px solid var(--linie);
+  background: var(--flaeche);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.kopf-aktionen button.aktiv {
+  border-color: var(--akzent);
+  color: var(--akzent);
+  font-weight: 600;
+}

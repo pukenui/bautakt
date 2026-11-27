@@ -22,7 +22,7 @@ export interface AnsichtZustand {
   schnitt: Schnitt;
   messen: boolean;
   /** Bauteilliste nach Geschoss oder nach Kostengruppe (B2) */
-  gliederung: 'geschoss' | 'kg';
+  gliederung: 'geschoss' | 'kg' | 'din277';
 }
 
 export const schluessel = (modellId: string, expressId: number) => `${modellId}:${expressId}`;

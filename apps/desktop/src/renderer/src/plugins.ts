@@ -1,4 +1,5 @@
 import { bimRenderer } from '@bautakt/plugin-bim/renderer';
+import { claudeRenderer } from '@bautakt/plugin-claude/renderer';
 import { bibliothekRenderer } from '@bautakt/plugin-bibliothek/renderer';
 import { kostenRenderer } from '@bautakt/plugin-kosten/renderer';
 import { statistikRenderer } from '@bautakt/plugin-statistik/renderer';
@@ -10,6 +11,7 @@ export const RENDERER_PLUGINS: readonly RendererPlugin[] = [
   termineRenderer,
   kostenRenderer,
   bimRenderer,
+  claudeRenderer,
   bibliothekRenderer,
   statistikRenderer,
 ];
