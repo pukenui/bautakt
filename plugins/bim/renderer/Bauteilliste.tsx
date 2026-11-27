@@ -156,6 +156,8 @@ export function Bauteilliste(props: {
   onEinpassen: (bauteile: BauteilZeile[]) => void;
   zuordnung: ZuordnungVon;
   raum: RaumVon;
+  /** 4D: Zweig mit einem Vorgang verknüpfen (E-101) */
+  onVerknuepfen?: (bauteile: BauteilZeile[], titel: string) => void;
 }) {
   const z = useAnsicht();
   const baeume = useMemo(
@@ -276,6 +278,14 @@ export function Bauteilliste(props: {
           {k.zusatz && <span className="bim-zusatz">{k.zusatz}</span>}
           {k.art !== 'bauteil' && <span className="bim-anzahl">{k.bauteile.length}</span>}
           <span className="bim-knoepfe">
+            {props.onVerknuepfen && !props.nurLesen && (
+              <button
+                title="Mit Vorgang verknüpfen (4D)"
+                onClick={() => props.onVerknuepfen?.(k.bauteile, k.titel)}
+              >
+                🔗
+              </button>
+            )}
             <button
               title="Nur diese zeigen (isolieren)"
               onClick={() => props.onIsolieren(k.bauteile)}

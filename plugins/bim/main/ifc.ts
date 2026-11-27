@@ -183,6 +183,28 @@ export function modellAuslesen(a: W.IfcAPI, inhalt: Uint8Array): ModellInhalt {
       return null;
     };
 
+    // Zonen (E-102): Gruppen über IfcRelAssignsToGroup; Bauteile in Räumen einer Zone gehören dazu
+    const zoneIds = new Set(ids(a.GetLineIDsWithType(m, W.IFCZONE)));
+    const zonenDirekt = new Map<number, Set<string>>();
+    for (const r of ids(a.GetLineIDsWithType(m, W.IFCRELASSIGNSTOGROUP))) {
+      const rel = a.GetLine(m, r) as Record<string, unknown>;
+      const gruppe = Number(roh(rel['RelatingGroup']));
+      if (!zoneIds.has(gruppe)) continue;
+      const z = a.GetLine(m, gruppe) as Record<string, unknown>;
+      const name = text(z['Name']) || text(z['LongName']) || `Zone ${gruppe}`;
+      for (const o of verweise(rel['RelatedObjects']))
+        zonenDirekt.set(o, new Set([...(zonenDirekt.get(o) ?? []), name]));
+    }
+    const zonenVon = (id: number): string[] => {
+      const z = new Set(zonenDirekt.get(id) ?? []);
+      // über die Raumstruktur aufwärts (Bauteil in einem Raum einer Zone)
+      for (let n = 0, x: number | undefined = eltern.get(id); x !== undefined && n < 50; n++) {
+        zonenDirekt.get(x)?.forEach((name) => z.add(name));
+        x = eltern.get(x);
+      }
+      return [...z].sort();
+    };
+
     // Typen (Name, PredefinedType, Psets des Typs)
     const typVon = new Map<number, Record<string, unknown>>();
     for (const r of ids(a.GetLineIDsWithType(m, W.IFCRELDEFINESBYTYPE))) {
@@ -272,6 +294,7 @@ export function modellAuslesen(a: W.IfcAPI, inhalt: Uint8Array): ModellInhalt {
           mengen,
           langname: text(e['LongName']),
           // Räume: alle Textwerte ihrer Eigenschaften, für „enthält“ in den Raumregeln (E-94)
+          zonen: zonenVon(id),
           texte: raum
             ? [...new Set(d.flatMap((def) => [...psetWerte(def).values()]))]
                 .filter((v) => v && !/^[\d.,\s-]+$/.test(v) && v !== 'ja' && v !== 'nein')

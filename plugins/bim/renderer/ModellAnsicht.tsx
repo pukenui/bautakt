@@ -15,6 +15,25 @@ import { zuordnen, type Mengenart, type Zuordnung } from '../gemeinsam/zuordnung
 import { Bauteilliste, type Struktur } from './Bauteilliste.js';
 import { KgDialog, RegelnDialog, ZuordnungBereich } from './Kostengruppen.js';
 import { RaumBereich, RaumDialog, VorschauDialog, type RaumRegelZeile } from './Raeume.js';
+import {
+  refSchluessel,
+  refsLesen,
+  tagePlus,
+  zustandAm,
+  type Zustand4d,
+} from '../gemeinsam/vierd.js';
+import {
+  FARBE_LAUFEND,
+  SimulationsLeiste,
+  VerknuepfenDialog,
+  VerknuepfungenDialog,
+  bauteile4d,
+  datumDe,
+  use4dDaten,
+  useZeitraeume,
+  zaehlen,
+  zustand4dSzene,
+} from './VierD.js';
 import { geometrie } from './geometrie.js';
 import { Szene, type Ansicht } from './szene.js';
 import { lesen, schluessel, setzen, useAnsicht, type Schnitt } from './zustand.js';
@@ -55,7 +74,11 @@ export function ModellAnsicht({ api, status, datenstand }: AnsichtProps) {
   const [umbenennen, setUmbenennen] = useState<ModellZeile | null>(null);
   const [regeln, setRegeln] = useState<RegelZeile[]>([]);
   const [zuweisungen, setZuweisungen] = useState<ZuweisungZeile[]>([]);
-  const [dialog, setDialog] = useState<'regeln' | 'kg' | 'raum' | null>(null);
+  const [dialog, setDialog] = useState<'regeln' | 'kg' | 'raum' | 'vierd' | null>(null);
+  const [verknuepfen, setVerknuepfen] = useState<{
+    titel: string;
+    bauteile: BauteilZeile[];
+  } | null>(null);
   const [raumregeln, setRaumregeln] = useState<RaumRegelZeile[]>([]);
   const [raumzuweisungen, setRaumzuweisungen] = useState<
     { modell_id: string; globalid: string; kategorie: RaumKategorie | null }[]
@@ -144,10 +167,73 @@ export function ModellAnsicht({ api, status, datenstand }: AnsichtProps) {
     };
   }, [szene, modelle, api]);
 
-  // Sichtbarkeit und Auswahl übertragen
+  // --- 4D (E-101–E-104) ------------------------------------------------------------------
+  const vd = use4dDaten(api, datenstand);
+  const zr = useZeitraeume(vd.plan);
+  const vierdAn = z.vierd.aktiv && !!vd.plan;
+  const datum4d = vierdAn && zr.von ? tagePlus(zr.von, Math.floor(z.vierd.tag)) : null;
+  /** express_id → GlobalId je Modell */
+  const globalIds = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const st of struktur.values())
+      for (const b of st.bauteile) m.set(schluessel(b.modell_id, b.express_id), b.globalid);
+    return m;
+  }, [struktur]);
+  const zustand4d = useCallback(
+    (modellId: string, globalid: string | undefined): Zustand4d => {
+      if (!datum4d || !globalid) return 'ohne';
+      const k = refSchluessel({ m: modellId, g: globalid });
+      return zustandAm(datum4d, zr.plan.get(k), z.vierd.sollId ? zr.soll.get(k) : undefined);
+    },
+    [datum4d, zr, z.vierd.sollId],
+  );
+
+  // Sichtbarkeit, Auswahl und Simulation übertragen
   useEffect(() => {
-    szene?.zustandSetzen(zustandFn());
-  }, [szene, z.versteckt, z.modelleAus, z.auswahl]);
+    if (!szene) return;
+    const basis = zustandFn();
+    if (!vierdAn || !datum4d) return szene.zustandSetzen(basis);
+    const farben = new Map<string, [number, number, number]>();
+    const optionen = { geist: z.vierd.geist, gewerk: z.vierd.gewerk };
+    szene.zustandSetzen(
+      (m, e) => {
+        const b = basis(m, e);
+        if (b === 0) return 0;
+        const g = globalIds.get(schluessel(m, e));
+        const zu = zustand4d(m, g);
+        const sz = zustand4dSzene(zu, zr.plan.get(`${m}:${g}`)?.gewerk ?? '', optionen);
+        if (b === 2 && sz.code !== 0) return 2;
+        if (sz.farbe) farben.set(schluessel(m, e), sz.farbe);
+        return sz.code;
+      },
+      (m, e) => farben.get(schluessel(m, e)) ?? FARBE_LAUFEND,
+    );
+  }, [
+    szene,
+    z.versteckt,
+    z.modelleAus,
+    z.auswahl,
+    vierdAn,
+    datum4d,
+    zustand4d,
+    z.vierd.geist,
+    z.vierd.gewerk,
+    globalIds,
+    zr,
+    fertig,
+  ]);
+
+  const zaehler = useMemo(
+    () =>
+      zaehlen(
+        vierdAn
+          ? [...struktur.values()].flatMap((st) =>
+              st.bauteile.map((b) => zustand4d(b.modell_id, b.globalid)),
+            )
+          : [],
+      ),
+    [vierdAn, struktur, zustand4d],
+  );
 
   // Eigenschaften der Auswahl
   useEffect(() => {
@@ -291,6 +377,66 @@ export function ModellAnsicht({ api, status, datenstand }: AnsichtProps) {
     if (a.wert) setBericht({ datei: a.wert.datei, zeilen: a.wert.bericht });
   };
 
+  // Befehl eines beliebigen Plugins (4D schreibt über die Termine, E-101)
+  const befehlIn = async (plugin: string, name: string, daten: unknown) => {
+    const a = await api.befehl.ausfuehren(plugin, name, daten);
+    if (!a.ok) setFehler(a.fehler);
+    return a.ok;
+  };
+
+  const teile4d = useMemo(
+    () =>
+      [...struktur.values()].flatMap((st) => bauteile4d(st.bauteile, st.geschosse, zuordnungVon)),
+    [struktur, zuordnungVon],
+  );
+
+  // Bild der Simulation mit Datum und Legende (E-104)
+  const bildSpeichern = () => {
+    if (!szene || !datum4d) return;
+    const bild = new Image();
+    bild.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = bild.width;
+      c.height = bild.height;
+      const g = c.getContext('2d');
+      if (!g) return;
+      g.drawImage(bild, 0, 0);
+      const zeilen = [
+        `Bauablauf ${datumDe(datum4d)}`,
+        `Plan: ${vd.plan?.plan.name ?? ''}${vd.plan?.vergleich ? ` · Soll: ${vd.plan.vergleich.standName}` : ''}`,
+      ];
+      g.font = 'bold 20px Segoe UI, sans-serif';
+      g.fillStyle = 'rgba(255,255,255,0.88)';
+      g.fillRect(12, 12, 460, 64);
+      g.fillStyle = '#1d1d1b';
+      g.fillText(zeilen[0] ?? '', 22, 38);
+      g.font = '15px Segoe UI, sans-serif';
+      g.fillText(zeilen[1] ?? '', 22, 62);
+      const legende: [string, string][] = [
+        ['#f28c1a', `in Arbeit (${zaehler.laufend})`],
+        ['#b8b8b8', `geplant (${zaehler.zukunft})`],
+        ['#7a7a7a', `fertig (${zaehler.fertig})`],
+        ...(vd.plan?.vergleich
+          ? ([['#d91f1f', `verspätet (${zaehler.verspaetet})`]] as [string, string][])
+          : []),
+      ];
+      g.fillStyle = 'rgba(255,255,255,0.88)';
+      g.fillRect(12, c.height - 20 - legende.length * 22, 240, legende.length * 22 + 8);
+      legende.forEach(([farbe, text], i) => {
+        const y = c.height - 16 - (legende.length - i) * 22 + 8;
+        g.fillStyle = farbe;
+        g.fillRect(22, y, 14, 14);
+        g.fillStyle = '#1d1d1b';
+        g.fillText(text, 44, y + 12);
+      });
+      const a = document.createElement('a');
+      a.href = c.toDataURL('image/png');
+      a.download = `Bautakt-4D-${datum4d}.png`;
+      a.click();
+    };
+    bild.src = szene.bild();
+  };
+
   // Neu einlesen mit Vorschau (E-96)
   const neuEinlesen = async (m: ModellZeile) => {
     setFehler(null);
@@ -371,6 +517,14 @@ export function ModellAnsicht({ api, status, datenstand }: AnsichtProps) {
         {!nurLesen && <button onClick={() => void importieren()}>IFC einlesen …</button>}
         <button onClick={() => setDialog('regeln')} title="Regeltabelle IFC → Kostengruppe">
           Regeln …
+        </button>
+        <button
+          aria-pressed={z.vierd.aktiv}
+          className={z.vierd.aktiv ? 'aktiv' : ''}
+          title="Bauablauf-Simulation (4D)"
+          onClick={() => setzen({ vierd: { ...z.vierd, aktiv: !z.vierd.aktiv, laeuft: false } })}
+        >
+          ⏱ 4D
         </button>
         <div className="tp-gruppe">
           <button onClick={() => einpassen()} title="Ganzes Modell zeigen">
@@ -504,6 +658,7 @@ export function ModellAnsicht({ api, status, datenstand }: AnsichtProps) {
           onEinpassen={(b) => einpassen(b)}
           zuordnung={zuordnungVon}
           raum={raumVon}
+          onVerknuepfen={(bauteile, titel) => setVerknuepfen({ bauteile, titel })}
           onModellAktion={(aktion, m) => {
             if (aktion === 'umbenennen') return setUmbenennen(m);
             if (aktion === 'neu') return void neuEinlesen(m);
@@ -511,15 +666,35 @@ export function ModellAnsicht({ api, status, datenstand }: AnsichtProps) {
             void befehl('modell.loeschen', { id: m.id });
           }}
         />
-        <div
-          className={`bim-flaeche${z.messen ? ' messen' : ''}`}
-          ref={flaeche}
-          onPointerDown={zeigerUnten}
-          onPointerUp={zeigerOben}
-          onDoubleClick={() => gewaehlt && einpassen([gewaehlt])}
-        >
-          {laedt.length > 0 && <div className="bim-status">Modell wird aufbereitet …</div>}
-          {messung && <div className="bim-status unten">{messung}</div>}
+        <div className="bim-mitte">
+          <div
+            className={`bim-flaeche${z.messen ? ' messen' : ''}`}
+            ref={flaeche}
+            onPointerDown={zeigerUnten}
+            onPointerUp={zeigerOben}
+            onDoubleClick={() => gewaehlt && einpassen([gewaehlt])}
+          >
+            {laedt.length > 0 && <div className="bim-status">Modell wird aufbereitet …</div>}
+            {messung && <div className="bim-status unten">{messung}</div>}
+            {vierdAn && datum4d && <div className="bim-4d-stempel">{datumDe(datum4d)}</div>}
+          </div>
+          {z.vierd.aktiv &&
+            (vd.fehler || !vd.plan ? (
+              <div className="bim-4d leise">
+                {vd.fehler ?? 'Für die Simulation braucht das Projekt einen Terminplan.'}
+              </div>
+            ) : (
+              <SimulationsLeiste
+                plaene={vd.plaene}
+                staende={vd.staende}
+                von={zr.von}
+                bis={zr.bis}
+                zaehler={zaehler}
+                sollAktiv={!!z.vierd.sollId}
+                onVerknuepfungen={() => setDialog('vierd')}
+                onBild={bildSpeichern}
+              />
+            ))}
         </div>
         <Eigenschaften bauteil={gewaehlt} gruppen={gruppen}>
           {gewaehlt?.klasse === 'IfcSpace' && (
@@ -528,6 +703,16 @@ export function ModellAnsicht({ api, status, datenstand }: AnsichtProps) {
               zuordnung={raumVon(gewaehlt)}
               nurLesen={nurLesen}
               onAendern={() => setDialog('raum')}
+            />
+          )}
+          {gewaehlt && vd.plan && (
+            <VorgaengeBereich
+              plan={vd.plan}
+              refKey={refSchluessel({ m: gewaehlt.modell_id, g: gewaehlt.globalid })}
+              nurLesen={nurLesen}
+              onVerknuepfen={() =>
+                setVerknuepfen({ titel: gewaehlt.name || gewaehlt.klasse, bauteile: [gewaehlt] })
+              }
             />
           )}
           {gewaehlt && gewaehlt.klasse !== 'IfcSpace' && (
@@ -550,6 +735,43 @@ export function ModellAnsicht({ api, status, datenstand }: AnsichtProps) {
           befehl={befehl}
           raumregeln={raumregeln}
           onSchliessen={() => setDialog(null)}
+        />
+      )}
+      {dialog === 'vierd' && vd.plan && (
+        <VerknuepfungenDialog
+          plan={vd.plan}
+          vierD={vd.vierD}
+          teile={teile4d}
+          geschossNamen={[
+            ...new Set([...struktur.values()].flatMap((s) => s.geschosse.map((g) => g.name))),
+          ]}
+          zonenNamen={[...new Set(alleBauteile.flatMap((b) => b.zonen ?? []))].sort()}
+          klassen={[...new Set(alleBauteile.map((b) => b.klasse))].sort()}
+          nurLesen={nurLesen}
+          befehl={(plugin, name, daten) => befehlIn(plugin, name, daten)}
+          onSchliessen={() => setDialog(null)}
+        />
+      )}
+      {verknuepfen && (
+        <VerknuepfenDialog
+          titel={verknuepfen.titel}
+          bauteile={verknuepfen.bauteile.map((b) => ({ m: b.modell_id, g: b.globalid }))}
+          plan={vd.plan}
+          plaene={vd.plaene}
+          onPlan={(id) => setzen({ vierd: { ...z.vierd, planId: id } })}
+          onSchliessen={() => setVerknuepfen(null)}
+          onSetzen={async (vorgangId, modus) => {
+            const ok = await befehlIn('termine', 'bauteile.setzen', {
+              aenderungen: [
+                {
+                  vorgangId,
+                  modus,
+                  bauteile: verknuepfen.bauteile.map((b) => ({ m: b.modell_id, g: b.globalid })),
+                },
+              ],
+            });
+            if (ok) setVerknuepfen(null);
+          }}
         />
       )}
       {dialog === 'raum' && gewaehlt && (
@@ -649,6 +871,44 @@ function ebene(
   const wert = lo + (hi - lo) * s.lage;
   const n = new THREE.Vector3().setComponent(i, s.umkehren ? 1 : -1);
   return new THREE.Plane(n, s.umkehren ? -wert : wert);
+}
+
+/** Vorgänge des gewählten Plans, die mit dem Bauteil verknüpft sind (E-101). */
+function VorgaengeBereich(props: {
+  plan: NonNullable<ReturnType<typeof use4dDaten>['plan']>;
+  refKey: string;
+  nurLesen: boolean;
+  onVerknuepfen: () => void;
+}) {
+  const t = props.plan.berechnung.ok ? (props.plan.berechnung.termine ?? {}) : {};
+  const vorgaenge = props.plan.vorgaenge.filter((v) =>
+    refsLesen(v.bauteil_refs).some((r) => refSchluessel(r) === props.refKey),
+  );
+  return (
+    <section className="bim-kg" aria-label="Vorgänge (4D)">
+      <div className="bim-kg-kopf">
+        <strong>Vorgänge im Plan „{props.plan.plan.name}“</strong>
+        {!props.nurLesen && <button onClick={props.onVerknuepfen}>🔗 …</button>}
+      </div>
+      {vorgaenge.length === 0 ? (
+        <div className="leise">nicht verknüpft</div>
+      ) : (
+        <ul className="bim-4d-vorgaenge">
+          {vorgaenge.map((v) => (
+            <li key={v.id}>
+              {v.nr} {v.name}
+              <span className="leise">
+                {' '}
+                {t[v.id]
+                  ? `${datumDe(t[v.id]?.anfang ?? null)} – ${datumDe(t[v.id]?.ende ?? null)}`
+                  : ''}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
 }
 
 function Eigenschaften(props: {

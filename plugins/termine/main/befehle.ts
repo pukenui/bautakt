@@ -140,7 +140,56 @@ const kanten = (bs: readonly BeziehungZeile[]) =>
 type Def = BefehlDefinition<never>;
 const def = <T>(d: BefehlDefinition<T>) => d as unknown as Def;
 
+/** Verweis auf ein Bauteil eines IFC-Modells (4D, E-101): Modell-ID und GlobalId. */
+const bauteilRef = z.object({ m: z.string().min(1), g: z.string().min(1).max(64) });
+
 export const BEFEHLE: Def[] = [
+  // 4D: Bauteile an Vorgängen (E-101) – mehrere Vorgänge in einem Undo-Schritt
+  def({
+    name: 'bauteile.setzen',
+    titel: 'Bauteile verknüpfen',
+    schema: z.object({
+      aenderungen: z
+        .array(
+          z.object({
+            vorgangId: id,
+            bauteile: z.array(bauteilRef).max(100_000),
+            modus: z.enum(['ersetzen', 'hinzufuegen', 'loesen']).default('ersetzen'),
+          }),
+        )
+        .min(1),
+    }),
+    ausfuehren(tx, d) {
+      const schluessel = (b: { m: string; g: string }) => `${b.m}:${b.g}`;
+      for (const a of d.aenderungen) {
+        const v = vorgangLesen(tx, a.vorgangId);
+        if (v.typ === 'sammel')
+          throw fehler(`„${v.name}“ ist ein Sammelvorgang; Bauteile gehören an seine Vorgänge.`);
+        let alt: { m: string; g: string }[] = [];
+        try {
+          alt = JSON.parse(v.bauteil_refs || '[]') as { m: string; g: string }[];
+        } catch {
+          alt = [];
+        }
+        const weg = new Set(a.bauteile.map(schluessel));
+        const neu =
+          a.modus === 'ersetzen'
+            ? a.bauteile
+            : a.modus === 'loesen'
+              ? alt.filter((b) => !weg.has(schluessel(b)))
+              : [
+                  ...alt,
+                  ...a.bauteile.filter((b) => !alt.some((x) => schluessel(x) === schluessel(b))),
+                ];
+        // doppelte entfernen, Reihenfolge stabil
+        const gesehen = new Set<string>();
+        const eindeutig = neu.filter(
+          (b) => !gesehen.has(schluessel(b)) && gesehen.add(schluessel(b)),
+        );
+        tx.aendern('t_vorgang', v.id, { bauteil_refs: JSON.stringify(eindeutig) });
+      }
+    },
+  }),
   // Pläne -------------------------------------------------------------------------------
   def({
     name: 'plan.anlegen',

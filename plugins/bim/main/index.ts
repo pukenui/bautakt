@@ -11,6 +11,7 @@ import type {
 } from '../gemeinsam/typen.js';
 import { RAUM_KATEGORIEN, STANDARD_RAUMREGELN, type RaumKategorie } from '../gemeinsam/raeume.js';
 import { MENGENARTEN, STANDARD_REGELN, kgMenge, type Mengen } from '../gemeinsam/zuordnung.js';
+import { refsLesen } from '../gemeinsam/vierd.js';
 import { abgleichen, type AltBauteil } from './abgleich.js';
 import { SCHEMATA, eigenschaftenLesen, ifcApi, modellAuslesen, modellOeffnen } from './ifc.js';
 import {
@@ -23,7 +24,7 @@ import {
   type BauteilDaten,
 } from './mengen.js';
 
-const MIGRATIONEN: readonly Migration[] = [
+const MIGRATIONEN: Migration[] = [
   {
     version: 1,
     name: 'IFC-Modelle, Geschosse und Bauteile (E-37, E-86, E-88)',
@@ -141,6 +142,26 @@ const MIGRATIONEN: readonly Migration[] = [
   },
 ];
 
+MIGRATIONEN.push({
+  version: 4,
+  name: '4D: Zonen der Bauteile, Ort ↔ Geschosse/Zonen, 4D-Regeln je Vorgang (E-101, E-102)',
+  sql: `
+    ALTER TABLE b_bauteil ADD COLUMN zonen TEXT NOT NULL DEFAULT '[]';
+    CREATE TABLE b_ort_zuordnung (
+      id TEXT PRIMARY KEY,
+      ort_id TEXT NOT NULL UNIQUE,
+      geschosse TEXT NOT NULL DEFAULT '[]',
+      zonen TEXT NOT NULL DEFAULT '[]'
+    );
+    CREATE TABLE b_regel4d (
+      id TEXT PRIMARY KEY,
+      vorgang_id TEXT NOT NULL UNIQUE,
+      kgs TEXT NOT NULL DEFAULT '[]',
+      klassen TEXT NOT NULL DEFAULT '[]'
+    );
+  `,
+});
+
 const kategorieSchema = z.enum(RAUM_KATEGORIEN);
 
 const mengenartSchema = z.enum(
@@ -193,6 +214,7 @@ const einlesenSchema = z.object({
       }),
       langname: z.string().default(''),
       texte: z.string().default(''),
+      zonen: z.array(z.string()).default([]),
     }),
   ),
 });
@@ -215,6 +237,7 @@ function bauteilSpalten(
     mengen: JSON.stringify(b.mengen),
     langname: b.langname,
     texte: b.texte,
+    zonen: JSON.stringify(b.zonen),
   };
 }
 
@@ -592,10 +615,86 @@ export const bimPlugin: BautaktPlugin = {
       },
     });
 
+    // --- 4D: Ort ↔ Geschosse/Zonen (E-102), 4D-Regeln je Vorgang (E-101) -------------------
+    const namen = z.array(z.string().trim().min(1).max(200)).max(500);
+    ctx.befehle.registrieren({
+      name: 'ortzuordnung.setzen',
+      titel: 'Ort mit Geschossen/Zonen verbinden',
+      schema: z.object({
+        zuordnungen: z
+          .array(z.object({ ortId: z.string().min(1), geschosse: namen, zonen: namen }))
+          .min(1),
+      }),
+      ausfuehren(tx, d) {
+        for (const a of d.zuordnungen) {
+          const da = tx.eins<{ id: string }>(
+            'SELECT id FROM b_ort_zuordnung WHERE ort_id = ?',
+            a.ortId,
+          );
+          const leer = a.geschosse.length === 0 && a.zonen.length === 0;
+          const felder = { geschosse: JSON.stringify(a.geschosse), zonen: JSON.stringify(a.zonen) };
+          if (da && leer) tx.loeschen('b_ort_zuordnung', da.id);
+          else if (da) tx.aendern('b_ort_zuordnung', da.id, felder);
+          else if (!leer)
+            tx.einfuegen('b_ort_zuordnung', { id: neueId(), ort_id: a.ortId, ...felder });
+        }
+      },
+    });
+
+    ctx.befehle.registrieren({
+      name: 'regel4d.setzen',
+      titel: '4D-Regel des Vorgangs festlegen',
+      schema: z.object({
+        vorgangId: z.string().min(1),
+        kgs: z.array(kgSchema).max(100),
+        klassen: z.array(z.string().trim().min(1).max(100)).max(100),
+      }),
+      ausfuehren(tx, d) {
+        const da = tx.eins<{ id: string }>(
+          'SELECT id FROM b_regel4d WHERE vorgang_id = ?',
+          d.vorgangId,
+        );
+        const leer = d.kgs.length === 0 && d.klassen.length === 0;
+        const felder = { kgs: JSON.stringify(d.kgs), klassen: JSON.stringify(d.klassen) };
+        if (da && leer) tx.loeschen('b_regel4d', da.id);
+        else if (da) tx.aendern('b_regel4d', da.id, felder);
+        else if (!leer)
+          tx.einfuegen('b_regel4d', { id: neueId(), vorgang_id: d.vorgangId, ...felder });
+      },
+    });
+
     // Modellmengen je KG für die Kosten (E-93)
     ctx.dienste.bereitstellen('bim.mengen', bimMengenDienst);
     // Flächen je DIN-277-Kategorie aus den Räumen (E-95)
     ctx.dienste.bereitstellen('bim.flaechen', bimFlaechenDienst);
+
+    /** Vorgänge, deren verknüpfte Bauteile entfernt oder geändert werden (über die Termine). */
+    const betroffeneVorgaenge = (
+      modellId: string,
+      entfernt: Set<string>,
+      geaendert: Set<string>,
+    ) => {
+      const ergebnis: Aenderungsbericht['vorgaenge'] = [];
+      let plaene: { id: string; name: string }[];
+      try {
+        plaene = ctx.abfragen.ausfuehren('termine', 'plaene') as { id: string; name: string }[];
+      } catch {
+        return ergebnis;
+      }
+      for (const p of plaene) {
+        const d = ctx.abfragen.ausfuehren('termine', 'plan', { planId: p.id }) as {
+          vorgaenge: { nr: string; name: string; bauteil_refs?: string }[];
+        };
+        for (const v of d.vorgaenge) {
+          const refs = refsLesen(v.bauteil_refs).filter((x) => x.m === modellId);
+          const e = refs.filter((x) => entfernt.has(x.g)).length;
+          const g = refs.filter((x) => geaendert.has(x.g)).length;
+          if (e || g)
+            ergebnis.push({ plan: p.name, nr: v.nr, name: v.name, entfernt: e, geaendert: g });
+        }
+      }
+      return ergebnis;
+    };
 
     const lesen = async (inhalt: Uint8Array): Promise<ModellInhalt> => {
       const api = await ifcApi();
@@ -719,7 +818,13 @@ export const bimPlugin: BautaktPlugin = {
           ),
         ].filter((z) => !neuIds.has(z.globalid)).length;
 
+        const vorgaenge = betroffeneVorgaenge(
+          modellId,
+          new Set(diff.entfernt.map((b) => b.globalid)),
+          new Set(diff.geaendert.map((b) => b.globalid)),
+        );
         const details: Aenderungsbericht = {
+          vorgaenge,
           modellId,
           modellName: m.name,
           dateiname,
@@ -770,11 +875,15 @@ export const bimPlugin: BautaktPlugin = {
           a.modellId,
         ),
         bauteile: db
-          .lesen<Omit<BauteilZeile, 'mengen'> & { mengen: string | null }>(
+          .lesen<Omit<BauteilZeile, 'mengen' | 'zonen'> & { mengen: string | null }>(
             'SELECT * FROM b_bauteil WHERE modell_id = ? ORDER BY klasse, name, express_id',
             a.modellId,
           )
-          .map((b) => ({ ...b, mengen: b.mengen ? JSON.parse(b.mengen) : null })),
+          .map((b) => ({
+            ...b,
+            mengen: b.mengen ? JSON.parse(b.mengen) : null,
+            zonen: JSON.parse((b as unknown as { zonen: string }).zonen || '[]') as string[],
+          })),
       }),
     });
 
@@ -808,6 +917,29 @@ export const bimPlugin: BautaktPlugin = {
           ohneKostengruppe: alle.filter((b) => b.zuordnung.kg === null).length,
         };
       },
+    });
+
+    ctx.abfragen.registrieren({
+      name: 'vierD',
+      schema: z.undefined(),
+      ausfuehren: (db) => ({
+        ortZuordnungen: db
+          .lesen<{ ort_id: string; geschosse: string; zonen: string }>(
+            'SELECT * FROM b_ort_zuordnung',
+          )
+          .map((z) => ({
+            ort_id: z.ort_id,
+            geschosse: JSON.parse(z.geschosse) as string[],
+            zonen: JSON.parse(z.zonen) as string[],
+          })),
+        regeln: db
+          .lesen<{ vorgang_id: string; kgs: string; klassen: string }>('SELECT * FROM b_regel4d')
+          .map((z) => ({
+            vorgang_id: z.vorgang_id,
+            kgs: JSON.parse(z.kgs) as number[],
+            klassen: JSON.parse(z.klassen) as string[],
+          })),
+      }),
     });
 
     ctx.abfragen.registrieren({

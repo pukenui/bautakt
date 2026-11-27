@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@bautakt/kern": "workspace:*",
+    "@bautakt/plugin-termine": "workspace:*",
     "@bautakt/rechnen-kosten": "workspace:*",
     "@bautakt/ui": "workspace:*",
     "react": "^19.2.0",

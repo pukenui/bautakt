@@ -85,3 +85,23 @@ Hat sich das Modell im Autorenwerkzeug geändert, wählen Sie in der Bauteillist
 was neu, geändert oder entfernt ist und wie sich Kostenzeilen und Flächen „aus dem Modell“
 ändern. Erst **Übernehmen** ersetzt das Modell; Zuordnungen von Hand bleiben erhalten,
 Rückgängig nimmt alles zurück.
+
+### Bauablauf (4D)
+
+**Verknüpfen:** Jeder Vorgang kann Bauteile haben. Von Hand über **🔗** an einem Bauteil oder
+einem ganzen Zweig der Bauteilliste (Geschoss, Klasse, Kostengruppe) bzw. in den Eigenschaften:
+Plan und Vorgang wählen, dann hinzufügen, ersetzen oder lösen. Automatisch über
+**4D → Verknüpfungen …**: je Vorgang Kostengruppen (z. B. „330“ für alle Wände) und/oder
+IFC-Klassen eintragen; Bautakt schlägt die passenden Bauteile vor, **Übernehmen** setzt sie.
+
+**Orte:** Im Reiter **Orte ↔ Geschosse/Zonen** ordnen Sie jedem Ort der Ortsstruktur Geschosse
+und Zonen (IfcZone, z. B. Bauabschnitte) aus dem Modell zu; **Gleiche Namen zuordnen** erledigt
+das bei gleichen Bezeichnungen. Hat ein Vorgang einen Ort (von–bis), schlägt die Automatik nur
+Bauteile in diesem Bereich vor.
+
+**Simulation:** **⏱ 4D** blendet die Leiste unter dem Modell ein. Mit dem Schieber oder **▶**
+läuft der Bauablauf: noch nicht begonnene Bauteile sind ausgeblendet oder als „Geist“
+angedeutet, laufende orange (oder in der Farbe des Gewerks), fertige normal. Mit einem
+**Soll-Stand** werden Bauteile rot, die laut Soll schon fertig sein müssten. **📷 Bild** speichert
+die Ansicht als PNG mit Datum und Legende. Beim Neu-Einlesen nennt der Bericht die Vorgänge,
+deren Bauteile entfernt oder geändert wurden.

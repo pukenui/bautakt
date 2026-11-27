@@ -285,3 +285,89 @@
   font-weight: 600;
   color: #a15c00;
 }
+
+/* 4D (B4) */
+.bim-mitte {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.bim-mitte .bim-flaeche {
+  flex: 1;
+}
+.bim-4d {
+  border-top: 1px solid var(--linie);
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 13px;
+}
+.bim-4d-zeile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.bim-4d-zeile input[type='range'] {
+  flex: 1;
+  min-width: 200px;
+}
+.bim-4d-play {
+  width: 34px;
+}
+.bim-4d-datum {
+  min-width: 84px;
+  font-variant-numeric: tabular-nums;
+}
+.bim-4d-legende {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.bim-4d-legende i {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  margin-left: 6px;
+}
+.lg-zukunft {
+  background: repeating-linear-gradient(45deg, #ccc 0 2px, transparent 2px 4px);
+  border: 1px solid #bbb;
+}
+.lg-laufend {
+  background: #f28c1a;
+}
+.lg-fertig {
+  background: #8a8a86;
+}
+.lg-verspaetet {
+  background: #d91f1f;
+}
+.bim-4d-stempel {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: rgb(255 255 255 / 92%);
+  border: 1px solid var(--linie);
+  border-radius: 4px;
+  padding: 3px 10px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.bim-4d-vorgaenge {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+.bim-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin: 1px 8px 1px 0;
+  white-space: nowrap;
+}
+.bim-werkzeuge button.aktiv {
+  font-weight: 600;
+}

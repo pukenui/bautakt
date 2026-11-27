@@ -8,13 +8,19 @@ import type { GeometrieErgebnis } from './geometrie.js';
  * Ein-/Ausblenden und Auswahl auch bei großen Modellen schnell.
  */
 
-export type Zustand = 0 | 1 | 2;
+/**
+ * 0 ausgeblendet, 1 sichtbar, 2 ausgewählt, 3 Geist (gerastert durchsichtig, 4D),
+ * 4 getönt mit eigener Farbe (4D: in Arbeit, Gewerk, verspätet).
+ */
+export type Zustand = 0 | 1 | 2 | 3 | 4;
 export type Ansicht = 'iso' | 'oben' | 'vorne' | 'seite';
 
 interface ModellSzene {
   geo: GeometrieErgebnis;
   meshes: THREE.Mesh[];
   zustand: THREE.BufferAttribute[];
+  /** Farbe je Punkt für Zustand 4 (RGB 0–1) */
+  toenung: THREE.BufferAttribute[];
   /** express_id → [teil, start, ende][] */
   bereiche: Map<number, [number, number, number][]>;
   /** Lage der Puffer in der Szene (gemeinsamer Ursprung aller Modelle) */
@@ -43,18 +49,25 @@ function material(transparent: boolean): THREE.MeshLambertMaterial {
     s.vertexShader = s.vertexShader
       .replace(
         '#include <common>',
-        '#include <common>\nattribute float zustand;\nvarying float vZustand;',
+        '#include <common>\nattribute float zustand;\nattribute vec3 toenung;\nvarying float vZustand;\nvarying vec3 vToenung;',
       )
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvZustand = zustand;');
+      .replace(
+        '#include <begin_vertex>',
+        '#include <begin_vertex>\nvZustand = zustand;\nvToenung = toenung;',
+      );
     s.fragmentShader = s.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying float vZustand;')
+      .replace(
+        '#include <common>',
+        '#include <common>\nvarying float vZustand;\nvarying vec3 vToenung;',
+      )
       .replace(
         '#include <clipping_planes_fragment>',
-        'if (vZustand < 0.5) discard;\n#include <clipping_planes_fragment>',
+        // Geist: Rasterung statt echter Transparenz (keine Sortierprobleme)
+        'if (vZustand < 0.5) discard;\nif (vZustand > 2.5 && vZustand < 3.5 && mod(floor(gl_FragCoord.x) + floor(gl_FragCoord.y), 3.0) > 0.5) discard;\n#include <clipping_planes_fragment>',
       )
       .replace(
         '#include <dithering_fragment>',
-        `if (vZustand > 1.5) gl_FragColor.rgb = mix(gl_FragColor.rgb, ${AUSWAHL_FARBE}, 0.65);\n#include <dithering_fragment>`,
+        `if (vZustand > 3.5) gl_FragColor.rgb = mix(gl_FragColor.rgb, vToenung, 0.8);\nelse if (vZustand > 2.5) gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.82), 0.7);\nelse if (vZustand > 1.5) gl_FragColor.rgb = mix(gl_FragColor.rgb, ${AUSWAHL_FARBE}, 0.65);\n#include <dithering_fragment>`,
       );
   };
   return m;
@@ -143,6 +156,7 @@ export class Szene {
     const versatz = this.bezug.clone().sub(eigene);
     const meshes: THREE.Mesh[] = [];
     const zustand: THREE.BufferAttribute[] = [];
+    const toenung: THREE.BufferAttribute[] = [];
     geo.teile.forEach((t, nr) => {
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.BufferAttribute(t.positionen, 3));
@@ -150,6 +164,9 @@ export class Szene {
       g.setAttribute('color', new THREE.BufferAttribute(t.farben, 4, true));
       const z = new THREE.BufferAttribute(new Float32Array(t.positionen.length / 3).fill(1), 1);
       g.setAttribute('zustand', z);
+      const tn = new THREE.BufferAttribute(new Float32Array(t.positionen.length), 3);
+      g.setAttribute('toenung', tn);
+      toenung.push(tn);
       g.setIndex(new THREE.BufferAttribute(t.indizes, 1));
       g.computeBoundingSphere();
       g.computeBoundingBox();
@@ -162,7 +179,7 @@ export class Szene {
       meshes.push(mesh);
       zustand.push(z);
     });
-    this.modelle.set(id, { geo, meshes, zustand, bereiche, versatz });
+    this.modelle.set(id, { geo, meshes, zustand, toenung, bereiche, versatz });
     this.anfordern();
   }
 
@@ -182,17 +199,45 @@ export class Szene {
     return [...this.modelle.keys()];
   }
 
-  /** Zustand aller Bauteile setzen (Sichtbarkeit und Auswahl). */
-  zustandSetzen(fn: (modellId: string, expressId: number) => Zustand): void {
+  /**
+   * Zustand aller Bauteile setzen (Sichtbarkeit, Auswahl, 4D). `farbe` liefert für Zustand 4 die
+   * Tönung als RGB (0–1).
+   */
+  zustandSetzen(
+    fn: (modellId: string, expressId: number) => Zustand,
+    farbe?: (modellId: string, expressId: number) => [number, number, number],
+  ): void {
     for (const [id, m] of this.modelle) {
       const felder = m.zustand.map((z) => z.array as Float32Array);
+      const toene = m.toenung.map((z) => z.array as Float32Array);
+      let getoent = false;
       for (const [e, liste] of m.bereiche) {
         const wert = fn(id, e);
         for (const [teil, start, ende] of liste) felder[teil]?.fill(wert, start, ende);
+        if (wert === 4 && farbe) {
+          getoent = true;
+          const [rr, gg, bb] = farbe(id, e);
+          for (const [teil, start, ende] of liste) {
+            const t = toene[teil];
+            if (!t) continue;
+            for (let i = start; i < ende; i++) {
+              t[i * 3] = rr;
+              t[i * 3 + 1] = gg;
+              t[i * 3 + 2] = bb;
+            }
+          }
+        }
       }
       m.zustand.forEach((z) => (z.needsUpdate = true));
+      if (getoent) m.toenung.forEach((z) => (z.needsUpdate = true));
     }
     this.anfordern();
+  }
+
+  /** Bild der aktuellen Ansicht (PNG als Data-URL). */
+  bild(): string {
+    this.renderer.render(this.scene, this.kamera);
+    return this.renderer.domElement.toDataURL('image/png');
   }
 
   /** Begrenzung sichtbarer (oder aller) Bauteile. */

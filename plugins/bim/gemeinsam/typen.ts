@@ -47,6 +47,8 @@ export interface BauteilZeile {
   langname: string;
   /** Räume: Textwerte der Eigenschaften (für Raumregeln, E-94) */
   texte: string;
+  /** Zonen (IfcZone, E-102); [] bei Modellen vor B4 */
+  zonen: string[];
 }
 
 /** Regel IFC → KG (b_kg_regel, E-90). */
@@ -101,6 +103,8 @@ export interface ModellInhalt {
     mengen: Mengen;
     langname: string;
     texte: string;
+    /** Namen der Zonen (IfcZone, E-102) */
+    zonen: string[];
   }[];
   bericht: string[];
 }
@@ -117,6 +121,8 @@ export interface Aenderungsbericht {
   kosten: { kg: number; einheit: string; alt: number | null; neu: number | null }[];
   /** Flächen aus dem Modell (DIN 277) */
   flaechen: { kategorie: string; alt: number | null; neu: number | null }[];
+  /** Vorgänge, deren verknüpfte Bauteile entfernt oder geändert werden (4D, E-101) */
+  vorgaenge: { plan: string; nr: string; name: string; entfernt: number; geaendert: number }[];
   /** manuelle Zuordnungen, deren Bauteil nicht mehr im Modell ist */
   zuordnungenOhneBauteil: number;
 }

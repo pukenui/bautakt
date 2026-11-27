@@ -194,6 +194,9 @@ importers:
       '@bautakt/kern':
         specifier: workspace:*
         version: link:../../packages/kern
+      '@bautakt/plugin-termine':
+        specifier: workspace:*
+        version: link:../termine
       '@bautakt/rechnen-kosten':
         specifier: workspace:*
         version: link:../../packages/rechnen-kosten

@@ -23,6 +23,19 @@ export interface AnsichtZustand {
   messen: boolean;
   /** Bauteilliste nach Geschoss oder nach Kostengruppe (B2) */
   gliederung: 'geschoss' | 'kg' | 'din277';
+  /** Bauablauf-Simulation (4D, E-103) */
+  vierd: {
+    aktiv: boolean;
+    planId: string | null;
+    sollId: string | null;
+    /** Tage seit dem ersten Anfang des Plans (gebrochen beim Abspielen) */
+    tag: number;
+    laeuft: boolean;
+    /** Tage je Sekunde */
+    tempo: number;
+    geist: boolean;
+    gewerk: boolean;
+  };
 }
 
 export const schluessel = (modellId: string, expressId: number) => `${modellId}:${expressId}`;
@@ -35,6 +48,16 @@ let zustand: AnsichtZustand = {
   schnitt: { art: 'aus' },
   messen: false,
   gliederung: 'geschoss',
+  vierd: {
+    aktiv: false,
+    planId: null,
+    sollId: null,
+    tag: 0,
+    laeuft: false,
+    tempo: 7,
+    geist: true,
+    gewerk: false,
+  },
 };
 const abonnenten = new Set<() => void>();
 

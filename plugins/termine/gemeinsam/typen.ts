@@ -55,6 +55,8 @@ export interface VorgangZeile {
   /** Ortsbereich (E-31, E-67): IDs aus t_ort, null = ohne Ort */
   ort_von: string | null;
   ort_bis: string | null;
+  /** verknüpfte Bauteile (4D, E-101): JSON-Liste aus { m: Modell-ID, g: GlobalId } */
+  bauteil_refs: string;
   bedingung_typ: BedingungTyp;
   bedingung_datum: string | null;
   schnittstelle: number; // 0/1

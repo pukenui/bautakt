@@ -6,7 +6,8 @@
   "type": "module",
   "exports": {
     "./main": "./main/index.ts",
-    "./renderer": "./renderer/index.tsx"
+    "./renderer": "./renderer/index.tsx",
+    "./orte": "./gemeinsam/orte.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"

@@ -330,6 +330,15 @@ if (!app.requestSingleInstanceLock()) {
     app.setAppUserModelId('de.bautakt.app');
     // Keine Berechtigungen (Kamera, Mikrofon, Benachrichtigungen …) für den Renderer
     session.defaultSession.setPermissionRequestHandler((_wc, _p, cb) => cb(false));
+    // Downloads aus dem Renderer (nur Data-URLs, z. B. 4D-Bild, E-104): Speichern-Dialog;
+    // in Entwicklungs-Builds mit BAUTAKT_TEST_EXPORT_ORDNER ohne Dialog in diesen Ordner.
+    session.defaultSession.on('will-download', (e, item) => {
+      if (!item.getURL().startsWith('data:')) return e.preventDefault();
+      const testOrdner = app.isPackaged ? undefined : process.env['BAUTAKT_TEST_EXPORT_ORDNER'];
+      const name = path.basename(item.getFilename()).replace(/[^\w.-]/g, '_') || 'Bautakt.png';
+      if (testOrdner) item.setSavePath(path.join(testOrdner, name));
+      else item.setSaveDialogOptions({ title: 'Bild speichern', defaultPath: name });
+    });
     let globalFehler: string | null = null;
     try {
       globaleDatenOeffnen();
