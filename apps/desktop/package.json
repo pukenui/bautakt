@@ -1,7 +1,7 @@
 {
   "name": "@bautakt/desktop",
   "productName": "Bautakt",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "Bautakt – Termin- und Kostenplanung für Bauprojekte",
   "author": "Bautakt",
